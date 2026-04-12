@@ -1,0 +1,17 @@
+{
+  "defaultLocale": "en",
+  "locales": ["es", "fr"],
+  "source": ["src"],
+  "extensions": [".ts", ".tsx"],
+  "output": "public/_tyndale",
+  "batchSize": 50,
+  "localeAliases": {},
+  "dictionaries": {
+    "include": ["src/dictionaries/*.json"],
+    "format": "key-value"
+  },
+  "pi": {
+    "model": "claude-sonnet-4-20250514",
+    "thinkingLevel": "low"
+  }
+}

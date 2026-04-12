@@ -1,0 +1,44 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+*.tsbuildinfo
+
+# Generated translation output
+public/_tyndale/
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Node
+node-compile-cache/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Turbo
+.turbo/
+
+# Coverage
+coverage/
+
+# Internal tooling
+.omp/
+TASKS.jsonl
+docs/
+skills/
+clean-ignored-from-git.sh
+
+# Next.js (fixture)
+.next/

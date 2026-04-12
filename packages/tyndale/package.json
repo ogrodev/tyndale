@@ -1,0 +1,43 @@
+{
+  "name": "tyndale",
+  "version": "0.1.0",
+  "description": "CLI for AI-powered i18n — extract, translate, and validate",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/tyndale-i18n/tyndale.git",
+    "directory": "packages/tyndale"
+  },
+  "homepage": "https://github.com/tyndale-i18n/tyndale",
+  "bugs": {
+    "url": "https://github.com/tyndale-i18n/tyndale/issues"
+  },
+  "type": "module",
+  "bin": {
+    "tyndale": "dist/cli.js"
+  },
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsc --build",
+    "test": "bun test"
+  },
+  "keywords": ["i18n", "internationalization", "react", "nextjs", "ai", "translation", "cli"],
+  "dependencies": {
+    "@babel/parser": "^7.29.2",
+    "@babel/traverse": "^7.29.0",
+    "@babel/types": "^7.29.0",
+    "@mariozechner/pi-coding-agent": "^0.66.1",
+    "tyndale-react": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/babel__traverse": "^7.28.0"
+  }
+}

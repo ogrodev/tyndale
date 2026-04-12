@@ -1,0 +1,50 @@
+{
+  "name": "tyndale-next",
+  "version": "0.1.0",
+  "description": "Next.js adapter for Tyndale i18n",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/tyndale-i18n/tyndale.git",
+    "directory": "packages/tyndale-next"
+  },
+  "homepage": "https://github.com/tyndale-i18n/tyndale",
+  "bugs": {
+    "url": "https://github.com/tyndale-i18n/tyndale/issues"
+  },
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./config": {
+      "types": "./dist/config.d.ts",
+      "import": "./dist/config.js"
+    },
+    "./middleware": {
+      "types": "./dist/middleware.d.ts",
+      "import": "./dist/middleware.js"
+    }
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsc",
+    "test": "bun test"
+  },
+  "keywords": ["i18n", "internationalization", "nextjs", "next", "translation", "ai", "middleware"],
+  "dependencies": {
+    "tyndale-react": "workspace:*"
+  },
+  "peerDependencies": {
+    "next": ">=14.0.0",
+    "react": ">=18.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.0",
+    "next": "^14.0.0",
+    "typescript": "^5.0.0"
+  }
+}

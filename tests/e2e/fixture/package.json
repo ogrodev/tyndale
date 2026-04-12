@@ -1,0 +1,16 @@
+{
+  "name": "e2e-fixture",
+  "private": true,
+  "dependencies": {
+    "next": "14.2.25",
+    "react": "^18.0.0",
+    "react-dom": "^18.0.0",
+    "tyndale-react": "workspace:*",
+    "tyndale-next": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0",
+    "@types/react": "^18.0.0",
+    "@types/node": "^20.0.0"
+  }
+}

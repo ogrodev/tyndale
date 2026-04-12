@@ -1,0 +1,33 @@
+{
+  "name": "tyndale",
+  "private": true,
+  "description": "AI-powered i18n for React and Next.js",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/tyndale-i18n/tyndale.git"
+  },
+  "homepage": "https://github.com/tyndale-i18n/tyndale",
+  "bugs": {
+    "url": "https://github.com/tyndale-i18n/tyndale/issues"
+  },
+  "workspaces": [
+    "packages/*",
+    "tests/e2e/fixture"
+  ],
+  "scripts": {
+    "test": "bun test --cwd packages/tyndale-react && bun test --cwd packages/tyndale-next && bun test --cwd packages/tyndale && bun test tests/e2e/",
+    "test:e2e": "bun test tests/e2e/",
+    "test:react": "bun test --cwd packages/tyndale-react",
+    "test:next": "bun test --cwd packages/tyndale-next",
+    "test:cli": "bun test --cwd packages/tyndale",
+    "typecheck": "tsc --build"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "typescript": "^5.7.0"
+  }
+}
