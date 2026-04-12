@@ -35,7 +35,7 @@ an individual is officially representing the community in public spaces.
 ## Enforcement
 
 Instances of unacceptable behavior may be reported to the project maintainers
-via [GitHub Issues](https://github.com/tyndale-i18n/tyndale/issues).
+via [GitHub Issues](https://github.com/ogrodev/tyndale/issues).
 
 All complaints will be reviewed and investigated and will result in a response
 that is deemed necessary and appropriate to the circumstances.

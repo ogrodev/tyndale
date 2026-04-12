@@ -2,7 +2,7 @@
 
 ## Reporting Bugs
 
-Open an issue at https://github.com/tyndale-i18n/tyndale/issues. Include:
+Open an issue at https://github.com/ogrodev/tyndale/issues. Include:
 
 - Tyndale version and package (`tyndale`, `tyndale-react`, or `tyndale-next`)
 - Node/Bun version
@@ -18,7 +18,7 @@ Open an issue with the `enhancement` label. Describe the use case, not just the 
 Prerequisites: [Bun](https://bun.sh) >= 1.0
 
 ```sh
-git clone https://github.com/tyndale-i18n/tyndale.git
+git clone https://github.com/ogrodev/tyndale.git
 cd tyndale
 bun install
 ```

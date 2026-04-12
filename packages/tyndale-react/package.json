@@ -5,12 +5,12 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/tyndale-i18n/tyndale.git",
+    "url": "https://github.com/ogrodev/tyndale.git",
     "directory": "packages/tyndale-react"
   },
-  "homepage": "https://github.com/tyndale-i18n/tyndale",
+  "homepage": "https://github.com/ogrodev/tyndale",
   "bugs": {
-    "url": "https://github.com/tyndale-i18n/tyndale/issues"
+    "url": "https://github.com/ogrodev/tyndale/issues"
   },
   "type": "module",
   "main": "src/index.ts",

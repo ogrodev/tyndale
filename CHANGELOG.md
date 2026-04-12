@@ -20,5 +20,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Locale aliases for variant locale codes
 - RTL direction support via `useDirection` hook
 
-[Unreleased]: https://github.com/tyndale-i18n/tyndale/compare/v0.1.0...HEAD
-[0.1.0]: https://github.com/tyndale-i18n/tyndale/releases/tag/v0.1.0
+[Unreleased]: https://github.com/ogrodev/tyndale/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/ogrodev/tyndale/releases/tag/v0.1.0
