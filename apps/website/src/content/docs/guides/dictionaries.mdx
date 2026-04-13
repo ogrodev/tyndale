@@ -1,0 +1,50 @@
+---
+title: Using Dictionaries
+description: Manage key-value translation dictionaries alongside your JSX translations.
+---
+
+## What are dictionaries?
+
+Dictionaries are traditional key-value translation files. They're useful for:
+- Shared strings across many components (button labels, error messages)
+- Content managed outside your codebase
+- Migration from existing i18n setups
+
+## Configuration
+
+```json
+{
+  "dictionaries": {
+    "include": ["src/dictionaries/*.json"],
+    "format": "key-value"
+  }
+}
+```
+
+## Create a dictionary
+
+```json
+// src/dictionaries/common.json
+{
+  "save": "Save",
+  "cancel": "Cancel",
+  "delete": "Delete",
+  "loading": "Loading..."
+}
+```
+
+## Use in components
+
+```tsx
+import { useDictionary } from 'tyndale-react';
+
+export function ActionButtons() {
+  const d = useDictionary();
+  return (
+    <div>
+      <button>{d('save')}</button>
+      <button>{d('cancel')}</button>
+    </div>
+  );
+}
+```

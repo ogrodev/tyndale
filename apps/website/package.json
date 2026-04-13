@@ -1,0 +1,27 @@
+{
+  "name": "tyndale-website",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "portless run astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "translate": "tyndale translate"
+  },
+  "dependencies": {
+    "astro": "^5.7.10",
+    "@astrojs/starlight": "^0.34.1",
+    "@astrojs/react": "^4.2.1",
+    "@astrojs/vercel": "^8.1.4",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "tailwindcss": "^4.1.4",
+    "@tailwindcss/vite": "^4.1.4",
+    "tyndale": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0"
+  }
+}

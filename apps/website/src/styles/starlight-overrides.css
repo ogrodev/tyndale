@@ -1,0 +1,24 @@
+/* Dark theme overrides for Starlight — rose palette */
+:root {
+  --sl-color-accent-low: #27151a;
+  --sl-color-accent: #d1476e;
+  --sl-color-accent-high: #e2aaba;
+  --sl-color-white: #e5e5e3;
+  --sl-color-gray-1: #d4d4d0;
+  --sl-color-gray-2: #9b9b97;
+  --sl-color-gray-3: #6b6b67;
+  --sl-color-gray-4: #3d3d3a;
+  --sl-color-gray-5: #222220;
+  --sl-color-gray-6: #161615;
+  --sl-color-black: #0a0a0b;
+  --sl-font-system: 'Outfit', system-ui, sans-serif;
+  --sl-font-system-mono: 'JetBrains Mono', 'Fira Code', monospace;
+}
+
+[data-theme='dark'] {
+  --sl-color-bg: #0a0a0b;
+  --sl-color-bg-nav: #111111;
+  --sl-color-bg-sidebar: #0e0e0e;
+  --sl-color-hairline-shade: rgba(255, 255, 255, 0.06);
+  --sl-color-hairline-light: rgba(255, 255, 255, 0.03);
+}

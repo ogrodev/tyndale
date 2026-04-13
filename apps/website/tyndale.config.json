@@ -1,0 +1,12 @@
+{
+  "defaultLocale": "en",
+  "locales": ["es", "fr", "de", "pt", "ja", "ko", "zh", "it", "ru"],
+  "source": ["src/lib"],
+  "extensions": [".ts", ".tsx"],
+  "output": "public/_tyndale",
+  "translate": {},
+  "pi": {
+    "model": "openai-codex/gpt-5.4-mini",
+    "thinkingLevel": "low"
+  }
+}

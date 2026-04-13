@@ -1,0 +1,24 @@
+---
+import type { strings as Strings } from '../../lib/strings';
+
+interface Props {
+  t: (s: string) => string;
+  strings: typeof Strings;
+}
+
+const { t, strings } = Astro.props;
+---
+
+<footer class="border-t border-white/4 py-12 px-6">
+  <div class="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
+    <div class="text-sm text-[#6b6b67]">
+      Tyndale &mdash; {t(strings.footerTagline)}
+      <a href="https://github.com/ogrodev/tyndale/blob/main/LICENSE" class="hover:text-[#9b9b97] transition-colors">MIT License</a>.
+    </div>
+    <div class="flex items-center gap-6">
+      <a href="/getting-started/installation" class="text-sm text-[#6b6b67] hover:text-[#c4c4c0] transition-colors">{t(strings.footerDocs)}</a>
+      <a href="https://github.com/ogrodev/tyndale" target="_blank" rel="noopener noreferrer" class="text-sm text-[#6b6b67] hover:text-[#c4c4c0] transition-colors">{t(strings.navGitHub)}</a>
+      <a href="https://www.npmjs.com/package/tyndale" target="_blank" rel="noopener noreferrer" class="text-sm text-[#6b6b67] hover:text-[#c4c4c0] transition-colors">npm</a>
+    </div>
+  </div>
+</footer>

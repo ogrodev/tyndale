@@ -1,0 +1,7 @@
+# Astro build output
+dist/
+.astro/
+.vercel/
+
+# Translation files are committed (override root gitignore)
+!public/_tyndale/

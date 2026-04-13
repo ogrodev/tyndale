@@ -1,0 +1,50 @@
+---
+import Logo from './Logo.astro';
+import LocaleSwitcher from '../landing/LocaleSwitcher';
+import type { strings as Strings } from '../../lib/strings';
+
+interface Props {
+  locale?: string;
+  t: (s: string) => string;
+  strings: typeof Strings;
+}
+
+const { locale = 'en', t, strings } = Astro.props;
+---
+
+<header id="site-header" class="fixed top-0 left-0 right-0 z-50 transition-colors duration-300">
+  <a href="#main-content" class="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-[60] focus:px-4 focus:py-2 focus:bg-accent-500 focus:text-white focus:rounded-lg focus:text-sm">Skip to content</a>
+  <nav class="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
+    <Logo />
+
+    <div class="flex items-center gap-6">
+      <a href="/getting-started/installation" class="text-sm text-[#9b9b97] hover:text-[#e5e5e3] transition-colors">
+        {t(strings.navDocs)}
+      </a>
+      <a
+        href="https://github.com/ogrodev/tyndale"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="text-sm text-[#9b9b97] hover:text-[#e5e5e3] transition-colors"
+      >
+        {t(strings.navGitHub)}
+      </a>
+
+      <LocaleSwitcher client:load locale={locale} />
+    </div>
+  </nav>
+</header>
+
+<script>
+  const header = document.getElementById('site-header');
+  function updateHeader() {
+    if (!header) return;
+    if (window.scrollY > 50) {
+      header.classList.add('bg-[#0a0a0b]/80', 'backdrop-blur-md', 'border-b', 'border-white/4');
+    } else {
+      header.classList.remove('bg-[#0a0a0b]/80', 'backdrop-blur-md', 'border-b', 'border-white/4');
+    }
+  }
+  window.addEventListener('scroll', updateHeader);
+  updateHeader();
+</script>

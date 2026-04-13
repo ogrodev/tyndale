@@ -1,0 +1,68 @@
+---
+title: Quickstart
+description: Get translations running in your React app in 5 minutes.
+---
+
+import { Steps } from '@astrojs/starlight/components';
+
+<Steps>
+
+1. **Install Tyndale**
+
+   ```bash
+   npm install tyndale tyndale-react
+   ```
+
+2. **Initialize your project**
+
+   ```bash
+   npx tyndale init
+   ```
+
+   This creates `tyndale.config.json` with default settings.
+
+3. **Authenticate with your AI provider**
+
+   ```bash
+   npx tyndale auth
+   ```
+
+   Follow the prompts to configure your API key (Anthropic, OpenAI, etc.).
+
+4. **Wrap translatable content**
+
+   ```tsx
+   import { T, useTranslation } from 'tyndale-react';
+
+   export function Welcome() {
+     const t = useTranslation();
+     return (
+       <div>
+         <T>Welcome to our app!</T>
+         <p>{t('You have {count} items', { count: 3 })}</p>
+       </div>
+     );
+   }
+   ```
+
+5. **Extract and translate**
+
+   ```bash
+   npx tyndale translate
+   ```
+
+   Tyndale scans your source files, extracts translatable strings, and generates translations for all configured locales.
+
+</Steps>
+
+## What just happened?
+
+Tyndale scanned your JSX for `<T>` components and `useTranslation()` calls, extracted the English source text, sent it to your AI provider for translation, and wrote locale files to your `output` directory.
+
+No key files. No manual JSON editing. Your translations are ready.
+
+## Next steps
+
+- [Configure your project](/reference/configuration) — locales, AI model, output directory
+- [Set up Next.js](/getting-started/nextjs-setup) — middleware, providers, static generation
+- [Learn the React API](/reference/react-api) — all components and hooks

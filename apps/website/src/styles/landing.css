@@ -1,0 +1,131 @@
+@import 'tailwindcss';
+
+/* ── Tailwind v4 theme ── */
+@theme {
+  /* Rose accent — hsl(343, 60%, 55%) base */
+  --color-accent-50: #faeff2;
+  --color-accent-100: #f3d7df;
+  --color-accent-200: #e2aaba;
+  --color-accent-300: #d27992;
+  --color-accent-400: #d1476e;
+  --color-accent-500: #b13357;
+  --color-accent-600: #8d2f49;
+  --color-accent-700: #6e2a3d;
+  --color-accent-800: #552432;
+  --color-accent-900: #44212b;
+  --color-accent-950: #27151a;
+
+  --font-sans: 'Outfit', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+}
+
+/* ── Smooth scroll ── */
+html {
+  scroll-behavior: smooth;
+}
+
+/* ── Noise / grain overlay ── */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  pointer-events: none;
+  opacity: 0.03;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-size: 256px 256px;
+}
+
+/* ── Ambient glow — hero ── */
+.hero-glow {
+  position: relative;
+}
+
+.hero-glow::before {
+  content: '';
+  position: absolute;
+  top: 40%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 700px;
+  height: 500px;
+  background: radial-gradient(ellipse, rgba(209, 71, 110, 0.1), transparent 70%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ── Code block glow ── */
+.code-block-glow {
+  box-shadow:
+    0 0 60px rgba(209, 71, 110, 0.06),
+    0 0 120px rgba(209, 71, 110, 0.03);
+}
+
+/* ── Feature card ── */
+.feature-card {
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  transition: border-color 0.3s ease, transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.feature-card:hover {
+  border-color: rgba(209, 71, 110, 0.3);
+  box-shadow: 0 8px 40px rgba(209, 71, 110, 0.06);
+  transform: translateY(-2px);
+}
+
+/* ── Button press feedback ── */
+a[href]:active,
+button:active {
+  transform: scale(0.98) translateY(1px);
+}
+
+/* ── Focus ring ── */
+a:focus-visible,
+button:focus-visible {
+  outline: 2px solid rgba(209, 71, 110, 0.6);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* ── Staggered entry animations ── */
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-up {
+  animation: fade-up 0.6s ease-out both;
+}
+
+.stagger-1 { animation-delay: 0ms; }
+.stagger-2 { animation-delay: 80ms; }
+.stagger-3 { animation-delay: 160ms; }
+.stagger-4 { animation-delay: 240ms; }
+.stagger-5 { animation-delay: 320ms; }
+.stagger-6 { animation-delay: 400ms; }
+
+/* ── Step counter ── */
+.step-line {
+  position: relative;
+}
+
+.step-line::before {
+  content: '';
+  position: absolute;
+  left: 15px;
+  top: 40px;
+  bottom: -24px;
+  width: 1px;
+  background: linear-gradient(to bottom, rgba(209, 71, 110, 0.3), transparent);
+}
+
+.step-line:last-child::before {
+  display: none;
+}

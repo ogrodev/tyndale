@@ -1,0 +1,39 @@
+---
+import '../styles/landing.css';
+
+interface Props {
+  locale?: string;
+}
+
+const { locale = 'en' } = Astro.props;
+---
+
+<!doctype html>
+<html lang={locale} class="dark">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="generator" content={Astro.generator} />
+    <title>Tyndale — AI-powered i18n for React & Next.js</title>
+    <meta
+      name="description"
+      content="Open-source AI-powered internationalization. Write your app in one language. Run the CLI. Get translations."
+    />
+    <meta property="og:title" content="Tyndale — AI-powered i18n for React & Next.js" />
+    <meta
+      property="og:description"
+      content="Open-source AI-powered internationalization. Write your app in one language. Run the CLI. Get translations."
+    />
+    <meta property="og:type" content="website" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body class="bg-[#0a0a0b] text-[#e5e5e3] antialiased">
+    <slot />
+  </body>
+</html>
