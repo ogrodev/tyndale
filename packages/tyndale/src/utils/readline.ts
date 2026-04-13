@@ -1,19 +1,30 @@
-/** Simple line reader from stdin. Prompts with the given message and returns the trimmed input. */
+import { createInterface } from 'readline';
+
+/**
+ * Reads a single line from stdin.
+ * Uses Node's readline module which properly handles terminal state,
+ * including after a TUI's ProcessTerminal has toggled raw mode.
+ */
 export function readLine(prompt?: string): Promise<string> {
   if (prompt) {
     process.stdout.write(prompt);
   }
+
   return new Promise((resolve) => {
-    let data = '';
-    const onData = (chunk: Buffer) => {
-      data += chunk.toString();
-      if (data.includes('\n')) {
-        process.stdin.removeListener('data', onData);
-        process.stdin.pause();
-        resolve(data.split('\n')[0]);
-      }
-    };
-    process.stdin.resume();
-    process.stdin.on('data', onData);
+    const rl = createInterface({ input: process.stdin });
+    let resolved = false;
+
+    rl.once('line', (line) => {
+      if (resolved) return;
+      resolved = true;
+      rl.close();
+      resolve(line);
+    });
+
+    rl.once('close', () => {
+      if (resolved) return;
+      resolved = true;
+      resolve('');
+    });
   });
 }

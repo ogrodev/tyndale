@@ -14,12 +14,13 @@ describe('formatExtractionReport', () => {
 
     const output = formatExtractionReport(report);
 
-    expect(output).toContain('42 entries');
-    expect(output).toContain('10 new');
-    expect(output).toContain('2 removed');
-    expect(output).toContain('30 unchanged');
-    expect(output).toContain('0 errors');
-    expect(output).toContain('0 warnings');
+    expect(output).toContain('Extraction summary');
+    expect(output).toContain('entries        42');
+    expect(output).toContain('new            10');
+    expect(output).toContain('removed        2');
+    expect(output).toContain('unchanged      30');
+    expect(output).toContain('errors         0');
+    expect(output).toContain('warnings       0');
   });
 
   it('formats report with errors and warnings', () => {
@@ -38,8 +39,10 @@ describe('formatExtractionReport', () => {
 
     const output = formatExtractionReport(report);
 
-    expect(output).toContain('1 error');
-    expect(output).toContain('1 warning');
+    expect(output).toContain('Errors (1)');
+    expect(output).toContain('Warnings (1)');
+    expect(output).toContain('errors         1');
+    expect(output).toContain('warnings       1');
     expect(output).toContain('a.tsx');
     expect(output).toContain('unwrapped dynamic');
     expect(output).toContain('stale hash');
@@ -56,7 +59,7 @@ describe('formatExtractionReport', () => {
     };
 
     const output = formatExtractionReport(report);
-    expect(output).toContain('0 entries');
+    expect(output).toContain('entries        0');
   });
 
   it('returns hasErrors=true when errors present', () => {
