@@ -1,6 +1,6 @@
 {
   "name": "tyndale-next",
-  "version": "0.1.0",
+  "version": "workspace:*",
   "description": "Next.js adapter for Tyndale i18n",
   "license": "MIT",
   "repository": {
@@ -19,6 +19,10 @@
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
+    },
+    "./server": {
+      "types": "./dist/server.d.ts",
+      "import": "./dist/server.js"
     },
     "./config": {
       "types": "./dist/config.d.ts",
