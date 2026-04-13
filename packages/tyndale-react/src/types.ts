@@ -16,8 +16,13 @@ export interface TyndaleConfig {
   source?: string[];
   /** Output directory for generated locale files. Defaults to "public/_tyndale". */
   output?: string;
-  /** Number of entries per translation batch. Defaults to 50. */
-  batchSize?: number;
+  /** Translation pipeline configuration. */
+  translate?: {
+    /** Token budget per translation batch. Default: 50000. */
+    tokenBudget?: number;
+    /** Max parallel translation sessions. Auto-detected if omitted. */
+    concurrency?: number;
+  };
   /** Map locale codes to aliases (e.g. { "pt": "pt-BR" }). */
   localeAliases?: Record<string, string>;
   /** Pi model configuration. */

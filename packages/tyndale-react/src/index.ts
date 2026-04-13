@@ -37,8 +37,8 @@ export type {
 
 // Phase 2A: Hooks and functions
 export { useTranslation, interpolate } from './use-translation';
-export { getTranslation, type GetTranslationOptions } from './get-translation';
 export { msg } from './msg';
+export { msgString } from './msg-string';
 export { useChangeLocale } from './use-change-locale';
 export { useDictionary } from './use-dictionary';
 

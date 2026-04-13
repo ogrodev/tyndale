@@ -37,7 +37,9 @@ export interface SerializeResult {
 
 // --- Variable component detection ---
 
-const VARIABLE_COMPONENTS = new Set<React.ComponentType>([
+type VariableComponent = typeof Var | typeof Num | typeof Currency | typeof DateTime;
+
+const VARIABLE_COMPONENTS = new Set<VariableComponent>([
   Var,
   Num,
   Currency,
@@ -46,8 +48,8 @@ const VARIABLE_COMPONENTS = new Set<React.ComponentType>([
 
 function isVariableComponent(
   type: unknown,
-): type is typeof Var | typeof Num | typeof Currency | typeof DateTime {
-  return VARIABLE_COMPONENTS.has(type as React.ComponentType);
+): type is VariableComponent {
+  return VARIABLE_COMPONENTS.has(type as VariableComponent);
 }
 
 function isPluralComponent(type: unknown): type is typeof Plural {
@@ -85,12 +87,16 @@ export function serializeChildren(children: ReactNode): SerializeResult {
     }
 
     if (isValidElement(node)) {
-      const element = node as ReactElement;
+      const element = node as ReactElement<Record<string, unknown>>;
       const type = element.type;
 
       // Variable components → {name} placeholder
       if (isVariableComponent(type)) {
-        const name = element.props.name as string;
+        const props = element.props as Record<string, unknown> & {
+          name?: string;
+          children?: ReactNode;
+        };
+        const name = typeof props.name === 'string' ? props.name : undefined;
         if (!name) {
           throw new Error(
             `Variable component <${(type as Function).name}> inside <T> requires a "name" prop`,
@@ -98,7 +104,7 @@ export function serializeChildren(children: ReactNode): SerializeResult {
         }
         // Store the original element for rendering at deserialization
         if (type === Var) {
-          variableMap.set(name, element.props.children);
+          variableMap.set(name, props.children ?? null);
         } else {
           // For Num/Currency/DateTime, store the element itself to render with locale
           variableMap.set(name, element);
@@ -108,13 +114,14 @@ export function serializeChildren(children: ReactNode): SerializeResult {
 
       // Plural → ICU format block
       if (isPluralComponent(type)) {
-        const props = element.props as React.ComponentProps<typeof Plural>;
+        const props = element.props as unknown as React.ComponentProps<typeof Plural>;
         return serializePluralToIcu(props);
       }
 
       // Regular element → numbered tag
       const tagIndex = tagCounter++;
-      const { children: childContent, ...restProps } = element.props;
+      const props = element.props as Record<string, unknown> & { children?: ReactNode };
+      const { children: childContent, ...restProps } = props;
       elementMap[tagIndex] = {
         type: typeof type === 'string' ? type : type,
         props: restProps,

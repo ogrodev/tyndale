@@ -15,11 +15,15 @@ export function computeHash(content: string): string {
   const encoder = new TextEncoder();
   const data = encoder.encode(normalized);
 
-  // Bun provides the Web Crypto API globally.
-  // For synchronous hashing, use Bun's native hasher.
-  const hasher = new Bun.CryptoHasher('sha256');
-  hasher.update(data);
-  return hasher.digest('hex');
+  if (typeof globalThis.Bun !== 'undefined') {
+    const hasher = new Bun.CryptoHasher('sha256');
+    hasher.update(data);
+    return hasher.digest('hex');
+  }
+
+  // Node.js fallback
+  const { createHash } = require('node:crypto');
+  return createHash('sha256').update(data).digest('hex');
 }
 
 
