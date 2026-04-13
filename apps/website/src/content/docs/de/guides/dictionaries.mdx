@@ -1,0 +1,50 @@
+---
+title: Verwendung von Wörterbüchern
+description: Verwalte Schlüssel-Wert-Übersetzungswörterbücher zusammen mit deinen JSX-Übersetzungen.
+---
+
+## Was sind Wörterbücher?
+
+Wörterbücher sind klassische Schlüssel-Wert-Übersetzungsdateien. Sie sind nützlich für:
+- Gemeinsam genutzte Strings über viele Komponenten hinweg (Button-Beschriftungen, Fehlermeldungen)
+- Inhalte, die außerhalb deiner Codebasis verwaltet werden
+- Migration von bestehenden i18n-Setups
+
+## Konfiguration
+
+```json
+{
+  "dictionaries": {
+    "include": ["src/dictionaries/*.json"],
+    "format": "key-value"
+  }
+}
+```
+
+## Ein Wörterbuch erstellen
+
+```json
+// src/dictionaries/common.json
+{
+  "save": "Save",
+  "cancel": "Cancel",
+  "delete": "Delete",
+  "loading": "Loading..."
+}
+```
+
+## In Komponenten verwenden
+
+```tsx
+import { useDictionary } from 'tyndale-react';
+
+export function ActionButtons() {
+  const d = useDictionary();
+  return (
+    <div>
+      <button>{d('save')}</button>
+      <button>{d('cancel')}</button>
+    </div>
+  );
+}
+```

@@ -1,0 +1,54 @@
+---
+title: CLI 命令
+description: Tyndale CLI 的完整参考。
+---
+
+## `tyndale init`
+
+初始化一个新的 Tyndale 项目。会使用合理的默认值创建 `tyndale.config.json`。
+
+```bash
+npx tyndale init
+```
+
+## `tyndale auth`
+
+配置你的 AI provider 凭据。
+
+```bash
+npx tyndale auth
+```
+
+## `tyndale translate`
+
+提取可翻译字符串，并为所有已配置的 locale 生成翻译。
+
+```bash
+npx tyndale translate [options]
+```
+
+| 标志 | 说明 |
+|------|-------------|
+| `--locale <code>` | 仅翻译指定的 locale |
+| `--force` | 重新翻译所有字符串，而不仅仅是变更部分 |
+| `--dry-run` | 显示将要翻译的内容，但不写入文件 |
+| `--token-budget <n>` | 每个 AI 批次的 token 预算（默认：50000） |
+| `--concurrency <n>` | 最大并行翻译会话数（自动检测） |
+
+## `tyndale validate`
+
+检查所有 locale 是否拥有完整且格式正确的翻译。不会发起 AI 调用。
+
+```bash
+npx tyndale validate
+```
+
+如果发现问题，将以状态码 1 退出。非常适合用于 CI 流水线。
+
+## `tyndale extract`
+
+提取可翻译字符串但不进行翻译。适合用于审查将发送给 AI provider 的内容。
+
+```bash
+npx tyndale extract
+```

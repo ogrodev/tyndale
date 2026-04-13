@@ -1,0 +1,84 @@
+---
+title: API de React
+description: Componentes y hooks de tyndale-react.
+---
+
+## Componentes
+
+### `<T>`
+
+Envuelve contenido de texto traducible. Admite variables y componentes anidados.
+
+```tsx
+import { T } from 'tyndale-react';
+
+<T>Welcome to our app!</T>
+<T>Hello, {name}!</T>
+```
+
+### `<Plural>`
+
+Gestiona la pluralización en función de un valor de conteo.
+
+```tsx
+import { Plural } from 'tyndale-react';
+
+<Plural value={count} one="1 item" other="{count} items" />
+```
+
+### `<DateTime>`
+
+Da formato a las fechas según la configuración regional actual.
+
+```tsx
+import { DateTime } from 'tyndale-react';
+
+<DateTime value={new Date()} />
+```
+
+### `<Currency>`
+
+Da formato a los valores monetarios según la configuración regional actual.
+
+```tsx
+import { Currency } from 'tyndale-react';
+
+<Currency value={49.99} currency="USD" />
+```
+
+## Hooks
+
+| Hook | Devuelve | Propósito |
+|------|---------|--------|
+| `useTranslation()` | `t(source, vars?)` | Traducir cadenas de forma programática |
+| `useLocale()` | `string` | Código de configuración regional actual |
+| `useChangeLocale()` | `(locale: string) => void` | Cambiar la configuración regional en tiempo de ejecución |
+| `useDictionary()` | `d(key) => string` | Acceder a las traducciones del diccionario |
+
+## Funciones
+
+### `msg(text)`
+
+Marca una cadena como traducible fuera de un contexto de componente.
+
+```tsx
+import { msg } from 'tyndale-react';
+
+const errorMessages = {
+  notFound: msg('Page not found'),
+  unauthorized: msg('Please sign in to continue'),
+};
+```
+
+### `msgString(text)`
+
+Marcador que devuelve cadenas para contextos que no son React (Astro, Node, TS puro). Funciona de forma idéntica a `msg()` para la extracción, pero devuelve un `string` simple en lugar de un elemento de React.
+
+```ts
+import { msgString } from 'tyndale-react';
+
+const labels = {
+  greeting: msgString('Hello'),
+  farewell: msgString('Goodbye'),
+};
+```

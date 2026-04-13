@@ -1,0 +1,50 @@
+---
+title: 使用字典
+description: 在管理 JSX 翻译的同时管理键值翻译字典。
+---
+
+## 什么是字典？
+
+字典是传统的键值翻译文件。它们适用于：
+- 在多个组件间共享字符串（按钮标签、错误消息）
+- 在代码库之外管理内容
+- 从现有 i18n 配置迁移
+
+## 配置
+
+```json
+{
+  "dictionaries": {
+    "include": ["src/dictionaries/*.json"],
+    "format": "key-value"
+  }
+}
+```
+
+## 创建字典
+
+```json
+// src/dictionaries/common.json
+{
+  "save": "Save",
+  "cancel": "Cancel",
+  "delete": "Delete",
+  "loading": "Loading..."
+}
+```
+
+## 在组件中使用
+
+```tsx
+import { useDictionary } from 'tyndale-react';
+
+export function ActionButtons() {
+  const d = useDictionary();
+  return (
+    <div>
+      <button>{d('save')}</button>
+      <button>{d('cancel')}</button>
+    </div>
+  );
+}
+```

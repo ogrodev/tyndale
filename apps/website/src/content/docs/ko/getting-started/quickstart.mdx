@@ -1,0 +1,68 @@
+---
+title: 빠른 시작
+description: React 앱에서 5분 안에 번역을 실행하세요.
+---
+
+import { Steps } from '@astrojs/starlight/components';
+
+<Steps>
+
+1. **Tyndale 설치**
+
+   ```bash
+   npm install tyndale tyndale-react
+   ```
+
+2. **프로젝트 초기화**
+
+   ```bash
+   npx tyndale init
+   ```
+
+   기본 설정이 포함된 `tyndale.config.json` 파일이 생성됩니다.
+
+3. **AI provider 인증**
+
+   ```bash
+   npx tyndale auth
+   ```
+
+   안내에 따라 API 키(Anthropic, OpenAI 등)를 구성하세요.
+
+4. **번역 가능한 콘텐츠 감싸기**
+
+   ```tsx
+   import { T, useTranslation } from 'tyndale-react';
+
+   export function Welcome() {
+     const t = useTranslation();
+     return (
+       <div>
+         <T>Welcome to our app!</T>
+         <p>{t('You have {count} items', { count: 3 })}</p>
+       </div>
+     );
+   }
+   ```
+
+5. **추출 및 번역**
+
+   ```bash
+   npx tyndale translate
+   ```
+
+   Tyndale은 소스 파일을 스캔해 번역 가능한 문자열을 추출하고, 구성된 모든 로캘에 대한 번역을 생성합니다.
+
+</Steps>
+
+## 방금 무슨 일이 일어났나요?
+
+Tyndale은 JSX에서 `<T>` 컴포넌트와 `useTranslation()` 호출을 스캔하고, 영어 원문 텍스트를 추출한 뒤, 번역을 위해 AI provider로 전송하고, 로캘 파일을 `output` 디렉터리에 작성했습니다.
+
+키 파일이 필요 없습니다. JSON을 수동으로 편집할 필요도 없습니다. 번역이 준비되었습니다.
+
+## 다음 단계
+
+- [프로젝트 구성하기](/reference/configuration) — 로캘, AI 모델, 출력 디렉터리
+- [Next.js 설정하기](/getting-started/nextjs-setup) — 미들웨어, provider, 정적 생성
+- [React API 알아보기](/reference/react-api) — 모든 컴포넌트와 훅

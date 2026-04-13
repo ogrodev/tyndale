@@ -1,0 +1,51 @@
+---
+title: Интеграция CI/CD
+description: Проверяйте переводы в вашем CI-конвейере.
+---
+
+## Проверка переводов
+
+`tyndale validate` проверяет, что для всех локалей есть полные и корректно сформированные переводы, не выполняя никаких AI-вызовов:
+
+```bash
+npx tyndale validate
+```
+
+Команда завершается с кодом 1, если обнаружены какие-либо проблемы, что делает её идеальной для CI.
+
+## GitHub Actions
+
+```yaml
+# .github/workflows/i18n.yml
+name: i18n Validation
+on: [push, pull_request]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install
+      - run: npx tyndale validate
+```
+
+## Хук pre-commit
+
+Используйте вместе с `husky` или `lint-staged`:
+
+```json
+{
+  "lint-staged": {
+    "*.{ts,tsx}": "tyndale validate"
+  }
+}
+```
+
+## Процесс перевода
+
+1. Разработчик оборачивает контент в `<T>` или `msg()`
+2. Локально запускается `npx tyndale translate` (требуются учётные данные AI)
+3. Сгенерированные файлы локалей коммитятся в `public/_tyndale/`
+4. В CI запускается `tyndale validate`, чтобы выявить пропущенные переводы
+5. Выпускайте с уверенностью

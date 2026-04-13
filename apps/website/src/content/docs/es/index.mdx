@@ -1,0 +1,32 @@
+---
+title: Documentación de Tyndale
+description: Aprende a usar Tyndale para i18n con IA en React y Next.js.
+template: splash
+hero:
+  tagline: i18n de código abierto con IA para React y Next.js
+  actions:
+    - text: Comenzar
+      link: /getting-started/installation/
+      icon: right-arrow
+      variant: primary
+    - text: Ver en GitHub
+      link: https://github.com/ogrodev/tyndale
+      icon: external
+---
+
+import { Card, CardGrid } from '@astrojs/starlight/components';
+
+<CardGrid>
+  <Card title="Configuración rápida" icon="rocket">
+    Instala Tyndale, ejecuta `tyndale init` y obtén traducciones en minutos.
+  </Card>
+  <Card title="Componentes de React" icon="puzzle">
+    Usa `<T>`, `<Plural>`, `<DateTime>` y hooks como `useTranslation()`.
+  </Card>
+  <Card title="Listo para Next.js" icon="laptop">
+    Middleware, proveedores de servidor y utilidades de generación estática integrados.
+  </Card>
+  <Card title="Compatible con CI/CD" icon="setting">
+    Valida las traducciones en tu pipeline con `tyndale validate`.
+  </Card>
+</CardGrid>

@@ -1,0 +1,32 @@
+---
+title: Tyndale 文档
+description: 了解如何在 React 和 Next.js 中使用 Tyndale 实现 AI 驱动的 i18n。
+template: splash
+hero:
+  tagline: 面向 React 与 Next.js 的开源 AI 驱动 i18n
+  actions:
+    - text: 快速开始
+      link: /getting-started/installation/
+      icon: right-arrow
+      variant: primary
+    - text: 在 GitHub 上查看
+      link: https://github.com/ogrodev/tyndale
+      icon: external
+---
+
+import { Card, CardGrid } from '@astrojs/starlight/components';
+
+<CardGrid>
+  <Card title="快速设置" icon="rocket">
+    安装 Tyndale，运行 `tyndale init`，几分钟内即可获得翻译。
+  </Card>
+  <Card title="React 组件" icon="puzzle">
+    使用 `<T>`、`<Plural>`、`<DateTime>` 以及 `useTranslation()` 等 hooks。
+  </Card>
+  <Card title="已为 Next.js 就绪" icon="laptop">
+    内置中间件、服务端 providers 和静态生成辅助工具。
+  </Card>
+  <Card title="CI/CD 友好" icon="setting">
+    在你的流水线中使用 `tyndale validate` 验证翻译。
+  </Card>
+</CardGrid>

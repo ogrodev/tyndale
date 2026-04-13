@@ -1,0 +1,54 @@
+---
+title: Comandi CLI
+description: Riferimento completo per la CLI di Tyndale.
+---
+
+## `tyndale init`
+
+Inizializza un nuovo progetto Tyndale. Crea `tyndale.config.json` con impostazioni predefinite sensate.
+
+```bash
+npx tyndale init
+```
+
+## `tyndale auth`
+
+Configura le credenziali del tuo provider AI.
+
+```bash
+npx tyndale auth
+```
+
+## `tyndale translate`
+
+Estrae le stringhe traducibili e genera traduzioni per tutte le lingue configurate.
+
+```bash
+npx tyndale translate [options]
+```
+
+| Opzione | Descrizione |
+|------|-------------|
+| `--locale <code>` | Traduce solo una lingua specifica |
+| `--force` | Ritraduce tutte le stringhe, non solo le modifiche |
+| `--dry-run` | Mostra cosa verrebbe tradotto senza scrivere file |
+| `--token-budget <n>` | Budget di token per batch AI (predefinito: 50000) |
+| `--concurrency <n>` | Numero massimo di sessioni di traduzione parallele (rilevato automaticamente) |
+
+## `tyndale validate`
+
+Controlla che tutte le lingue abbiano traduzioni complete e ben formate. Non vengono effettuate chiamate AI.
+
+```bash
+npx tyndale validate
+```
+
+Esce con codice 1 se vengono trovati problemi. Ideale per pipeline CI.
+
+## `tyndale extract`
+
+Estrae le stringhe traducibili senza tradurle. Utile per rivedere cosa verrà inviato al provider AI.
+
+```bash
+npx tyndale extract
+```

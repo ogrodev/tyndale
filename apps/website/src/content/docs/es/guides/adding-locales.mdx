@@ -1,0 +1,40 @@
+---
+title: Añadir nuevos locales
+description: Cómo añadir un nuevo idioma de destino a tu proyecto Tyndale.
+---
+
+## Añadir un locale
+
+Abre `tyndale.config.json` y añade el código de locale al array `locales`:
+
+```json
+{
+  "defaultLocale": "en",
+  "locales": ["es", "fr", "ja", "de"]
+}
+```
+
+Luego ejecuta:
+
+```bash
+npx tyndale translate
+```
+
+Tyndale generará traducciones para el nuevo locale y dejará intactas las traducciones existentes.
+
+## Alias de locales
+
+Asocia códigos de variante con sus códigos canónicos mediante `localeAliases`:
+
+```json
+{
+  "localeAliases": {
+    "pt-BR": "pt",
+    "zh-TW": "zh"
+  }
+}
+```
+
+## Compatibilidad RTL
+
+Tyndale detecta automáticamente los locales RTL (árabe, hebreo, etc.). `TyndaleServerProvider` establece el atributo `dir` en el elemento HTML. Usa la variante `rtl:` de Tailwind para estilos específicos de RTL.

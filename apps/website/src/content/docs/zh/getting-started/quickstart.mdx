@@ -1,0 +1,68 @@
+---
+title: 快速开始
+description: 在 5 分钟内让你的 React 应用运行翻译功能。
+---
+
+import { Steps } from '@astrojs/starlight/components';
+
+<Steps>
+
+1. **安装 Tyndale**
+
+   ```bash
+   npm install tyndale tyndale-react
+   ```
+
+2. **初始化你的项目**
+
+   ```bash
+   npx tyndale init
+   ```
+
+   这会创建包含默认设置的 `tyndale.config.json`。
+
+3. **使用你的 AI provider 进行身份验证**
+
+   ```bash
+   npx tyndale auth
+   ```
+
+   按照提示配置你的 API key（Anthropic、OpenAI 等）。
+
+4. **包裹可翻译内容**
+
+   ```tsx
+   import { T, useTranslation } from 'tyndale-react';
+
+   export function Welcome() {
+     const t = useTranslation();
+     return (
+       <div>
+         <T>Welcome to our app!</T>
+         <p>{t('You have {count} items', { count: 3 })}</p>
+       </div>
+     );
+   }
+   ```
+
+5. **提取并翻译**
+
+   ```bash
+   npx tyndale translate
+   ```
+
+   Tyndale 会扫描你的源文件，提取可翻译字符串，并为所有已配置的 locales 生成翻译。
+
+</Steps>
+
+## 刚刚发生了什么？
+
+Tyndale 扫描了你 JSX 中的 `<T>` 组件和 `useTranslation()` 调用，提取英文源文本，将其发送给你的 AI provider 进行翻译，并将 locale 文件写入你的 `output` 目录。
+
+不需要 key 文件。无需手动编辑 JSON。你的翻译已经就绪。
+
+## 下一步
+
+- [配置你的项目](/reference/configuration) — locales、AI model、output directory
+- [设置 Next.js](/getting-started/nextjs-setup) — middleware、providers、静态生成
+- [了解 React API](/reference/react-api) — 所有组件和 hooks

@@ -1,0 +1,40 @@
+---
+title: 添加新的区域设置
+description: 如何为你的 Tyndale 项目添加新的目标语言。
+---
+
+## 添加区域设置
+
+打开 `tyndale.config.json`，并将区域代码添加到 `locales` 数组中：
+
+```json
+{
+  "defaultLocale": "en",
+  "locales": ["es", "fr", "ja", "de"]
+}
+```
+
+然后运行：
+
+```bash
+npx tyndale translate
+```
+
+Tyndale 将为新的区域设置生成翻译，同时保持现有翻译不变。
+
+## 区域设置别名
+
+使用 `localeAliases` 将变体代码映射到规范代码：
+
+```json
+{
+  "localeAliases": {
+    "pt-BR": "pt",
+    "zh-TW": "zh"
+  }
+}
+```
+
+## RTL 支持
+
+Tyndale 会自动检测 RTL 区域设置（阿拉伯语、希伯来语等）。`TyndaleServerProvider` 会在 HTML 元素上设置 `dir` 属性。对 RTL 专用样式请使用 Tailwind 的 `rtl:` 变体。

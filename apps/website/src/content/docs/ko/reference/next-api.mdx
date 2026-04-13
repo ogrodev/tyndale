@@ -1,0 +1,46 @@
+---
+title: Next.js API
+description: tyndale-next를 위한 API 참조입니다.
+---
+
+## `TyndaleServerProvider`
+
+번역을 로드하여 모든 하위 컴포넌트에서 사용할 수 있게 해주는 서버 사이드 provider입니다.
+
+```tsx
+import { TyndaleServerProvider } from 'tyndale-next/server';
+
+// In your layout
+<TyndaleServerProvider locale={locale}>
+  {children}
+</TyndaleServerProvider>
+```
+
+## `withTyndaleConfig(config)`
+
+locale 기반 rewrites와 redirects를 추가하도록 Next.js config를 래핑합니다.
+
+```js
+// next.config.mjs
+import { withTyndaleConfig } from 'tyndale-next/config';
+
+export default withTyndaleConfig({
+  // your existing config
+});
+```
+
+## `tyndaleMiddleware`
+
+locale 감지와 라우팅을 처리하는 middleware입니다.
+
+```ts
+// middleware.ts
+export { tyndaleMiddleware as middleware } from 'tyndale-next/middleware';
+```
+
+### 동작
+
+1. URL에서 locale 접두사를 확인합니다
+2. `Accept-Language` 헤더를 대체로 사용합니다
+3. config의 기본 locale을 대체로 사용합니다
+4. 이후 요청을 위해 locale 쿠키를 설정합니다

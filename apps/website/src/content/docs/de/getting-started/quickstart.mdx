@@ -1,0 +1,68 @@
+---
+title: Schnellstart
+description: Bringe Übersetzungen in deiner React-App in 5 Minuten zum Laufen.
+---
+
+import { Steps } from '@astrojs/starlight/components';
+
+<Steps>
+
+1. **Tyndale installieren**
+
+   ```bash
+   npm install tyndale tyndale-react
+   ```
+
+2. **Dein Projekt initialisieren**
+
+   ```bash
+   npx tyndale init
+   ```
+
+   Dadurch wird `tyndale.config.json` mit Standardeinstellungen erstellt.
+
+3. **Mit deinem KI-Provider authentifizieren**
+
+   ```bash
+   npx tyndale auth
+   ```
+
+   Folge den Anweisungen, um deinen API-Schlüssel zu konfigurieren (Anthropic, OpenAI usw.).
+
+4. **Übersetzbare Inhalte umschließen**
+
+   ```tsx
+   import { T, useTranslation } from 'tyndale-react';
+
+   export function Welcome() {
+     const t = useTranslation();
+     return (
+       <div>
+         <T>Welcome to our app!</T>
+         <p>{t('You have {count} items', { count: 3 })}</p>
+       </div>
+     );
+   }
+   ```
+
+5. **Extrahieren und übersetzen**
+
+   ```bash
+   npx tyndale translate
+   ```
+
+   Tyndale durchsucht deine Quelldateien, extrahiert übersetzbare Strings und generiert Übersetzungen für alle konfigurierten Locales.
+
+</Steps>
+
+## Was ist gerade passiert?
+
+Tyndale hat dein JSX nach `<T>`-Komponenten und `useTranslation()`-Aufrufen durchsucht, den englischen Quelltext extrahiert, ihn zur Übersetzung an deinen KI-Provider gesendet und Locale-Dateien in dein `output`-Verzeichnis geschrieben.
+
+Keine Key-Dateien. Keine manuelle JSON-Bearbeitung. Deine Übersetzungen sind bereit.
+
+## Nächste Schritte
+
+- [Projekt konfigurieren](/reference/configuration) — Locales, KI-Modell, Output-Verzeichnis
+- [Next.js einrichten](/getting-started/nextjs-setup) — Middleware, Provider, statische Generierung
+- [Die React-API kennenlernen](/reference/react-api) — alle Komponenten und Hooks

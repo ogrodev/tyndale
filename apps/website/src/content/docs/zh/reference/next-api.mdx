@@ -1,0 +1,46 @@
+---
+title: Next.js API
+description: tyndale-next 的 API 参考。
+---
+
+## `TyndaleServerProvider`
+
+服务端 provider，用于加载翻译并让所有子组件都可访问这些翻译。
+
+```tsx
+import { TyndaleServerProvider } from 'tyndale-next/server';
+
+// In your layout
+<TyndaleServerProvider locale={locale}>
+  {children}
+</TyndaleServerProvider>
+```
+
+## `withTyndaleConfig(config)`
+
+包装你的 Next.js 配置，以添加基于 locale 的 rewrites 和 redirects。
+
+```js
+// next.config.mjs
+import { withTyndaleConfig } from 'tyndale-next/config';
+
+export default withTyndaleConfig({
+  // your existing config
+});
+```
+
+## `tyndaleMiddleware`
+
+用于处理 locale 检测和路由的 middleware。
+
+```ts
+// middleware.ts
+export { tyndaleMiddleware as middleware } from 'tyndale-next/middleware';
+```
+
+### 行为
+
+1. 检查 URL 中是否包含 locale 前缀
+2. 回退到 `Accept-Language` 请求头
+3. 回退到配置中的默认 locale
+4. 为后续请求设置 locale cookie

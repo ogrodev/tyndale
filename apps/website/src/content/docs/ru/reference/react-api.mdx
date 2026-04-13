@@ -1,0 +1,84 @@
+---
+title: API React
+description: Компоненты и хуки из tyndale-react.
+---
+
+## Компоненты
+
+### `<T>`
+
+Оборачивает переводимый текстовый контент. Поддерживает переменные и вложенные компоненты.
+
+```tsx
+import { T } from 'tyndale-react';
+
+<T>Welcome to our app!</T>
+<T>Hello, {name}!</T>
+```
+
+### `<Plural>`
+
+Обрабатывает множественные формы на основе значения количества.
+
+```tsx
+import { Plural } from 'tyndale-react';
+
+<Plural value={count} one="1 item" other="{count} items" />
+```
+
+### `<DateTime>`
+
+Форматирует даты в соответствии с текущей локалью.
+
+```tsx
+import { DateTime } from 'tyndale-react';
+
+<DateTime value={new Date()} />
+```
+
+### `<Currency>`
+
+Форматирует значения валют в соответствии с текущей локалью.
+
+```tsx
+import { Currency } from 'tyndale-react';
+
+<Currency value={49.99} currency="USD" />
+```
+
+## Хуки
+
+| Хук | Возвращает | Назначение |
+|------|---------|--------|
+| `useTranslation()` | `t(source, vars?)` | Переводить строки программно |
+| `useLocale()` | `string` | Код текущей локали |
+| `useChangeLocale()` | `(locale: string) => void` | Переключать локаль во время выполнения |
+| `useDictionary()` | `d(key) => string` | Получать доступ к переводам словаря |
+
+## Функции
+
+### `msg(text)`
+
+Помечает строку как переводимую вне контекста компонента.
+
+```tsx
+import { msg } from 'tyndale-react';
+
+const errorMessages = {
+  notFound: msg('Page not found'),
+  unauthorized: msg('Please sign in to continue'),
+};
+```
+
+### `msgString(text)`
+
+Маркер, возвращающий строку, для контекстов вне React (Astro, Node, обычный TS). Работает идентично `msg()` для извлечения, но возвращает обычный `string` вместо React-элемента.
+
+```ts
+import { msgString } from 'tyndale-react';
+
+const labels = {
+  greeting: msgString('Hello'),
+  farewell: msgString('Goodbye'),
+};
+```

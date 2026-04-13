@@ -1,0 +1,50 @@
+---
+title: Использование словарей
+description: Управляйте словарями переводов в формате ключ-значение вместе с вашими JSX-переводами.
+---
+
+## Что такое словари?
+
+Словари — это традиционные файлы переводов в формате ключ-значение. Они полезны для:
+- Общих строк во многих компонентах (подписи кнопок, сообщения об ошибках)
+- Контента, управляемого вне вашей кодовой базы
+- Миграции с существующих настроек i18n
+
+## Конфигурация
+
+```json
+{
+  "dictionaries": {
+    "include": ["src/dictionaries/*.json"],
+    "format": "key-value"
+  }
+}
+```
+
+## Создайте словарь
+
+```json
+// src/dictionaries/common.json
+{
+  "save": "Save",
+  "cancel": "Cancel",
+  "delete": "Delete",
+  "loading": "Loading..."
+}
+```
+
+## Использование в компонентах
+
+```tsx
+import { useDictionary } from 'tyndale-react';
+
+export function ActionButtons() {
+  const d = useDictionary();
+  return (
+    <div>
+      <button>{d('save')}</button>
+      <button>{d('cancel')}</button>
+    </div>
+  );
+}
+```

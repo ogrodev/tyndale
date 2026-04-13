@@ -1,0 +1,40 @@
+---
+title: 새로운 로케일 추가하기
+description: Tyndale 프로젝트에 새로운 대상 언어를 추가하는 방법.
+---
+
+## 로케일 추가
+
+`tyndale.config.json`을 열고 `locales` 배열에 로케일 코드를 추가하세요:
+
+```json
+{
+  "defaultLocale": "en",
+  "locales": ["es", "fr", "ja", "de"]
+}
+```
+
+그런 다음 실행하세요:
+
+```bash
+npx tyndale translate
+```
+
+Tyndale는 기존 번역은 그대로 유지하면서 새 로케일에 대한 번역을 생성합니다.
+
+## 로케일 별칭
+
+`localeAliases`를 사용해 변형 코드를 정식 코드에 매핑하세요:
+
+```json
+{
+  "localeAliases": {
+    "pt-BR": "pt",
+    "zh-TW": "zh"
+  }
+}
+```
+
+## RTL 지원
+
+Tyndale는 RTL 로케일(아랍어, 히브리어 등)을 자동으로 감지합니다. `TyndaleServerProvider`는 HTML 요소에 `dir` 속성을 설정합니다. RTL 전용 스타일에는 Tailwind의 `rtl:` variant를 사용하세요.

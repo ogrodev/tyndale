@@ -1,0 +1,51 @@
+---
+title: CI/CD 통합
+description: CI 파이프라인에서 번역을 검증하세요.
+---
+
+## 번역 검증
+
+`tyndale validate`는 AI 호출 없이 모든 로캘에 완전하고 올바른 형식의 번역이 있는지 확인합니다:
+
+```bash
+npx tyndale validate
+```
+
+문제가 하나라도 발견되면 종료 코드 1로 종료되므로 CI에 매우 적합합니다.
+
+## GitHub Actions
+
+```yaml
+# .github/workflows/i18n.yml
+name: i18n Validation
+on: [push, pull_request]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install
+      - run: npx tyndale validate
+```
+
+## Pre-commit 훅
+
+`husky` 또는 `lint-staged`와 함께 사용하세요:
+
+```json
+{
+  "lint-staged": {
+    "*.{ts,tsx}": "tyndale validate"
+  }
+}
+```
+
+## 번역 워크플로
+
+1. 개발자가 콘텐츠를 `<T>` 또는 `msg()`로 감쌉니다
+2. 로컬에서 `npx tyndale translate`를 실행합니다 (AI 자격 증명 필요)
+3. 생성된 로캘 파일을 `public/_tyndale/`에 커밋합니다
+4. CI가 `tyndale validate`를 실행해 누락된 번역을 찾아냅니다
+5. 안심하고 배포합니다

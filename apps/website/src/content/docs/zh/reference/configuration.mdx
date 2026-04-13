@@ -1,0 +1,48 @@
+---
+title: 配置
+description: tyndale.config.json 的完整参考。
+---
+
+## 配置文件
+
+在项目根目录创建 `tyndale.config.json`，或运行 `npx tyndale init` 来生成一个。
+
+```json
+{
+  "defaultLocale": "en",
+  "locales": ["es", "fr", "ja"],
+  "source": ["src", "app"],
+  "extensions": [".ts", ".tsx", ".js", ".jsx"],
+  "output": "public/_tyndale",
+  "translate": {
+    "tokenBudget": 50000,
+    "concurrency": 8
+  },
+  "localeAliases": { "pt-BR": "pt" },
+  "dictionaries": {
+    "include": ["src/dictionaries/*.json"],
+    "format": "key-value"
+  },
+  "pi": {
+    "model": "claude-sonnet-4-20250514",
+    "thinkingLevel": "low"
+  }
+}
+```
+
+## 字段
+
+| 字段 | 类型 | 默认值 | 描述 |
+|-------|------|---------|-------------|
+| `defaultLocale` | `string` | `"en"` | 源语言代码 |
+| `locales` | `string[]` | `[]` | 目标 locale 代码 |
+| `source` | `string[]` | `["src"]` | 用于扫描可翻译内容的目录 |
+| `extensions` | `string[]` | `[".ts", ".tsx", ".js", ".jsx"]` | 要包含的文件扩展名 |
+| `output` | `string` | `"public/_tyndale"` | 生成的 locale 文件输出目录 |
+| `translate.tokenBudget` | `number` | `50000` | 每个 AI 翻译批次的 token 预算 |
+| `translate.concurrency` | `number` | auto | 最大并行翻译会话数 |
+| `localeAliases` | `object` | `{}` | 将变体 locale 代码映射到规范代码 |
+| `dictionaries.include` | `string[]` | `[]` | 字典文件的 Glob 模式 |
+| `dictionaries.format` | `string` | `"key-value"` | 字典文件格式 |
+| `pi.model` | `string` | `"claude-sonnet-4-20250514"` | 要使用的 AI 模型 |
+| `pi.thinkingLevel` | `string` | `"low"` | AI 思考级别 |

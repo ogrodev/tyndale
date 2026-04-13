@@ -1,0 +1,30 @@
+---
+title: 安装
+description: 安装 Tyndale 及其配套包。
+---
+
+## 前置条件
+
+- Node.js 20 或更高版本
+- React 18.2+ 或 19+
+- 一个 AI 提供商的 API 密钥（Anthropic、OpenAI 等）
+
+## 安装软件包
+
+```bash
+npm install tyndale tyndale-react
+```
+
+对于 Next.js 项目，还需要安装适配器：
+
+```bash
+npm install tyndale-next
+```
+
+## 初始化你的项目
+
+```bash
+npx tyndale init
+```
+
+这会在你的项目根目录创建一个 `tyndale.config.json`，并提供合理的默认配置。

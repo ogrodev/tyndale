@@ -1,0 +1,50 @@
+---
+title: 사전 사용하기
+description: JSX 번역과 함께 키-값 번역 사전을 관리하세요.
+---
+
+## 사전이란 무엇인가요?
+
+사전은 전통적인 키-값 번역 파일입니다. 다음과 같은 경우에 유용합니다:
+- 여러 컴포넌트에서 공유되는 문자열(버튼 레이블, 오류 메시지)
+- 코드베이스 외부에서 관리되는 콘텐츠
+- 기존 i18n 설정에서의 마이그레이션
+
+## 구성
+
+```json
+{
+  "dictionaries": {
+    "include": ["src/dictionaries/*.json"],
+    "format": "key-value"
+  }
+}
+```
+
+## 사전 만들기
+
+```json
+// src/dictionaries/common.json
+{
+  "save": "Save",
+  "cancel": "Cancel",
+  "delete": "Delete",
+  "loading": "Loading..."
+}
+```
+
+## 컴포넌트에서 사용하기
+
+```tsx
+import { useDictionary } from 'tyndale-react';
+
+export function ActionButtons() {
+  const d = useDictionary();
+  return (
+    <div>
+      <button>{d('save')}</button>
+      <button>{d('cancel')}</button>
+    </div>
+  );
+}
+```

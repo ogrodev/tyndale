@@ -1,0 +1,48 @@
+---
+title: Configuration
+description: Référence complète pour tyndale.config.json.
+---
+
+## Fichier de configuration
+
+Créez `tyndale.config.json` à la racine de votre projet, ou exécutez `npx tyndale init` pour en générer un.
+
+```json
+{
+  "defaultLocale": "en",
+  "locales": ["es", "fr", "ja"],
+  "source": ["src", "app"],
+  "extensions": [".ts", ".tsx", ".js", ".jsx"],
+  "output": "public/_tyndale",
+  "translate": {
+    "tokenBudget": 50000,
+    "concurrency": 8
+  },
+  "localeAliases": { "pt-BR": "pt" },
+  "dictionaries": {
+    "include": ["src/dictionaries/*.json"],
+    "format": "key-value"
+  },
+  "pi": {
+    "model": "claude-sonnet-4-20250514",
+    "thinkingLevel": "low"
+  }
+}
+```
+
+## Champs
+
+| Champ | Type | Par défaut | Description |
+|-------|------|---------|-------------|
+| `defaultLocale` | `string` | `"en"` | Code de langue source |
+| `locales` | `string[]` | `[]` | Codes de langues cibles |
+| `source` | `string[]` | `["src"]` | Répertoires à analyser pour le contenu traduisible |
+| `extensions` | `string[]` | `[".ts", ".tsx", ".js", ".jsx"]` | Extensions de fichiers à inclure |
+| `output` | `string` | `"public/_tyndale"` | Répertoire de sortie pour les fichiers de langue générés |
+| `translate.tokenBudget` | `number` | `50000` | Budget de tokens par lot de traduction IA |
+| `translate.concurrency` | `number` | auto | Nombre maximal de sessions de traduction parallèles |
+| `localeAliases` | `object` | `{}` | Associe les codes de variantes régionales aux codes canoniques |
+| `dictionaries.include` | `string[]` | `[]` | Motifs glob pour les fichiers de dictionnaire |
+| `dictionaries.format` | `string` | `"key-value"` | Format de fichier de dictionnaire |
+| `pi.model` | `string` | `"claude-sonnet-4-20250514"` | Modèle IA à utiliser |
+| `pi.thinkingLevel` | `string` | `"low"` | Niveau de réflexion de l’IA |

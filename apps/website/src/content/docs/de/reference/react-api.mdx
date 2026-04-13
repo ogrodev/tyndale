@@ -1,0 +1,84 @@
+---
+title: React-API
+description: Komponenten und Hooks von tyndale-react.
+---
+
+## Komponenten
+
+### `<T>`
+
+Umschließt übersetzbaren Textinhalt. Unterstützt Variablen und verschachtelte Komponenten.
+
+```tsx
+import { T } from 'tyndale-react';
+
+<T>Welcome to our app!</T>
+<T>Hello, {name}!</T>
+```
+
+### `<Plural>`
+
+Behandelt Pluralisierung basierend auf einem Zählwert.
+
+```tsx
+import { Plural } from 'tyndale-react';
+
+<Plural value={count} one="1 item" other="{count} items" />
+```
+
+### `<DateTime>`
+
+Formatiert Datumsangaben entsprechend der aktuellen Spracheinstellung.
+
+```tsx
+import { DateTime } from 'tyndale-react';
+
+<DateTime value={new Date()} />
+```
+
+### `<Currency>`
+
+Formatiert Währungswerte entsprechend der aktuellen Spracheinstellung.
+
+```tsx
+import { Currency } from 'tyndale-react';
+
+<Currency value={49.99} currency="USD" />
+```
+
+## Hooks
+
+| Hook | Rückgabe | Zweck |
+|------|---------|--------|
+| `useTranslation()` | `t(source, vars?)` | Zeichenketten programmatisch übersetzen |
+| `useLocale()` | `string` | Aktueller Locale-Code |
+| `useChangeLocale()` | `(locale: string) => void` | Locale zur Laufzeit wechseln |
+| `useDictionary()` | `d(key) => string` | Auf Wörterbuchübersetzungen zugreifen |
+
+## Funktionen
+
+### `msg(text)`
+
+Markiert eine Zeichenkette außerhalb eines Komponentenkontexts als übersetzbar.
+
+```tsx
+import { msg } from 'tyndale-react';
+
+const errorMessages = {
+  notFound: msg('Page not found'),
+  unauthorized: msg('Please sign in to continue'),
+};
+```
+
+### `msgString(text)`
+
+Marker mit `string`-Rückgabe für Nicht-React-Kontexte (Astro, Node, plain TS). Funktioniert für die Extraktion identisch zu `msg()`, gibt aber statt eines React-Elements einen einfachen `string` zurück.
+
+```ts
+import { msgString } from 'tyndale-react';
+
+const labels = {
+  greeting: msgString('Hello'),
+  farewell: msgString('Goodbye'),
+};
+```

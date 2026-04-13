@@ -1,0 +1,46 @@
+---
+title: API di Next.js
+description: Riferimento API per tyndale-next.
+---
+
+## `TyndaleServerProvider`
+
+Provider lato server che carica le traduzioni e le rende disponibili a tutti i componenti figli.
+
+```tsx
+import { TyndaleServerProvider } from 'tyndale-next/server';
+
+// In your layout
+<TyndaleServerProvider locale={locale}>
+  {children}
+</TyndaleServerProvider>
+```
+
+## `withTyndaleConfig(config)`
+
+Avvolge la configurazione di Next.js per aggiungere riscritture e reindirizzamenti basati sulla lingua.
+
+```js
+// next.config.mjs
+import { withTyndaleConfig } from 'tyndale-next/config';
+
+export default withTyndaleConfig({
+  // your existing config
+});
+```
+
+## `tyndaleMiddleware`
+
+Middleware che gestisce il rilevamento della lingua e il routing.
+
+```ts
+// middleware.ts
+export { tyndaleMiddleware as middleware } from 'tyndale-next/middleware';
+```
+
+### Comportamento
+
+1. Controlla la presenza di un prefisso della lingua nell'URL
+2. Usa come fallback l'header `Accept-Language`
+3. Usa come fallback la lingua predefinita dalla configurazione
+4. Imposta un cookie della lingua per le richieste successive

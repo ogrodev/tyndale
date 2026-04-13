@@ -1,0 +1,84 @@
+---
+title: React API 参考
+description: 来自 tyndale-react 的组件和 Hook。
+---
+
+## 组件
+
+### `<T>`
+
+包裹可翻译的文本内容。支持变量和嵌套组件。
+
+```tsx
+import { T } from 'tyndale-react';
+
+<T>Welcome to our app!</T>
+<T>Hello, {name}!</T>
+```
+
+### `<Plural>`
+
+根据计数值处理复数形式。
+
+```tsx
+import { Plural } from 'tyndale-react';
+
+<Plural value={count} one="1 item" other="{count} items" />
+```
+
+### `<DateTime>`
+
+根据当前语言环境格式化日期。
+
+```tsx
+import { DateTime } from 'tyndale-react';
+
+<DateTime value={new Date()} />
+```
+
+### `<Currency>`
+
+根据当前语言环境格式化货币值。
+
+```tsx
+import { Currency } from 'tyndale-react';
+
+<Currency value={49.99} currency="USD" />
+```
+
+## Hook
+
+| Hook | 返回值 | 用途 |
+|------|---------|--------|
+| `useTranslation()` | `t(source, vars?)` | 以编程方式翻译字符串 |
+| `useLocale()` | `string` | 当前语言环境代码 |
+| `useChangeLocale()` | `(locale: string) => void` | 在运行时切换语言环境 |
+| `useDictionary()` | `d(key) => string` | 访问字典翻译 |
+
+## 函数
+
+### `msg(text)`
+
+在组件上下文之外将字符串标记为可翻译。
+
+```tsx
+import { msg } from 'tyndale-react';
+
+const errorMessages = {
+  notFound: msg('Page not found'),
+  unauthorized: msg('Please sign in to continue'),
+};
+```
+
+### `msgString(text)`
+
+用于非 React 上下文（Astro、Node、纯 TS）的返回字符串标记器。在提取时与 `msg()` 的行为完全一致，但返回的是普通 `string`，而不是 React 元素。
+
+```ts
+import { msgString } from 'tyndale-react';
+
+const labels = {
+  greeting: msgString('Hello'),
+  farewell: msgString('Goodbye'),
+};
+```

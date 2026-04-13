@@ -1,0 +1,84 @@
+---
+title: React API
+description: tyndale-react의 컴포넌트와 훅.
+---
+
+## 컴포넌트
+
+### `<T>`
+
+번역 가능한 텍스트 콘텐츠를 감쌉니다. 변수와 중첩 컴포넌트를 지원합니다.
+
+```tsx
+import { T } from 'tyndale-react';
+
+<T>Welcome to our app!</T>
+<T>Hello, {name}!</T>
+```
+
+### `<Plural>`
+
+카운트 값을 기준으로 복수형을 처리합니다.
+
+```tsx
+import { Plural } from 'tyndale-react';
+
+<Plural value={count} one="1 item" other="{count} items" />
+```
+
+### `<DateTime>`
+
+현재 로캘에 따라 날짜를 포맷합니다.
+
+```tsx
+import { DateTime } from 'tyndale-react';
+
+<DateTime value={new Date()} />
+```
+
+### `<Currency>`
+
+현재 로캘에 따라 통화 값을 포맷합니다.
+
+```tsx
+import { Currency } from 'tyndale-react';
+
+<Currency value={49.99} currency="USD" />
+```
+
+## 훅
+
+| 훅 | 반환값 | 용도 |
+|------|---------|--------|
+| `useTranslation()` | `t(source, vars?)` | 문자열을 프로그래밍 방식으로 번역 |
+| `useLocale()` | `string` | 현재 로캘 코드 |
+| `useChangeLocale()` | `(locale: string) => void` | 런타임에 로캘 전환 |
+| `useDictionary()` | `d(key) => string` | 사전 번역에 접근 |
+
+## 함수
+
+### `msg(text)`
+
+컴포넌트 컨텍스트 밖에서 문자열을 번역 가능 항목으로 표시합니다.
+
+```tsx
+import { msg } from 'tyndale-react';
+
+const errorMessages = {
+  notFound: msg('Page not found'),
+  unauthorized: msg('Please sign in to continue'),
+};
+```
+
+### `msgString(text)`
+
+non-React 컨텍스트(Astro, Node, plain TS)를 위한 문자열 반환 마커입니다. 추출 시에는 `msg()`와 동일하게 동작하지만 React 요소 대신 일반 `string`을 반환합니다.
+
+```ts
+import { msgString } from 'tyndale-react';
+
+const labels = {
+  greeting: msgString('Hello'),
+  farewell: msgString('Goodbye'),
+};
+```

@@ -1,0 +1,54 @@
+---
+title: CLI-Befehle
+description: Vollständige Referenz für die Tyndale CLI.
+---
+
+## `tyndale init`
+
+Initialisiert ein neues Tyndale-Projekt. Erstellt `tyndale.config.json` mit sinnvollen Standardwerten.
+
+```bash
+npx tyndale init
+```
+
+## `tyndale auth`
+
+Konfiguriert die Zugangsdaten Ihres AI-Providers.
+
+```bash
+npx tyndale auth
+```
+
+## `tyndale translate`
+
+Extrahiert übersetzbare Strings und erzeugt Übersetzungen für alle konfigurierten Locales.
+
+```bash
+npx tyndale translate [options]
+```
+
+| Flag | Beschreibung |
+|------|-------------|
+| `--locale <code>` | Übersetzt nur ein bestimmtes Locale |
+| `--force` | Übersetzt alle Strings erneut, nicht nur Änderungen |
+| `--dry-run` | Zeigt, was übersetzt würde, ohne Dateien zu schreiben |
+| `--token-budget <n>` | Token-Budget pro AI-Batch (Standard: 50000) |
+| `--concurrency <n>` | Maximale parallele Übersetzungssitzungen (automatisch erkannt) |
+
+## `tyndale validate`
+
+Prüft, ob alle Locales vollständige, korrekt formatierte Übersetzungen haben. Es werden keine AI-Aufrufe ausgeführt.
+
+```bash
+npx tyndale validate
+```
+
+Beendet sich mit Code 1, wenn Probleme gefunden werden. Ideal für CI-Pipelines.
+
+## `tyndale extract`
+
+Extrahiert übersetzbare Strings, ohne sie zu übersetzen. Nützlich, um zu prüfen, was an den AI-Provider gesendet wird.
+
+```bash
+npx tyndale extract
+```
