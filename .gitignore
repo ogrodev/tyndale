@@ -36,9 +36,14 @@ coverage/
 # Internal tooling
 .omp/
 TASKS.jsonl
-docs/
+test_docs/
 skills/
 clean-ignored-from-git.sh
 
 # Next.js (fixture)
 .next/
+
+# Astro (website)
+apps/website/dist/
+apps/website/.astro/
+apps/website/.vercel/
