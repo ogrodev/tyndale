@@ -1,43 +1,10 @@
 // packages/tyndale/tests/translate/batch-translator.test.ts
 import { describe, it, expect } from 'bun:test';
 import {
-  splitIntoBatches,
   translateBatch,
   type TranslationInput,
   type TranslationSession,
-  type BatchResult,
 } from '../../src/translate/batch-translator';
-
-describe('splitIntoBatches', () => {
-  it('returns single batch when entries fit', () => {
-    const entries: TranslationInput[] = [
-      { hash: 'a', source: 'Hello', context: 'a.tsx:T@1', type: 'jsx' },
-      { hash: 'b', source: 'World', context: 'b.tsx:T@2', type: 'jsx' },
-    ];
-    const batches = splitIntoBatches(entries, 50);
-    expect(batches).toHaveLength(1);
-    expect(batches[0]).toHaveLength(2);
-  });
-
-  it('splits entries into multiple batches', () => {
-    const entries: TranslationInput[] = Array.from({ length: 7 }, (_, i) => ({
-      hash: `h${i}`,
-      source: `Text ${i}`,
-      context: `file.tsx:T@${i}`,
-      type: 'string' as const,
-    }));
-    const batches = splitIntoBatches(entries, 3);
-    expect(batches).toHaveLength(3);
-    expect(batches[0]).toHaveLength(3);
-    expect(batches[1]).toHaveLength(3);
-    expect(batches[2]).toHaveLength(1);
-  });
-
-  it('returns empty array for empty input', () => {
-    const batches = splitIntoBatches([], 50);
-    expect(batches).toEqual([]);
-  });
-});
 
 describe('translateBatch', () => {
   it('returns translations from a successful session', async () => {
@@ -78,7 +45,7 @@ describe('translateBatch', () => {
     expect(result.failedHashes).toEqual(['abc']);
   });
 
-  it('validates translations and excludes invalid ones', async () => {
+  it('retries invalid translations and reports persistent failures', async () => {
     const entries: TranslationInput[] = [
       { hash: 'h1', source: '<0>Hello</0>', context: 'a.tsx:T@1', type: 'jsx' },
       { hash: 'h2', source: 'Plain text', context: 'b.tsx:T@2', type: 'string' },
@@ -109,5 +76,41 @@ describe('translateBatch', () => {
     const result = await translateBatch(mockSession, entries, 'es', 'Spanish');
     expect(result.translations).toEqual({ h2: 'Texto plano' });
     expect(result.failedHashes).toEqual(['h1']);
+  });
+
+  it('passes brief to prompt when provided', async () => {
+    const entries: TranslationInput[] = [
+      { hash: 'abc', source: 'Hello', context: 'a.tsx:T@1', type: 'jsx' },
+    ];
+
+    let capturedPrompt = '';
+    const mockSession: TranslationSession = {
+      async sendPrompt(prompt: string) {
+        capturedPrompt = prompt;
+        return { translations: { abc: 'Hola' } };
+      },
+    };
+
+    const brief = '## Tone\nUse informal register.';
+    await translateBatch(mockSession, entries, 'es', 'Spanish', brief);
+    expect(capturedPrompt).toContain('TRANSLATION BRIEF:');
+    expect(capturedPrompt).toContain('Use informal register.');
+  });
+
+  it('omits brief section when brief is not provided', async () => {
+    const entries: TranslationInput[] = [
+      { hash: 'abc', source: 'Hello', context: 'a.tsx:T@1', type: 'jsx' },
+    ];
+
+    let capturedPrompt = '';
+    const mockSession: TranslationSession = {
+      async sendPrompt(prompt: string) {
+        capturedPrompt = prompt;
+        return { translations: { abc: 'Hola' } };
+      },
+    };
+
+    await translateBatch(mockSession, entries, 'es', 'Spanish');
+    expect(capturedPrompt).not.toContain('TRANSLATION BRIEF:');
   });
 });

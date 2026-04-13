@@ -15,19 +15,6 @@ export interface BatchResult {
   failedHashes: string[];
 }
 
-/** Splits entries into batches of the given size. */
-export function splitIntoBatches(
-  entries: TranslationInput[],
-  batchSize: number,
-): TranslationInput[][] {
-  if (entries.length === 0) return [];
-  const batches: TranslationInput[][] = [];
-  for (let i = 0; i < entries.length; i += batchSize) {
-    batches.push(entries.slice(i, i + batchSize));
-  }
-  return batches;
-}
-
 /**
  * Translates a batch of entries via the Pi session.
  *
@@ -43,13 +30,14 @@ export async function translateBatch(
   entries: TranslationInput[],
   localeCode: string,
   languageName: string,
+  brief?: string,
 ): Promise<BatchResult> {
   const sourceMap = new Map(entries.map((e) => [e.hash, e.source]));
   const translations: Record<string, string> = {};
   const failedHashes: string[] = [];
 
   // First attempt
-  const prompt = buildTranslationPrompt(entries, localeCode, languageName);
+  const prompt = buildTranslationPrompt(entries, localeCode, languageName, brief);
   const rawResult = await session.sendPrompt(prompt);
   const parsed = parseTranslationResult(rawResult);
 
@@ -78,7 +66,7 @@ export async function translateBatch(
 
   // Retry invalid entries once with error-correction prompt
   if (needsRetry.length > 0) {
-    const retryPrompt = buildErrorCorrectionPrompt(needsRetry, parsed, localeCode, languageName);
+    const retryPrompt = buildErrorCorrectionPrompt(needsRetry, parsed, localeCode, languageName, brief);
     const retryRaw = await session.sendPrompt(retryPrompt);
     const retryParsed = parseTranslationResult(retryRaw);
 
@@ -104,12 +92,14 @@ function buildErrorCorrectionPrompt(
   previousTranslations: Record<string, string>,
   localeCode: string,
   languageName: string,
+  brief?: string,
 ): string {
   const details = entries
     .map((e) => {
       const prev = previousTranslations[e.hash];
       const validation = prev ? validateTranslation(e.source, prev) : null;
       const errorDetail = validation ? validation.errors.join('; ') : 'No translation provided';
+
       return `  "${e.hash}": {
     "source": "${e.source}",
     "previous_translation": ${prev ? `"${prev}"` : 'null'},
@@ -118,13 +108,17 @@ function buildErrorCorrectionPrompt(
     })
     .join(',\n');
 
+  const briefSection = brief
+    ? `\nTRANSLATION BRIEF:\n${brief}\n`
+    : '';
+
   return `Your previous translations for ${languageName} (${localeCode}) had errors. Please fix them.
 
 ERRORS TO FIX:
 {
 ${details}
 }
-
+${briefSection}
 RULES (same as before):
 1. Preserve ALL numbered tags: <0>, </0>, <1>, </1>, etc.
 2. Preserve ALL variable placeholders: {name}, {count}, etc.

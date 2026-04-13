@@ -1,4 +1,4 @@
-// packages/tyndale/src/translate/pi-session.ts
+import type { TranslationSession } from './batch-translator';
 
 export interface TranslationInput {
   hash: string;
@@ -7,19 +7,19 @@ export interface TranslationInput {
   type: string;
 }
 
-/**
- * Builds the translation prompt sent to Pi.
- * Includes source entries, target locale, and instructions for preserving
- * numbered tags and variable placeholders.
- */
 export function buildTranslationPrompt(
   entries: TranslationInput[],
   localeCode: string,
   languageName: string,
+  brief?: string,
 ): string {
   const entriesBlock = entries
     .map((e) => `  "${e.hash}": "${e.source}"`)
     .join(',\n');
+
+  const briefSection = brief
+    ? `\nTRANSLATION BRIEF:\n${brief}\n`
+    : '';
 
   return `You are a professional translator. Translate the following text entries from the source language to ${languageName} (locale code: ${localeCode}).
 
@@ -30,7 +30,7 @@ CRITICAL RULES:
 4. Do NOT invent new tags or placeholders that don't exist in the source.
 5. Every opening tag <N> must have a matching closing tag </N>.
 6. Translate naturally and fluently — don't produce word-for-word translations.
-
+${briefSection}
 SOURCE ENTRIES (hash → source text):
 {
 ${entriesBlock}
@@ -64,18 +64,103 @@ export function parseTranslationResult(
   return obj.translations as Record<string, string>;
 }
 
+// ── SDK initialization (expensive — do once) ────────────────
+
+interface PiSDK {
+  createAgentSession: any;
+  SessionManager: any;
+  authStorage: any;
+  modelRegistry: any;
+}
+
+let cachedSDK: PiSDK | null = null;
+
 /**
- * Creates a Pi agent session configured for translation.
- * No tools — pure text generation with structured output via submit_result.
+ * Initialize the Pi SDK once. Subsequent calls return the cached instance.
+ * This is the expensive part: dynamic import + auth + model registry.
  */
-export async function createTranslationSession() {
-  const { createAgentSession, SessionManager, discoverAuthStorage } = await import('@mariozechner/pi-coding-agent');
-  const authStorage = await discoverAuthStorage();
-  const { session } = await createAgentSession({
-    sessionManager: SessionManager.inMemory(),
-    authStorage,
-    toolNames: [],
-    requireSubmitResultTool: true,
+async function getSDK(): Promise<PiSDK> {
+  if (cachedSDK) return cachedSDK;
+
+  const { AuthStorage, ModelRegistry, createAgentSession, SessionManager } =
+    await import('@mariozechner/pi-coding-agent');
+
+  const authStorage = AuthStorage.create();
+  const modelRegistry = ModelRegistry.create(authStorage);
+  modelRegistry.refresh();
+
+  cachedSDK = { createAgentSession, SessionManager, authStorage, modelRegistry };
+  return cachedSDK;
+}
+
+// ── Response extractors ─────────────────────────────────────
+
+function extractJsonResponse(textParts: string): unknown {
+  try {
+    const jsonMatch = textParts.match(/\{[\s\S]*\}/);
+    if (jsonMatch) return JSON.parse(jsonMatch[0]);
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+function extractTextResponse(textParts: string): unknown {
+  return textParts || null;
+}
+
+// ── Session factory ─────────────────────────────────────────
+
+type ResponseMode = 'json' | 'text';
+
+async function createSession(mode: ResponseMode): Promise<TranslationSession> {
+  const sdk = await getSDK();
+
+  const { session } = await sdk.createAgentSession({
+    sessionManager: sdk.SessionManager.inMemory(),
+    authStorage: sdk.authStorage,
+    modelRegistry: sdk.modelRegistry,
+    tools: [],
   });
-  return session;
+
+  const extract = mode === 'json' ? extractJsonResponse : extractTextResponse;
+
+  return {
+    async sendPrompt(prompt: string): Promise<unknown> {
+      return new Promise<unknown>((resolve, reject) => {
+        const unsubscribe = session.subscribe((event: any) => {
+          if (event.type === 'agent_end') {
+            unsubscribe();
+            const messages: any[] = event.messages ?? [];
+            const assistantMsg = [...messages].reverse().find(
+              (m: any) => m.role === 'assistant'
+            );
+            if (!assistantMsg) {
+              resolve(null);
+              return;
+            }
+            const textParts = (assistantMsg.content ?? [])
+              .filter((c: any) => c.type === 'text')
+              .map((c: any) => c.text)
+              .join('');
+            resolve(extract(textParts));
+          } else if (event.type === 'error') {
+            unsubscribe();
+            reject(new Error(event.error?.message ?? 'Agent session error'));
+          }
+        });
+        session.prompt(prompt).catch(reject);
+      });
+    },
+  };
+}
+
+/** Creates a session that parses JSON from the AI response. */
+export async function createTranslationSession(): Promise<TranslationSession> {
+  return createSession('json');
+}
+
+/** Creates a session that returns raw text (for doc translation). */
+export async function createTextSession(): Promise<TranslationSession> {
+  return createSession('text');
 }

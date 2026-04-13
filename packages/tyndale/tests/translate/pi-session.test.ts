@@ -1,5 +1,5 @@
 // packages/tyndale/tests/translate/pi-session.test.ts
-import { describe, it, expect, mock } from 'bun:test';
+import { describe, it, expect } from 'bun:test';
 import { buildTranslationPrompt, parseTranslationResult, type TranslationInput } from '../../src/translate/pi-session';
 
 describe('pi-session', () => {
@@ -39,6 +39,30 @@ describe('pi-session', () => {
       expect(prompt).toContain('"h1"');
       expect(prompt).toContain('"Hello"');
     });
+
+    it('includes brief section when brief is provided', () => {
+      const entries: TranslationInput[] = [
+        { hash: 'h1', source: 'Hello', context: 'a.tsx:T@1', type: 'jsx' },
+      ];
+      const brief = '## Tone\nUse informal register (tu).';
+      const prompt = buildTranslationPrompt(entries, 'es', 'Spanish', brief);
+      expect(prompt).toContain('TRANSLATION BRIEF:');
+      expect(prompt).toContain('Use informal register (tu).');
+      // Brief appears between rules and source entries
+      const briefIdx = prompt.indexOf('TRANSLATION BRIEF:');
+      const rulesIdx = prompt.indexOf('CRITICAL RULES:');
+      const sourceIdx = prompt.indexOf('SOURCE ENTRIES');
+      expect(briefIdx).toBeGreaterThan(rulesIdx);
+      expect(briefIdx).toBeLessThan(sourceIdx);
+    });
+
+    it('omits brief section when brief is undefined', () => {
+      const entries: TranslationInput[] = [
+        { hash: 'h1', source: 'Hello', context: 'a.tsx:T@1', type: 'jsx' },
+      ];
+      const prompt = buildTranslationPrompt(entries, 'es', 'Spanish');
+      expect(prompt).not.toContain('TRANSLATION BRIEF:');
+    });
   });
 
   describe('parseTranslationResult', () => {
@@ -66,35 +90,6 @@ describe('pi-session', () => {
     it('returns null for null input', () => {
       const parsed = parseTranslationResult(null);
       expect(parsed).toBeNull();
-    });
-  });
-
-  describe('createTranslationSession', () => {
-    it('passes discovered authStorage to createAgentSession', async () => {
-      const fakeAuthStorage = { load: () => null, store: () => {} };
-      const fakeSession = { id: 'test-session' };
-      let capturedOptions: Record<string, unknown> | undefined;
-
-      mock.module('@mariozechner/pi-coding-agent', () => ({
-        discoverAuthStorage: async () => fakeAuthStorage,
-        SessionManager: {
-          inMemory: () => ({ type: 'in-memory' }),
-        },
-        createAgentSession: async (opts: Record<string, unknown>) => {
-          capturedOptions = opts;
-          return { session: fakeSession };
-        },
-      }));
-
-      // Re-import after mocking to pick up the mock
-      const { createTranslationSession } = await import('../../src/translate/pi-session');
-      const session = await createTranslationSession();
-
-      expect(capturedOptions).toBeDefined();
-      expect(capturedOptions!.authStorage).toBe(fakeAuthStorage);
-      expect(capturedOptions!.toolNames).toEqual([]);
-      expect(capturedOptions!.requireSubmitResultTool).toBe(true);
-      expect(session).toBe(fakeSession);
     });
   });
 });
