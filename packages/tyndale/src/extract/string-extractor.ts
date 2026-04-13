@@ -25,7 +25,7 @@ const T_FUNCTION_SOURCES = new Set(['useTranslation', 'getTranslation']);
 /**
  * Names of marker functions whose first argument is an extractable string.
  */
-const MARKER_FUNCTIONS = new Set(['msg']);
+const MARKER_FUNCTIONS = new Set(['msg', 'msgString']);
 
 export function extractStrings(ast: File, filePath: string): StringExtractionResult {
   const entries: ExtractedEntry[] = [];

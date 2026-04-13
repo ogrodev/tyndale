@@ -116,9 +116,20 @@ export function loadConfig(cwd: string = process.cwd()): TyndaleConfig {
     }
   }
 
-  if (obj.batchSize !== undefined) {
-    if (typeof obj.batchSize !== 'number' || !Number.isInteger(obj.batchSize) || obj.batchSize < 1) {
-      throw new ConfigError(`${CONFIG_FILENAME}: "batchSize" must be a positive integer.`);
+  if (obj.translate !== undefined) {
+    if (typeof obj.translate !== 'object' || obj.translate === null || Array.isArray(obj.translate)) {
+      throw new ConfigError(`${CONFIG_FILENAME}: "translate" must be an object.`);
+    }
+    const translate = obj.translate as Record<string, unknown>;
+    if (translate.tokenBudget !== undefined) {
+      if (typeof translate.tokenBudget !== 'number' || !Number.isInteger(translate.tokenBudget) || translate.tokenBudget < 1) {
+        throw new ConfigError(`${CONFIG_FILENAME}: "translate.tokenBudget" must be a positive integer.`);
+      }
+    }
+    if (translate.concurrency !== undefined) {
+      if (typeof translate.concurrency !== 'number' || !Number.isInteger(translate.concurrency) || translate.concurrency < 1) {
+        throw new ConfigError(`${CONFIG_FILENAME}: "translate.concurrency" must be a positive integer.`);
+      }
     }
   }
 
@@ -166,7 +177,7 @@ export function loadConfig(cwd: string = process.cwd()): TyndaleConfig {
     extensions: obj.extensions as string[] | undefined,
     source: obj.source as string[] | undefined,
     output: obj.output as string | undefined,
-    batchSize: obj.batchSize as number | undefined,
+    translate: obj.translate as { tokenBudget?: number; concurrency?: number } | undefined,
     localeAliases: obj.localeAliases as Record<string, string> | undefined,
     pi: obj.pi as { model?: string; thinkingLevel?: string } | undefined,
     dictionaries: obj.dictionaries as { include: string[]; format?: string } | undefined,

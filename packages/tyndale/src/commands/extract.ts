@@ -1,7 +1,7 @@
 import { join } from 'path';
 import { readFileSync, existsSync } from 'fs';
 import type { CommandResult } from '../cli';
-import { loadConfig } from '../config'
+import { loadConfig } from '../config';
 import { walkSourceFiles } from '../extract/file-walker';
 import { parseSource } from '../extract/ast-parser';
 import { extractTComponents, type ExtractedEntry } from '../extract/t-extractor';
@@ -10,6 +10,7 @@ import { extractDictionaries } from '../extract/dict-extractor';
 import { validateTComponent, detectStaleHashes } from '../extract/validator';
 import { writeExtractionOutput } from '../extract/output-writer';
 import { formatExtractionReport, type ExtractionReport } from '../utils/reporter';
+import { createProgress, createTerminalUi } from '../terminal/ui';
 import type { JSXElement } from '@babel/types';
 import _traverse from '@babel/traverse';
 
@@ -19,6 +20,11 @@ const traverse = (_traverse as any).default ?? _traverse;
 const DEFAULT_SOURCE = ['src'];
 const DEFAULT_EXTENSIONS = ['.ts', '.tsx', '.js', '.jsx'];
 const DEFAULT_OUTPUT = 'public/_tyndale';
+
+interface Logger {
+  log(msg: string): void;
+  error(msg: string): void;
+}
 
 /**
  * Runs the `tyndale extract` command.
@@ -32,43 +38,78 @@ const DEFAULT_OUTPUT = 'public/_tyndale';
  * 7. Reports
  */
 export async function runExtract(
-  flags: Record<string, string | boolean>,
+  _flags: Record<string, string | boolean>,
   cwd?: string,
+  logger: Logger = console,
 ): Promise<CommandResult> {
   const rootDir = cwd ?? process.cwd();
+  const isConsoleLogger = logger === console;
+  const interactiveTerminal = isConsoleLogger && process.stdout.isTTY === true;
+  const ui = createTerminalUi({
+    write: logger.log.bind(logger),
+    error: logger.error.bind(logger),
+    decorated: interactiveTerminal,
+  });
 
-  // 1. Load config — loadConfig takes a directory, not a file path
+  ui.header('Extract source strings', 'Scan source files, validate messages, and refresh manifest output');
+
   let config;
   try {
     config = loadConfig(rootDir);
   } catch (err: any) {
-    console.error(`Failed to load config: ${err.message}`);
+    ui.fail(`Failed to load config: ${err.message}`);
     return { exitCode: 1 };
   }
 
   const source: string[] = config.source ?? config.include ?? DEFAULT_SOURCE;
   const extensions: string[] = config.extensions ?? DEFAULT_EXTENSIONS;
   const output: string = config.output ?? DEFAULT_OUTPUT;
+  const dictionaryIncludes = config.dictionaries?.include ?? [];
+
+  ui.section('Preflight');
+  ui.rows([
+    { label: 'root', value: rootDir },
+    { label: 'source dirs', value: source.join(', ') },
+    { label: 'extensions', value: extensions.join(', ') },
+    { label: 'output dir', value: output },
+    { label: 'dictionaries', value: dictionaryIncludes.length > 0 ? dictionaryIncludes.length : 'none' },
+  ]);
 
   const allEntries: ExtractedEntry[] = [];
   const allErrors: ExtractionError[] = [];
 
-  // 2. Walk source files
   const files = await walkSourceFiles({
     source,
     extensions,
     rootDir,
   });
 
-  // 3. Parse each file and extract
+  ui.section('Scan source');
+  ui.rows([{ label: 'source files', value: files.length }]);
+
+  const progress = createProgress({
+    total: files.length,
+    noun: 'files',
+    interactive: interactiveTerminal,
+    decorated: interactiveTerminal,
+    writeLine: interactiveTerminal ? undefined : logger.log.bind(logger),
+  });
+
   for (const filePath of files) {
     const relativePath = filePath.replace(rootDir + '/', '');
+    const errorCountBefore = allErrors.length;
     let code: string;
 
     try {
       code = readFileSync(filePath, 'utf-8');
     } catch {
-      console.error(`Failed to read: ${relativePath}`);
+      allErrors.push({
+        file: relativePath,
+        line: 0,
+        message: 'Failed to read source file',
+        severity: 'error',
+      });
+      progress.tick(relativePath, false);
       continue;
     }
 
@@ -76,15 +117,19 @@ export async function runExtract(
     try {
       ast = parseSource(code, relativePath);
     } catch (err: any) {
-      console.error(`Parse error in ${relativePath}: ${err.message}`);
+      allErrors.push({
+        file: relativePath,
+        line: 0,
+        message: `Parse error: ${err.message}`,
+        severity: 'error',
+      });
+      progress.tick(relativePath, false);
       continue;
     }
 
-    // Extract <T> components
     const tEntries = extractTComponents(ast, relativePath);
     allEntries.push(...tEntries);
 
-    // Validate <T> components
     traverse(ast, {
       JSXElement(path: any) {
         const opening = path.node.openingElement;
@@ -99,23 +144,28 @@ export async function runExtract(
       },
     });
 
-    // Extract t()/msg() strings
     const stringResult = extractStrings(ast, relativePath);
     allEntries.push(...stringResult.entries);
     allErrors.push(...stringResult.errors);
+
+    progress.tick(relativePath, allErrors.length === errorCountBefore);
   }
 
-  // 4. Extract dictionary files
-  if (config.dictionaries?.include?.length) {
+  progress.done();
+
+  let dictionaryEntryCount = 0;
+  if (dictionaryIncludes.length > 0) {
+    ui.section('Dictionary pass');
     const dictEntries = await extractDictionaries({
-      include: config.dictionaries.include,
+      include: dictionaryIncludes,
       rootDir,
     });
+    dictionaryEntryCount = dictEntries.length;
     allEntries.push(...dictEntries);
+    ui.rows([{ label: 'dictionary entries', value: dictionaryEntryCount }]);
   }
 
-  // 5. Check for stale hashes
-  const currentHashes = new Set(allEntries.map((e) => e.hash));
+  const currentHashes = new Set(allEntries.map((entry) => entry.hash));
   const allWarnings: ExtractionError[] = [];
   const outputDir = join(rootDir, output);
   const defaultLocaleFile = join(outputDir, `${config.defaultLocale}.json`);
@@ -125,7 +175,12 @@ export async function runExtract(
     try {
       previousLocaleData = JSON.parse(readFileSync(defaultLocaleFile, 'utf-8'));
     } catch {
-      // Corrupted file — ignore
+      allWarnings.push({
+        file: `${config.defaultLocale}.json`,
+        line: 0,
+        message: 'Existing locale file is unreadable; stale hash detection skipped for previous data.',
+        severity: 'warning',
+      });
     }
   }
 
@@ -136,7 +191,6 @@ export async function runExtract(
   );
   allWarnings.push(...staleWarnings);
 
-  // 6. Compute report stats
   const previousHashes = new Set(Object.keys(previousLocaleData));
   const uniqueEntries = new Map<string, ExtractedEntry>();
   for (const entry of allEntries) {
@@ -144,12 +198,19 @@ export async function runExtract(
       uniqueEntries.set(entry.hash, entry);
     }
   }
+
   const totalUnique = uniqueEntries.size;
-  const newCount = [...uniqueEntries.keys()].filter((h) => !previousHashes.has(h)).length;
-  const removedCount = [...previousHashes].filter((h) => !currentHashes.has(h)).length;
+  const newCount = [...uniqueEntries.keys()].filter((hash) => !previousHashes.has(hash)).length;
+  const removedCount = [...previousHashes].filter((hash) => !currentHashes.has(hash)).length;
   const unchangedCount = totalUnique - newCount;
 
-  // 7. Write output
+  ui.section('Write output');
+  ui.rows([
+    { label: 'manifest dir', value: outputDir },
+    { label: 'entries', value: totalUnique },
+    { label: 'dictionary entries', value: dictionaryEntryCount },
+  ]);
+
   await writeExtractionOutput({
     entries: allEntries,
     outputDir,
@@ -157,7 +218,6 @@ export async function runExtract(
     locales: config.locales,
   });
 
-  // 8. Report
   const report: ExtractionReport = {
     total: totalUnique,
     newEntries: newCount,
@@ -167,12 +227,12 @@ export async function runExtract(
     warnings: allWarnings,
   };
 
-  const output_text = formatExtractionReport(report);
+  const outputText = formatExtractionReport(report, { decorated: isConsoleLogger });
   if (allErrors.length > 0) {
-    console.error(output_text);
+    logger.error(outputText);
     return { exitCode: 1 };
   }
 
-  console.log(output_text);
+  logger.log(outputText);
   return { exitCode: 0 };
 }

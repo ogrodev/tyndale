@@ -122,13 +122,13 @@ describe('loadConfig', () => {
     expect(() => loadConfig(dir)).toThrow(/defaultLocale.*must not appear in.*locales/i);
   });
 
-  it('accepts new spec fields: source, output, batchSize, localeAliases, pi, dictionaries.format', () => {
+  it('accepts new spec fields: source, output, translate, localeAliases, pi, dictionaries.format', () => {
     const dir = createFixture('full-spec', JSON.stringify({
       defaultLocale: 'en',
       locales: ['es'],
       source: ['src', 'app'],
       output: 'dist/i18n',
-      batchSize: 25,
+      translate: { tokenBudget: 30000, concurrency: 4 },
       localeAliases: { pt: 'pt-BR' },
       pi: { model: 'claude-4', thinkingLevel: 'high' },
       dictionaries: { include: ['dict/*.json'], format: 'nested' },
@@ -137,7 +137,7 @@ describe('loadConfig', () => {
     const config = loadConfig(dir);
     expect(config.source).toEqual(['src', 'app']);
     expect(config.output).toBe('dist/i18n');
-    expect(config.batchSize).toBe(25);
+    expect(config.translate).toEqual({ tokenBudget: 30000, concurrency: 4 });
     expect(config.localeAliases).toEqual({ pt: 'pt-BR' });
     expect(config.pi).toEqual({ model: 'claude-4', thinkingLevel: 'high' });
     expect(config.dictionaries?.format).toBe('nested');
@@ -163,14 +163,34 @@ describe('loadConfig', () => {
     expect(() => loadConfig(dir)).toThrow(/output/);
   });
 
-  it('throws when batchSize is not a positive integer', () => {
-    const dir = createFixture('bad-batch', JSON.stringify({
+  it('throws when translate.tokenBudget is not a positive integer', () => {
+    const dir = createFixture('bad-token-budget', JSON.stringify({
       defaultLocale: 'en',
       locales: ['es'],
-      batchSize: -1,
+      translate: { tokenBudget: -1 },
     }));
     expect(() => loadConfig(dir)).toThrow(ConfigError);
-    expect(() => loadConfig(dir)).toThrow(/batchSize/);
+    expect(() => loadConfig(dir)).toThrow(/translate\.tokenBudget/);
+  });
+
+  it('throws when translate.concurrency is not a positive integer', () => {
+    const dir = createFixture('bad-concurrency', JSON.stringify({
+      defaultLocale: 'en',
+      locales: ['es'],
+      translate: { concurrency: 0 },
+    }));
+    expect(() => loadConfig(dir)).toThrow(ConfigError);
+    expect(() => loadConfig(dir)).toThrow(/translate\.concurrency/);
+  });
+
+  it('throws when translate is not an object', () => {
+    const dir = createFixture('bad-translate', JSON.stringify({
+      defaultLocale: 'en',
+      locales: ['es'],
+      translate: 'fast',
+    }));
+    expect(() => loadConfig(dir)).toThrow(ConfigError);
+    expect(() => loadConfig(dir)).toThrow(/translate/);
   });
 
   it('throws when localeAliases values are not strings', () => {

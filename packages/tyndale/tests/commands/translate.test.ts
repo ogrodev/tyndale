@@ -1,7 +1,7 @@
 // packages/tyndale/tests/commands/translate.test.ts
 import { describe, it, expect, beforeEach, afterEach } from 'bun:test';
 import { handleTranslate, type TranslateOptions, type TranslateDeps } from '../../src/commands/translate';
-import { mkdirSync, rmSync, writeFileSync, readFileSync } from 'fs';
+import { mkdirSync, rmSync, writeFileSync, readFileSync, existsSync } from 'fs';
 import { join } from 'path';
 import type { Manifest } from '../../src/translate/delta';
 import type { TranslationSession } from '../../src/translate/batch-translator';
@@ -52,6 +52,15 @@ describe('translate command', () => {
     };
   }
 
+  function baseDeps(overrides?: Partial<TranslateDeps>): TranslateDeps {
+    return {
+      outputDir: OUTPUT_DIR,
+      projectRoot: TEST_DIR,
+      createSession: async () => createMockSession({}),
+      ...overrides,
+    };
+  }
+
   it('translates new entries and writes locale file', async () => {
     const manifest = createManifest({
       h1: { type: 'string', context: 'a.tsx:T@1' },
@@ -60,10 +69,9 @@ describe('translate command', () => {
     writeJSON(join(OUTPUT_DIR, 'manifest.json'), manifest);
     writeJSON(join(OUTPUT_DIR, 'en.json'), { h1: 'Hello', h2: 'World' });
 
-    const deps: TranslateDeps = {
-      outputDir: OUTPUT_DIR,
+    const deps = baseDeps({
       createSession: async () => createMockSession({ h1: 'Hola', h2: 'Mundo' }),
-    };
+    });
 
     const code = await handleTranslate(deps, {}, logger);
     expect(code).toBe(0);
@@ -80,10 +88,7 @@ describe('translate command', () => {
     writeJSON(join(OUTPUT_DIR, 'en.json'), { h1: 'Hello' });
     writeJSON(join(OUTPUT_DIR, 'es.json'), { h1: 'Hola', old: 'Viejo' });
 
-    const deps: TranslateDeps = {
-      outputDir: OUTPUT_DIR,
-      createSession: async () => createMockSession({}),
-    };
+    const deps = baseDeps();
 
     const code = await handleTranslate(deps, {}, logger);
     expect(code).toBe(0);
@@ -101,13 +106,12 @@ describe('translate command', () => {
     writeJSON(join(OUTPUT_DIR, 'en.json'), { h1: 'Hello' });
 
     let sessionCreated = false;
-    const deps: TranslateDeps = {
-      outputDir: OUTPUT_DIR,
+    const deps = baseDeps({
       createSession: async () => {
         sessionCreated = true;
         return createMockSession({});
       },
-    };
+    });
 
     const code = await handleTranslate(deps, { dryRun: true }, logger);
     expect(code).toBe(0);
@@ -127,10 +131,9 @@ describe('translate command', () => {
     writeJSON(join(OUTPUT_DIR, 'manifest.json'), manifest);
     writeJSON(join(OUTPUT_DIR, 'en.json'), { h1: 'Hello' });
 
-    const deps: TranslateDeps = {
-      outputDir: OUTPUT_DIR,
+    const deps = baseDeps({
       createSession: async () => createMockSession({ h1: 'Hola' }),
-    };
+    });
 
     const code = await handleTranslate(deps, { locale: 'es' }, logger);
     expect(code).toBe(0);
@@ -151,10 +154,9 @@ describe('translate command', () => {
     writeJSON(join(OUTPUT_DIR, 'en.json'), { h1: 'Hello' });
     writeJSON(join(OUTPUT_DIR, 'es.json'), { h1: 'Old Hola' });
 
-    const deps: TranslateDeps = {
-      outputDir: OUTPUT_DIR,
+    const deps = baseDeps({
       createSession: async () => createMockSession({ h1: 'Nuevo Hola' }),
-    };
+    });
 
     const code = await handleTranslate(deps, { force: true }, logger);
     expect(code).toBe(0);
@@ -175,22 +177,20 @@ describe('translate command', () => {
     writeJSON(join(OUTPUT_DIR, 'manifest.json'), manifest);
     writeJSON(join(OUTPUT_DIR, 'en.json'), { h1: 'Hello' });
 
-    let callCount = 0;
-    const deps: TranslateDeps = {
-      outputDir: OUTPUT_DIR,
+    const deps = baseDeps({
       createSession: async () => ({
-        async sendPrompt(_prompt: string) {
-          callCount++;
+        async sendPrompt(prompt: string) {
           // es succeeds, fr fails
-          if (_prompt.includes('Spanish')) {
+          if (prompt.includes('Spanish')) {
             return { translations: { h1: 'Hola' } };
           }
           throw new Error('Network timeout');
         },
       }),
-    };
+    });
 
     const code = await handleTranslate(deps, {}, logger);
+
     // Should exit 1 because fr failed
     expect(code).toBe(1);
 
@@ -210,13 +210,136 @@ describe('translate command', () => {
     writeJSON(join(OUTPUT_DIR, 'en.json'), { h1: 'Hello' });
     writeJSON(join(OUTPUT_DIR, 'es.json'), { h1: 'Hola' });
 
-    const deps: TranslateDeps = {
-      outputDir: OUTPUT_DIR,
-      createSession: async () => createMockSession({}),
-    };
+    const deps = baseDeps();
 
     const code = await handleTranslate(deps, {}, logger);
     expect(code).toBe(0);
     expect(output.some((l) => l.includes('up to date') || l.includes('0 new'))).toBe(true);
+  });
+
+  it('reports concurrency when translating', async () => {
+    const manifest = createManifest({
+      h1: { type: 'string', context: 'a.tsx:T@1' },
+    });
+    writeJSON(join(OUTPUT_DIR, 'manifest.json'), manifest);
+    writeJSON(join(OUTPUT_DIR, 'en.json'), { h1: 'Hello' });
+
+    const deps = baseDeps({
+      createSession: async () => createMockSession({ h1: 'Hola' }),
+    });
+
+    await handleTranslate(deps, { concurrency: 2 }, logger);
+    expect(output.some((l) => l.includes('concurrency') && l.includes('2 (configured)'))).toBe(true);
+  });
+
+  it('uses brief from disk when available', async () => {
+    const manifest = createManifest({
+      h1: { type: 'string', context: 'a.tsx:T@1' },
+    });
+    writeJSON(join(OUTPUT_DIR, 'manifest.json'), manifest);
+    writeJSON(join(OUTPUT_DIR, 'en.json'), { h1: 'Hello' });
+
+    // Pre-create a brief file
+    const briefDir = join(TEST_DIR, '.tyndale/briefs');
+    mkdirSync(briefDir, { recursive: true });
+    writeFileSync(join(briefDir, 'es.md'), '## Tone\nUse informal register.');
+
+    let capturedPrompt = '';
+    const deps = baseDeps({
+      createSession: async () => ({
+        async sendPrompt(prompt: string) {
+          capturedPrompt = prompt;
+          return { translations: { h1: 'Hola' } };
+        },
+      }),
+    });
+
+    await handleTranslate(deps, {}, logger);
+    // The translation prompt should include the brief
+    expect(capturedPrompt).toContain('TRANSLATION BRIEF:');
+    expect(capturedPrompt).toContain('Use informal register.');
+  });
+
+  it('generates brief via createBriefSession and persists it', async () => {
+    const manifest = createManifest({
+      h1: { type: 'string', context: 'a.tsx:T@1' },
+    });
+    writeJSON(join(OUTPUT_DIR, 'manifest.json'), manifest);
+    writeJSON(join(OUTPUT_DIR, 'en.json'), { h1: 'Hello' });
+
+    const deps = baseDeps({
+      createSession: async () => createMockSession({ h1: 'Hola' }),
+      createBriefSession: async () => ({
+        async sendPrompt(_prompt: string) {
+          // Text-mode session returns a string directly
+          return '## Register\nUse tu (informal).';
+        },
+      }),
+    });
+
+    await handleTranslate(deps, {}, logger);
+
+    // Brief should be saved to disk
+    const briefPath = join(TEST_DIR, '.tyndale/briefs/es.md');
+    expect(existsSync(briefPath)).toBe(true);
+    expect(readFileSync(briefPath, 'utf-8')).toBe('## Register\nUse tu (informal).');
+
+    // Brief should be injected into translation prompt
+    const esData = readJSON(join(OUTPUT_DIR, 'es.json'));
+    expect(esData).toEqual({ h1: 'Hola' });
+  });
+
+  it('skips brief generation when brief already exists on disk', async () => {
+    const manifest = createManifest({
+      h1: { type: 'string', context: 'a.tsx:T@1' },
+    });
+    writeJSON(join(OUTPUT_DIR, 'manifest.json'), manifest);
+    writeJSON(join(OUTPUT_DIR, 'en.json'), { h1: 'Hello' });
+
+    // Pre-create brief
+    const briefDir = join(TEST_DIR, '.tyndale/briefs');
+    mkdirSync(briefDir, { recursive: true });
+    writeFileSync(join(briefDir, 'es.md'), '## Existing brief');
+
+    let briefSessionCalled = false;
+    const deps = baseDeps({
+      createSession: async () => createMockSession({ h1: 'Hola' }),
+      createBriefSession: async () => {
+        briefSessionCalled = true;
+        return { async sendPrompt() { return 'should not be called'; } };
+      },
+    });
+
+    await handleTranslate(deps, {}, logger);
+
+    // Brief session should never be created
+    expect(briefSessionCalled).toBe(false);
+    // Existing brief should be unchanged
+    expect(readFileSync(join(briefDir, 'es.md'), 'utf-8')).toBe('## Existing brief');
+  });
+
+  it('does not save brief when session returns non-string', async () => {
+    const manifest = createManifest({
+      h1: { type: 'string', context: 'a.tsx:T@1' },
+    });
+    writeJSON(join(OUTPUT_DIR, 'manifest.json'), manifest);
+    writeJSON(join(OUTPUT_DIR, 'en.json'), { h1: 'Hello' });
+
+    const deps = baseDeps({
+      createSession: async () => createMockSession({ h1: 'Hola' }),
+      createBriefSession: async () => ({
+        async sendPrompt() { return { some: 'json' }; },
+      }),
+    });
+
+    await handleTranslate(deps, {}, logger);
+
+    // Brief should NOT be saved since the session returned non-string
+    const briefPath = join(TEST_DIR, '.tyndale/briefs/es.md');
+    expect(existsSync(briefPath)).toBe(false);
+
+    // Translation should still succeed (brief is optional)
+    const esData = readJSON(join(OUTPUT_DIR, 'es.json'));
+    expect(esData).toEqual({ h1: 'Hola' });
   });
 });

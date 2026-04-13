@@ -94,7 +94,7 @@ describe('scaffoldConfig', () => {
       source: ['app', 'src'],
       extensions: ['.ts', '.tsx', '.js', '.jsx'],
       output: 'public/_tyndale',
-      batchSize: 50,
+      translate: {},
       localeAliases: {},
       dictionaries: {
         include: ['src/dictionaries/*.json'],
@@ -257,6 +257,17 @@ describe('runInit', () => {
     console.log = originalLog;
     console.error = originalError;
     await rm(dir, { recursive: true, force: true });
+  });
+
+  it('rejects when tyndale.config.json already exists', async () => {
+    // First init succeeds
+    const result1 = await runInit({ 'default-locale': 'en', locales: 'es' });
+    expect(result1.exitCode).toBe(0);
+
+    // Second init should fail
+    const result2 = await runInit({ 'default-locale': 'en', locales: 'es' });
+    expect(result2.exitCode).toBe(1);
+    expect(errors.some(e => e.includes('already exists'))).toBe(true);
   });
 
   it('skips prompts when flags are provided', async () => {

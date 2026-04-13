@@ -62,7 +62,7 @@ export async function scaffoldConfig(
     source,
     extensions: ['.ts', '.tsx', '.js', '.jsx'],
     output: 'public/_tyndale',
-    batchSize: 50,
+    translate: {},
     localeAliases: {},
     dictionaries: {
       include: ['src/dictionaries/*.json'],
@@ -139,6 +139,16 @@ function frameworkDisplayName(fw: Framework): string {
 /** CLI entry point for `tyndale init` */
 export async function runInit(flags: Record<string, string | boolean>): Promise<CommandResult> {
   const cwd = process.cwd();
+
+  // Check if already initialized
+  const configPath = join(cwd, 'tyndale.config.json');
+  try {
+    await stat(configPath);
+    console.error('tyndale.config.json already exists. Remove it first to re-initialize.');
+    return { exitCode: 1 };
+  } catch {
+    // File doesn't exist — proceed
+  }
 
   let framework: Framework;
   try {

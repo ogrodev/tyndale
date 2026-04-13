@@ -1,18 +1,23 @@
 // packages/tyndale/src/commands/validate.ts
 import type { CommandResult } from '../cli';
 import { join } from 'node:path';
-import { readFile, readFileSync, existsSync } from 'node:fs';
-import { readFile as fsReadFile } from 'node:fs/promises';
+import { readFileSync } from 'node:fs';
 import { loadConfig } from '../config';
 import { walkSourceFiles } from '../extract/file-walker';
 import { parseSource } from '../extract/ast-parser';
 import { extractTComponents, type ExtractedEntry } from '../extract/t-extractor';
-import { extractStrings, type ExtractionError } from '../extract/string-extractor';
+import { extractStrings } from '../extract/string-extractor';
 import { validateTComponent } from '../extract/validator';
+import { createProgress, createTerminalUi } from '../terminal/ui';
 import type { JSXElement } from '@babel/types';
 import _traverse from '@babel/traverse';
 
 const traverse = (_traverse as any).default ?? _traverse;
+
+interface Logger {
+  log(msg: string): void;
+  error(msg: string): void;
+}
 
 export interface Diagnostic {
   file: string;
@@ -29,33 +34,57 @@ export interface ValidateResult {
 
 export async function runValidate(
   flagsOrProjectRoot: Record<string, string | boolean> | string,
+  logger: Logger = console,
 ): Promise<ValidateResult & CommandResult> {
-  // Support both CLI flags mode and direct projectRoot mode
+  const isCliInvocation = typeof flagsOrProjectRoot !== 'string';
   const projectRoot = typeof flagsOrProjectRoot === 'string'
     ? flagsOrProjectRoot
     : process.cwd();
+  const isConsoleLogger = logger === console;
+  const interactiveTerminal = isConsoleLogger && process.stdout.isTTY === true;
+  const ui = isCliInvocation
+    ? createTerminalUi({
+        write: logger.log.bind(logger),
+        error: logger.error.bind(logger),
+        decorated: interactiveTerminal,
+      })
+    : null;
+
+  if (ui) {
+    ui.header('Validate source strings', 'Dry-run extraction with diagnostics, stale-hash checks, and timing');
+  }
 
   let config;
   try {
     config = loadConfig(projectRoot);
   } catch (err) {
-    return {
+    const result = {
       exitCode: 1,
       errors: [{ file: 'tyndale.config.json', message: (err as Error).message }],
       warnings: [],
       entryCount: 0,
     };
+    if (ui) {
+      ui.fail(`tyndale.config.json: ${(err as Error).message}`);
+    }
+    return result;
   }
 
-  // Read raw config for fields not in TyndaleConfig type
-  const rawConfig = JSON.parse(
-    require('fs').readFileSync(join(projectRoot, 'tyndale.config.json'), 'utf-8'),
-  );
+  const rawConfig = JSON.parse(readFileSync(join(projectRoot, 'tyndale.config.json'), 'utf-8'));
   const source: string[] = rawConfig.source ?? config.include ?? ['src'];
   const extensions: string[] = config.extensions ?? ['.ts', '.tsx', '.js', '.jsx'];
   const output: string = rawConfig.output ?? 'public/_tyndale';
 
-  // Walk and extract entries (dry-run — no file writes)
+  if (ui) {
+    ui.section('Preflight');
+    ui.rows([
+      { label: 'project root', value: projectRoot },
+      { label: 'source dirs', value: source.join(', ') },
+      { label: 'extensions', value: extensions.join(', ') },
+      { label: 'output dir', value: output },
+    ]);
+  }
+
   const allEntries: ExtractedEntry[] = [];
   const allErrors: Diagnostic[] = [];
 
@@ -65,28 +94,49 @@ export async function runValidate(
     rootDir: projectRoot,
   });
 
+  if (ui) {
+    ui.section('Scan source');
+    ui.rows([{ label: 'source files', value: files.length }]);
+  }
+
+  const progress = ui
+    ? createProgress({
+        total: files.length,
+        noun: 'files',
+        interactive: interactiveTerminal,
+        decorated: interactiveTerminal,
+        writeLine: interactiveTerminal ? undefined : logger.log.bind(logger),
+      })
+    : null;
+
   for (const filePath of files) {
     const relativePath = filePath.replace(projectRoot + '/', '');
+    const errorCountBefore = allErrors.length;
     let code: string;
 
     try {
-      code = require('fs').readFileSync(filePath, 'utf-8');
+      code = readFileSync(filePath, 'utf-8');
     } catch {
+      allErrors.push({ file: relativePath, message: 'Failed to read source file' });
+      progress?.tick(relativePath, false);
       continue;
     }
 
     let ast;
     try {
       ast = parseSource(code, relativePath);
-    } catch {
+    } catch (err) {
+      allErrors.push({
+        file: relativePath,
+        message: `Parse error: ${(err as Error).message}`,
+      });
+      progress?.tick(relativePath, false);
       continue;
     }
 
-    // Extract <T> components
     const tEntries = extractTComponents(ast, relativePath);
     allEntries.push(...tEntries);
 
-    // Validate <T> components
     traverse(ast, {
       JSXElement(path: any) {
         const opening = path.node.openingElement;
@@ -95,13 +145,13 @@ export async function runValidate(
           opening.name.name === 'T'
         ) {
           const validationErrors = validateTComponent(path.node as JSXElement, relativePath);
-          for (const e of validationErrors) {
+          for (const error of validationErrors) {
             allErrors.push({
-              file: e.file,
-              line: e.line,
-              message: e.message.includes('dynamic content')
-                ? e.message
-                : `Unwrapped dynamic content inside <T>`,
+              file: error.file,
+              line: error.line,
+              message: error.message.includes('dynamic content')
+                ? error.message
+                : 'Unwrapped dynamic content inside <T>',
             });
           }
           path.skip();
@@ -109,30 +159,31 @@ export async function runValidate(
       },
     });
 
-    // Extract t()/msg() strings
     const stringResult = extractStrings(ast, relativePath);
     allEntries.push(...stringResult.entries);
 
-    // String extraction errors — check for non-literal t() arguments
-    for (const e of stringResult.errors) {
+    for (const error of stringResult.errors) {
       allErrors.push({
-        file: e.file,
-        line: e.line,
-        message: e.message.includes('literal')
-          ? e.message
-          : `Non-literal argument to t() or msg()`,
+        file: error.file,
+        line: error.line,
+        message: error.message.includes('literal')
+          ? error.message
+          : 'Non-literal argument to t() or msg()',
       });
     }
+
+    progress?.tick(relativePath, allErrors.length === errorCountBefore);
   }
 
-  // Check for stale translations in existing locale files
+  progress?.done();
+
   const warnings: Diagnostic[] = [];
-  const currentHashes = new Set(allEntries.map((e) => e.hash));
+  const currentHashes = new Set(allEntries.map((entry) => entry.hash));
 
   for (const locale of config.locales) {
     const localePath = join(projectRoot, output, `${locale}.json`);
     try {
-      const raw = require('fs').readFileSync(localePath, 'utf-8');
+      const raw = readFileSync(localePath, 'utf-8');
       const localeData = JSON.parse(raw) as Record<string, string>;
       for (const hash of Object.keys(localeData)) {
         if (!currentHashes.has(hash)) {
@@ -143,29 +194,39 @@ export async function runValidate(
         }
       }
     } catch {
-      // Locale file doesn't exist yet — not an error for validate
+      // Locale file doesn't exist yet — not an error for validate.
     }
   }
 
   const exitCode = allErrors.length > 0 ? 1 : 0;
 
-  // CLI output when called from CLI
-  if (typeof flagsOrProjectRoot !== 'string') {
+  if (ui) {
     if (allErrors.length > 0) {
-      for (const err of allErrors) {
-        console.error(`ERROR ${err.file}${err.line ? `:${err.line}` : ''}: ${err.message}`);
-      }
-    }
-    if (warnings.length > 0) {
-      for (const warn of warnings) {
-        console.warn(`WARN ${warn.file}${warn.line ? `:${warn.line}` : ''}: ${warn.message}`);
+      ui.section(`Errors (${allErrors.length})`);
+      for (const error of allErrors) {
+        const location = error.line ? `${error.file}:${error.line}` : error.file;
+        ui.issue('failure', location, error.message);
       }
     }
 
-    console.log(
-      `✓ ${allEntries.length} entries validated\n${allErrors.length} errors, ${warnings.length} warnings`,
-    );
-    process.exit(exitCode);
+    if (warnings.length > 0) {
+      ui.section(`Warnings (${warnings.length})`);
+      for (const warning of warnings) {
+        const location = warning.line ? `${warning.file}:${warning.line}` : warning.file;
+        ui.issue('warning', location, warning.message);
+      }
+    }
+
+    ui.summary('Validation summary', [
+      {
+        label: 'status',
+        value: exitCode === 0 ? 'validated' : 'validation failed',
+        tone: exitCode === 0 ? 'success' : 'failure',
+      },
+      { label: 'entries', value: allEntries.length },
+      { label: 'errors', value: allErrors.length, tone: allErrors.length > 0 ? 'failure' : 'muted' },
+      { label: 'warnings', value: warnings.length, tone: warnings.length > 0 ? 'warning' : 'muted' },
+    ], `${allEntries.length} entries validated, ${allErrors.length} errors, ${warnings.length} warnings`);
   }
 
   return {

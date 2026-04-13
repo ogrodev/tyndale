@@ -1,3 +1,4 @@
+import { createTerminalUi } from './terminal/ui';
 
 export interface ParsedArgs {
   command: string;
@@ -22,13 +23,18 @@ export function parseArgs(argv: string[]): ParsedArgs {
   for (let i = 1; i < args.length; i++) {
     const arg = args[i];
     if (arg.startsWith('--')) {
-      const key = arg.slice(2);
-      const next = args[i + 1];
-      if (next && !next.startsWith('--')) {
-        flags[key] = next;
-        i++;
+      const raw = arg.slice(2);
+      const eqIdx = raw.indexOf('=');
+      if (eqIdx !== -1) {
+        flags[raw.slice(0, eqIdx)] = raw.slice(eqIdx + 1);
       } else {
-        flags[key] = true;
+        const next = args[i + 1];
+        if (next && !next.startsWith('--')) {
+          flags[raw] = next;
+          i++;
+        } else {
+          flags[raw] = true;
+        }
       }
     } else {
       positionals.push(arg);
@@ -43,7 +49,7 @@ export function parseArgs(argv: string[]): ParsedArgs {
   return { command, flags };
 }
 
-const KNOWN_COMMANDS = ['extract', 'translate', 'auth', 'init', 'validate'] as const;
+const KNOWN_COMMANDS = ['extract', 'translate', 'translate-docs', 'auth', 'model', 'init', 'validate'] as const;
 
 export async function routeCommand(
   command: string,
@@ -70,37 +76,75 @@ export async function routeCommand(
       const { runValidate } = await import('./commands/validate');
       return runValidate(flags);
     }
+    case 'model': {
+      const { runModel } = await import('./commands/model');
+      return runModel(flags);
+    }
+    case 'translate-docs': {
+      const { runTranslateDocs } = await import('./commands/translate-docs');
+      return runTranslateDocs(flags);
+    }
     case 'help':
       printHelp();
       return { exitCode: 0 };
     default:
-      console.error(`Unknown command: ${command}. Run "tyndale --help" for usage.`);
+      printUnknownCommand(command);
       return { exitCode: 1 };
   }
 }
 
 function printHelp(): void {
-  console.log(`
-tyndale — AI-powered i18n for React & Next.js
+  const lines: string[] = [];
+  const ui = createTerminalUi({
+    write: (line) => lines.push(line),
+    error: (line) => lines.push(line),
+    decorated: process.stdout.isTTY === true,
+  });
 
-Usage: tyndale <command> [options]
+  ui.header('tyndale', 'AI-powered i18n operator console for React and Next.js');
+  ui.section('Usage');
+  ui.rows([{ label: 'command', value: 'tyndale <command> [options]' }]);
 
-Commands:
-  extract     Extract translatable strings from source code
-  translate   Translate extracted strings using AI
-  auth        Configure AI provider authentication
-  init        Initialize tyndale in your project
-  validate    Validate translations without writing files
+  ui.section('Commands');
+  ui.rows([
+    { label: 'extract', value: 'Extract translatable strings from source code' },
+    { label: 'translate', value: 'Translate extracted strings using AI' },
+    { label: 'translate-docs', value: 'Translate documentation files (MDX/MD) using AI' },
+    { label: 'auth', value: 'Configure AI provider authentication' },
+    { label: 'model', value: 'Change the AI model for translations' },
+    { label: 'init', value: 'Initialize tyndale in your project' },
+    { label: 'validate', value: 'Validate translations without writing files' },
+  ]);
 
-Translate options:
-  --locale <code>   Translate only one locale
-  --force           Retranslate all entries (ignore cache)
-  --dry-run         Report delta without translating
-  --batch-size <n>  Entries per AI request (default: config or 50)
+  ui.section('Translate options');
+  ui.rows([
+    { label: '--locale', value: '<code> limit translation to one locale' },
+    { label: '--force', value: 'retranslate all entries and docs' },
+    { label: '--dry-run', value: 'report delta without translating' },
+    { label: '--token-budget', value: '<n> token budget per AI batch (default: 50000)' },
+    { label: '--concurrency', value: '<n> max parallel translation sessions (auto-detected)' },
+  ]);
 
-General:
-  --help            Show this help message
-`.trim());
+  ui.section('General');
+  ui.rows([{ label: '--help', value: 'Show this help message' }]);
+
+  console.log(lines.join('\n'));
+}
+
+function printUnknownCommand(command: string): void {
+  const lines: string[] = [];
+  const ui = createTerminalUi({
+    write: (line) => lines.push(line),
+    error: (line) => lines.push(line),
+    decorated: process.stderr.isTTY === true,
+  });
+
+  ui.header('Unknown command');
+  ui.fail(`tyndale does not recognize "${command}".`);
+  ui.info(`Known commands: ${KNOWN_COMMANDS.join(', ')}`);
+  ui.info('Run `tyndale --help` for the full command reference.');
+
+  console.error(lines.join('\n'));
 }
 
 // Entry point — only runs when executed directly
