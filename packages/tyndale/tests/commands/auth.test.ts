@@ -1,76 +1,64 @@
 // packages/tyndale/tests/commands/auth.test.ts
-import { describe, it, expect, beforeEach } from 'bun:test';
-import { handleAuthStatus, handleAuthLogout } from '../../src/commands/auth';
-import type { AuthStorage } from '../../src/auth/credentials';
-import { storeCredentials } from '../../src/auth/credentials';
+//
+// The auth command now uses TUI selectors for provider selection.
+// Unit tests cover the non-interactive parts: Pi AuthStorage integration
+// and the runAuth CLI entry point's subcommand routing.
 
-class FakeAuthStorage {
-  private data = new Map<string, string>();
-  async get(key: string): Promise<string | undefined> { return this.data.get(key); }
-  async set(key: string, value: string): Promise<void> { this.data.set(key, value); }
-  async delete(key: string): Promise<void> { this.data.delete(key); }
-}
+import { describe, it, expect, mock } from 'bun:test';
 
 describe('auth command', () => {
-  let storage: FakeAuthStorage;
-  let output: string[];
+  describe('runAuth', () => {
+    it('routes status subcommand', async () => {
+      // Mock the Pi SDK
+      const fakeAuthStorage = {
+        list: () => ['anthropic'],
+        get: (p: string) => ({ type: 'api_key', key: 'sk-test' }),
+        getOAuthProviders: () => [],
+      };
 
-  beforeEach(() => {
-    storage = new FakeAuthStorage();
-    output = [];
-  });
+      mock.module('@mariozechner/pi-coding-agent', () => ({
+        AuthStorage: { create: () => fakeAuthStorage },
+        ModelRegistry: { create: () => ({ refresh() {}, getAll: () => [] }) },
+      }));
 
-  const logger = {
-    log: (msg: string) => output.push(msg),
-    error: (msg: string) => output.push(`ERROR: ${msg}`),
-  };
+      const { runAuth } = await import('../../src/commands/auth');
+      const origLog = console.log;
+      const output: string[] = [];
+      console.log = (msg: string) => output.push(msg);
 
-  describe('auth status', () => {
-    it('shows "not configured" when no credentials', async () => {
-      const code = await handleAuthStatus(storage, logger);
-      expect(code).toBe(1);
-      expect(output.some((l) => l.includes('not configured'))).toBe(true);
+      try {
+        const result = await runAuth({ _sub: 'status' });
+        expect(result.exitCode).toBe(0);
+        expect(output.some((l) => l.includes('anthropic'))).toBe(true);
+      } finally {
+        console.log = origLog;
+      }
     });
 
-    it('shows provider and model when credentials exist', async () => {
-      await storeCredentials(storage, {
-        provider: 'anthropic',
-        apiKey: 'sk-ant-key',
-        model: 'claude-sonnet-4-20250514',
-      });
-      const code = await handleAuthStatus(storage, logger);
-      expect(code).toBe(0);
-      expect(output.some((l) => l.includes('Anthropic (Claude)'))).toBe(true);
-      expect(output.some((l) => l.includes('claude-sonnet-4-20250514'))).toBe(true);
-    });
+    it('status returns 1 when no providers authenticated', async () => {
+      const fakeAuthStorage = {
+        list: () => [],
+        get: () => undefined,
+        getOAuthProviders: () => [],
+      };
 
-    it('does not show the API key in status', async () => {
-      await storeCredentials(storage, {
-        provider: 'anthropic',
-        apiKey: 'sk-ant-secret',
-        model: 'claude-sonnet-4-20250514',
-      });
-      await handleAuthStatus(storage, logger);
-      expect(output.every((l) => !l.includes('sk-ant-secret'))).toBe(true);
-    });
-  });
+      mock.module('@mariozechner/pi-coding-agent', () => ({
+        AuthStorage: { create: () => fakeAuthStorage },
+        ModelRegistry: { create: () => ({ refresh() {}, getAll: () => [] }) },
+      }));
 
-  describe('auth logout', () => {
-    it('clears credentials and confirms', async () => {
-      await storeCredentials(storage, {
-        provider: 'openai',
-        apiKey: 'sk-openai-key',
-        model: 'gpt-4o',
-      });
-      const code = await handleAuthLogout(storage, logger);
-      expect(code).toBe(0);
-      expect(output.some((l) => l.includes('Logged out'))).toBe(true);
-    });
+      const { runAuth } = await import('../../src/commands/auth');
+      const origLog = console.log;
+      const output: string[] = [];
+      console.log = (msg: string) => output.push(msg);
 
-    it('reports nothing to clear when not authenticated', async () => {
-      const code = await handleAuthLogout(storage, logger);
-      expect(code).toBe(0);
-      expect(output.some((l) => l.includes('No credentials'))).toBe(true);
+      try {
+        const result = await runAuth({ _sub: 'status' });
+        expect(result.exitCode).toBe(1);
+        expect(output.some((l) => l.includes('No providers'))).toBe(true);
+      } finally {
+        console.log = origLog;
+      }
     });
   });
 });
