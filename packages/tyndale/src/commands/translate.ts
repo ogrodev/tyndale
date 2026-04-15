@@ -529,13 +529,38 @@ export async function runTranslate(flags: Record<string, string | boolean>): Pro
     return extractResult;
   }
 
+  // After auto-extract, verify there are source strings to translate
   const { loadConfig } = await import('../config');
-
   const config = loadConfig();
+  const outputDir = config.output ?? 'public/_tyndale';
+  const manifestPath = join(outputDir, 'manifest.json');
+  const manifestFile = Bun.file(manifestPath);
+  if (!(await manifestFile.exists())) {
+    console.error('No manifest found. Run `tyndale extract` to extract translatable strings.');
+    return { exitCode: 1 };
+  }
+  const manifest: Manifest = JSON.parse(await manifestFile.text());
+  if (Object.keys(manifest.entries).length === 0) {
+    // Check if any target locale files exist with stale content that needs cleanup
+    const hasStaleLocaleFiles = await Promise.all(
+      manifest.locales.map(async (locale: string) => {
+        const file = Bun.file(join(outputDir, `${locale}.json`));
+        if (!(await file.exists())) return false;
+        const data = JSON.parse(await file.text());
+        return Object.keys(data).length > 0;
+      }),
+    ).then((results) => results.some(Boolean));
+
+    if (!hasStaleLocaleFiles) {
+      console.error('No source strings found in manifest. Extract translatable strings before translating.');
+      return { exitCode: 1 };
+    }
+  }
+
   const isMock = process.env.TYNDALE_MOCK_TRANSLATE === '1';
 
   const deps: TranslateDeps = {
-    outputDir: config.output ?? 'public/_tyndale',
+    outputDir,
     projectRoot: process.cwd(),
     createSession: async (sessionOptions) => {
       if (isMock) {
