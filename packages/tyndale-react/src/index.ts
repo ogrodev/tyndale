@@ -41,6 +41,8 @@ export { msg } from './msg';
 export { msgString } from './msg-string';
 export { useChangeLocale } from './use-change-locale';
 export { useDictionary } from './use-dictionary';
+export { getTranslation } from './get-translation';
+export type { GetTranslationOptions } from './get-translation';
 
 // Phase 2A: Wire format (for advanced usage / CLI shared code)
 export {
