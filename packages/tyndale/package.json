@@ -1,6 +1,6 @@
 {
   "name": "tyndale",
-  "version": "workspace:*",
+  "version": "1.0.0",
   "description": "CLI for AI-powered i18n — extract, translate, and validate",
   "license": "MIT",
   "repository": {

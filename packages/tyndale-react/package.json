@@ -1,6 +1,6 @@
 {
   "name": "tyndale-react",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "React components and hooks for Tyndale i18n",
   "license": "MIT",
   "repository": {
