@@ -169,6 +169,27 @@ export function loadConfig(cwd: string = process.cwd()): TyndaleConfig {
     }
   }
 
+  if (obj.docs !== undefined) {
+    if (typeof obj.docs !== 'object' || obj.docs === null || Array.isArray(obj.docs)) {
+      throw new ConfigError(`${CONFIG_FILENAME}: "docs" must be an object.`);
+    }
+    const docs = obj.docs as Record<string, unknown>;
+    const validFrameworks = ['starlight', 'docusaurus', 'vitepress', 'mkdocs', 'nextra'];
+    if (!('framework' in docs) || typeof docs.framework !== 'string' || !validFrameworks.includes(docs.framework)) {
+      throw new ConfigError(
+        `${CONFIG_FILENAME}: "docs.framework" is required and must be one of: ${validFrameworks.join(', ')}.`
+      );
+    }
+    if (docs.contentDir !== undefined && typeof docs.contentDir !== 'string') {
+      throw new ConfigError(`${CONFIG_FILENAME}: "docs.contentDir" must be a string.`);
+    }
+    if (docs.extensions !== undefined) {
+      if (!Array.isArray(docs.extensions) || !docs.extensions.every((v: unknown) => typeof v === 'string')) {
+        throw new ConfigError(`${CONFIG_FILENAME}: "docs.extensions" must be an array of strings.`);
+      }
+    }
+  }
+
   return {
     defaultLocale: obj.defaultLocale as string,
     locales: obj.locales as string[],
@@ -181,5 +202,6 @@ export function loadConfig(cwd: string = process.cwd()): TyndaleConfig {
     localeAliases: obj.localeAliases as Record<string, string> | undefined,
     pi: obj.pi as { model?: string; thinkingLevel?: string } | undefined,
     dictionaries: obj.dictionaries as { include: string[]; format?: string } | undefined,
+    docs: obj.docs as TyndaleConfig['docs'],
   };
 }

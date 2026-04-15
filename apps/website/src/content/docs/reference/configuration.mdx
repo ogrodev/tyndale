@@ -26,6 +26,10 @@ Create `tyndale.config.json` at your project root, or run `npx tyndale init` to 
   "pi": {
     "model": "claude-sonnet-4-20250514",
     "thinkingLevel": "low"
+  },
+  "docs": {
+    "framework": "starlight",
+    "contentDir": "src/content/docs"
   }
 }
 ```
@@ -46,3 +50,6 @@ Create `tyndale.config.json` at your project root, or run `npx tyndale init` to 
 | `dictionaries.format` | `string` | `"key-value"` | Dictionary file format |
 | `pi.model` | `string` | `"claude-sonnet-4-20250514"` | AI model to use |
 | `pi.thinkingLevel` | `string` | `"low"` | AI thinking level |
+| `docs.framework` | `string` | — | Documentation framework: `starlight`, `docusaurus`, `vitepress`, `mkdocs`, or `nextra` |
+| `docs.contentDir` | `string` | auto | Content directory (relative to project root) |
+| `docs.extensions` | `string[]` | auto | Override file extensions for doc translation |

@@ -1,6 +1,6 @@
 ---
 title: Configuration
-description: Référence complète pour tyndale.config.json.
+description: "Référence complète de `tyndale.config.json`."
 ---
 
 ## Fichier de configuration
@@ -26,6 +26,10 @@ Créez `tyndale.config.json` à la racine de votre projet, ou exécutez `npx tyn
   "pi": {
     "model": "claude-sonnet-4-20250514",
     "thinkingLevel": "low"
+  },
+  "docs": {
+    "framework": "starlight",
+    "contentDir": "src/content/docs"
   }
 }
 ```
@@ -35,14 +39,17 @@ Créez `tyndale.config.json` à la racine de votre projet, ou exécutez `npx tyn
 | Champ | Type | Par défaut | Description |
 |-------|------|---------|-------------|
 | `defaultLocale` | `string` | `"en"` | Code de langue source |
-| `locales` | `string[]` | `[]` | Codes de langues cibles |
+| `locales` | `string[]` | `[]` | Codes de locale cibles |
 | `source` | `string[]` | `["src"]` | Répertoires à analyser pour le contenu traduisible |
-| `extensions` | `string[]` | `[".ts", ".tsx", ".js", ".jsx"]` | Extensions de fichiers à inclure |
-| `output` | `string` | `"public/_tyndale"` | Répertoire de sortie pour les fichiers de langue générés |
+| `extensions` | `string[]` | `[".ts", ".tsx", ".js", ".jsx"]` | Extensions de fichier à inclure |
+| `output` | `string` | `"public/_tyndale"` | Répertoire de sortie pour les fichiers de locale générés |
 | `translate.tokenBudget` | `number` | `50000` | Budget de tokens par lot de traduction IA |
 | `translate.concurrency` | `number` | auto | Nombre maximal de sessions de traduction parallèles |
-| `localeAliases` | `object` | `{}` | Associe les codes de variantes régionales aux codes canoniques |
+| `localeAliases` | `object` | `{}` | Associe les codes de locale variantes aux codes canoniques |
 | `dictionaries.include` | `string[]` | `[]` | Motifs glob pour les fichiers de dictionnaire |
 | `dictionaries.format` | `string` | `"key-value"` | Format de fichier de dictionnaire |
-| `pi.model` | `string` | `"claude-sonnet-4-20250514"` | Modèle IA à utiliser |
+| `pi.model` | `string` | `"claude-sonnet-4-20250514"` | Modèle d’IA à utiliser |
 | `pi.thinkingLevel` | `string` | `"low"` | Niveau de réflexion de l’IA |
+| `docs.framework` | `string` | — | Framework de documentation : `starlight`, `docusaurus`, `vitepress`, `mkdocs`, ou `nextra` |
+| `docs.contentDir` | `string` | auto | Répertoire de contenu (relatif à la racine du projet) |
+| `docs.extensions` | `string[]` | auto | Remplace les extensions de fichier pour la traduction de la documentation |

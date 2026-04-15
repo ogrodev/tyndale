@@ -26,6 +26,10 @@ Crea `tyndale.config.json` en la raíz de tu proyecto, o ejecuta `npx tyndale in
   "pi": {
     "model": "claude-sonnet-4-20250514",
     "thinkingLevel": "low"
+  },
+  "docs": {
+    "framework": "starlight",
+    "contentDir": "src/content/docs"
   }
 }
 ```
@@ -36,13 +40,16 @@ Crea `tyndale.config.json` en la raíz de tu proyecto, o ejecuta `npx tyndale in
 |-------|------|---------|-------------|
 | `defaultLocale` | `string` | `"en"` | Código del idioma de origen |
 | `locales` | `string[]` | `[]` | Códigos de locale de destino |
-| `source` | `string[]` | `["src"]` | Directorios que se analizarán en busca de contenido traducible |
-| `extensions` | `string[]` | `[".ts", ".tsx", ".js", ".jsx"]` | Extensiones de archivo que se incluirán |
+| `source` | `string[]` | `["src"]` | Directorios que se analizarán para contenido traducible |
+| `extensions` | `string[]` | `[".ts", ".tsx", ".js", ".jsx"]` | Extensiones de archivo a incluir |
 | `output` | `string` | `"public/_tyndale"` | Directorio de salida para los archivos de locale generados |
-| `translate.tokenBudget` | `number` | `50000` | Presupuesto de tokens por lote de traducción con IA |
-| `translate.concurrency` | `number` | auto | Máximo de sesiones de traducción en paralelo |
-| `localeAliases` | `object` | `{}` | Mapa de códigos de locale variantes a códigos canónicos |
+| `translate.tokenBudget` | `number` | `50000` | Presupuesto de tokens por lote de traducción de IA |
+| `translate.concurrency` | `number` | auto | Máximo de sesiones de traducción paralelas |
+| `localeAliases` | `object` | `{}` | Mapa de códigos de locale variantes a los canónicos |
 | `dictionaries.include` | `string[]` | `[]` | Patrones glob para archivos de diccionario |
 | `dictionaries.format` | `string` | `"key-value"` | Formato de archivo de diccionario |
-| `pi.model` | `string` | `"claude-sonnet-4-20250514"` | Modelo de IA que se usará |
+| `pi.model` | `string` | `"claude-sonnet-4-20250514"` | Modelo de IA que se utilizará |
 | `pi.thinkingLevel` | `string` | `"low"` | Nivel de razonamiento de IA |
+| `docs.framework` | `string` | — | Framework de documentación: `starlight`, `docusaurus`, `vitepress`, `mkdocs`, o `nextra` |
+| `docs.contentDir` | `string` | auto | Directorio de contenido (relativo a la raíz del proyecto) |
+| `docs.extensions` | `string[]` | auto | Sobrescribe las extensiones de archivo para la traducción de documentación |

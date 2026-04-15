@@ -1,0 +1,32 @@
+---
+title: Tyndale ドキュメント
+description: React と Next.js で AI を活用した i18n のために Tyndale を使う方法を学びます。
+template: splash
+hero:
+  tagline: React と Next.js のためのオープンソース AI 活用 i18n
+  actions:
+    - text: はじめる
+      link: /getting-started/installation/
+      icon: right-arrow
+      variant: primary
+    - text: GitHub で見る
+      link: https://github.com/ogrodev/tyndale
+      icon: external
+---
+
+import { Card, CardGrid } from '@astrojs/starlight/components';
+
+<CardGrid>
+  <Card title="クイックセットアップ" icon="rocket">
+    Tyndale をインストールし、`tyndale init` を実行すれば、数分で翻訳を導入できます。
+  </Card>
+  <Card title="React コンポーネント" icon="puzzle">
+    `<T>`、`<Plural>`、`<DateTime>`、そして `useTranslation()` のようなフックを使用します。
+  </Card>
+  <Card title="Next.js 対応" icon="laptop">
+    Middleware、サーバープロバイダー、静的生成ヘルパーを標準搭載。
+  </Card>
+  <Card title="CI/CD フレンドリー" icon="setting">
+    `tyndale validate` でパイプライン内の翻訳を検証できます。
+  </Card>
+</CardGrid>

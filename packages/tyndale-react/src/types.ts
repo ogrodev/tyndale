@@ -37,6 +37,15 @@ export interface TyndaleConfig {
     /** Format of dictionary files. */
     format?: string;
   };
+  /** Documentation framework configuration for translate-docs. */
+  docs?: {
+    /** Detected/configured documentation framework. */
+    framework: 'starlight' | 'docusaurus' | 'vitepress' | 'mkdocs' | 'nextra';
+    /** Content directory (relative to project root). */
+    contentDir?: string;
+    /** Override file extensions. */
+    extensions?: string[];
+  };
 }
 
 /**

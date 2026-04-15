@@ -107,7 +107,7 @@ This is a monorepo containing three packages:
 
 | Package | Description |
 |---------|-------------|
-| [`tyndale`](packages/tyndale) | CLI — extract, translate, validate, auth, init |
+| [`tyndale`](packages/tyndale) | CLI — extract, translate, translate-docs, validate, auth, model, init |
 | [`tyndale-react`](packages/tyndale-react) | React components and hooks for rendering translations |
 | [`tyndale-next`](packages/tyndale-next) | Next.js adapter — middleware, server provider, config helper |
 
@@ -120,6 +120,11 @@ This is a monorepo containing three packages:
 | `tyndale extract` | Walk source files, produce manifest + default locale JSON |
 | `tyndale translate` | Translate the delta for each target locale |
 | `tyndale validate` | Check for errors without writing files (CI-ready) |
+| `tyndale translate-docs` | Translate documentation files for any supported framework |
+| `tyndale translate-docs setup` | Detect docs framework and save to config |
+| `tyndale model` | Change the AI model for translations |
+
+`tyndale translate-docs` writes `.tyndale-docs-state.json` at your project root to track source-document hashes. Commit this file so fresh clones can skip unchanged docs without retranslation.
 
 ### `tyndale translate` flags
 
@@ -222,6 +227,7 @@ Create `tyndale.config.json` at your project root (or run `tyndale init`):
 | `localeAliases` | `object` | Map variant locale codes to canonical ones |
 | `dictionaries` | `object` | Dictionary file discovery config |
 | `pi` | `object` | AI model and thinking level |
+| `docs` | `object` | Documentation framework config (`framework`, `contentDir`, `extensions`) |
 
 ## Prerequisites
 

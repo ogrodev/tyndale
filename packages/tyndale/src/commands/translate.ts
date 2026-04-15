@@ -2,15 +2,17 @@
 import type { CommandResult } from '../cli';
 import { join } from 'path';
 import { computeDelta, type Manifest, type LocaleData } from '../translate/delta';
-import { translateBatch, type TranslationSession } from '../translate/batch-translator';
+import { translateBatch, type TranslateBatchPhase, type TranslationSession } from '../translate/batch-translator';
 import { readLocaleFile, writeLocaleFile } from '../translate/locale-writer';
 import { withRetry } from '../translate/retry';
 import { splitByTokenBudget, type TokenBatch } from '../translate/token-batcher';
 import { loadBrief, saveBrief, sampleEntriesForBrief, buildBriefGenerationPrompt } from '../translate/brief';
 import { resolveConcurrency } from '../translate/concurrency';
 import { runPool } from '../translate/pool';
-import type { TranslationInput } from '../translate/pi-session';
-import { createProgress, createTerminalUi, type TerminalRow } from '../terminal/ui';
+import type { CreateTranslationSessionOptions, TranslationInput } from '../translate/pi-session';
+import { createProgress, createTerminalUi, type ProgressReporter, type TerminalRow } from '../terminal/ui';
+import { createTranslateActivityTui, type TranslateActivityController } from '../tui/translate-activity';
+import { runTui } from '../tui/run-tui';
 
 /** Locale code → full language name for prompt context. */
 const LOCALE_NAMES: Record<string, string> = {
@@ -42,18 +44,21 @@ export interface TranslateOptions {
   dryRun?: boolean;
 }
 
+type SessionFactory = (options?: CreateTranslationSessionOptions) => Promise<TranslationSession>;
+
 /** Injectable dependencies for testability. */
 export interface TranslateDeps {
   outputDir: string;
   projectRoot: string;
   /** Creates a JSON-mode session (for string translation). */
-  createSession: () => Promise<TranslationSession>;
+  createSession: SessionFactory;
   /** Creates a text-mode session (for brief generation). */
-  createBriefSession?: () => Promise<TranslationSession>;
+  createBriefSession?: SessionFactory;
 }
 
 /** A single unit of work: one batch for one locale. */
 interface WorkUnit {
+  id: string;
   locale: string;
   languageName: string;
   batch: TokenBatch;
@@ -66,6 +71,108 @@ interface WorkUnitResult {
   locale: string;
   translations: Record<string, string>;
   failedHashes: string[];
+}
+
+function describeBatchPhase(phase: TranslateBatchPhase): string {
+  switch (phase.type) {
+    case 'awaiting_response':
+      return phase.attempt === 'initial'
+        ? `awaiting response for ${phase.totalEntries} strings`
+        : `awaiting retry response for ${phase.totalEntries} strings`;
+    case 'validating':
+      return phase.attempt === 'initial'
+        ? `validating ${phase.totalEntries} strings`
+        : `validating ${phase.totalEntries} retried strings`;
+    case 'retrying':
+      return `retrying ${phase.retryEntries}/${phase.totalEntries} strings`;
+  }
+}
+
+
+async function runTranslationWorkUnits(
+  workUnits: WorkUnit[],
+  concurrency: number,
+  createSession: SessionFactory,
+  progress: ProgressReporter | null,
+  onRetry: (unit: WorkUnit, attempt: number, error: Error) => void,
+  activity?: TranslateActivityController,
+): Promise<WorkUnitResult[]> {
+  const localeBatchCounts = new Map<string, number>();
+  for (const unit of workUnits) {
+    localeBatchCounts.set(unit.locale, (localeBatchCounts.get(unit.locale) ?? 0) + 1);
+  }
+
+  activity?.registerBatches(
+    workUnits.map((unit) => ({
+      id: unit.id,
+      locale: unit.locale,
+      batchIndex: unit.batchIndex,
+      totalLocaleBatches: localeBatchCounts.get(unit.locale),
+      entryCount: unit.batch.entries.length,
+    })),
+  );
+
+  return runPool<WorkUnit, WorkUnitResult>(
+    workUnits,
+    concurrency,
+    async (unit) => {
+      activity?.startBatch(unit.id);
+
+      try {
+        const session = await createSession(
+          activity
+            ? {
+                onActivity: (event) => activity.recordSessionEvent(unit.id, event),
+              }
+            : undefined,
+        );
+        const result = await withRetry(
+          () => translateBatch(
+            session,
+            unit.batch.entries,
+            unit.locale,
+            unit.languageName,
+            unit.brief,
+            activity
+              ? {
+                  onPhase: (phase) => activity.setBatchPhase(unit.id, describeBatchPhase(phase)),
+                }
+              : undefined,
+          ),
+          {
+            maxAttempts: 3,
+            baseDelayMs: 1000,
+            onRetry: (attempt, error) => onRetry(unit, attempt, error),
+          },
+        );
+
+        const ok = result.failedHashes.length === 0;
+        progress?.tick(`${unit.locale} batch ${unit.batchIndex + 1}`, ok);
+        activity?.finishBatch(
+          unit.id,
+          ok,
+          ok
+            ? `${Object.keys(result.translations).length} translated`
+            : `${result.failedHashes.length} failed validation`,
+        );
+
+        return {
+          locale: unit.locale,
+          translations: result.translations,
+          failedHashes: result.failedHashes,
+        };
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Translation session failed';
+        progress?.tick(`${unit.locale} batch ${unit.batchIndex + 1}`, false);
+        activity?.finishBatch(unit.id, false, message);
+        return {
+          locale: unit.locale,
+          translations: {},
+          failedHashes: unit.batch.entries.map((entry) => entry.hash),
+        };
+      }
+    },
+  );
 }
 
 /**
@@ -271,6 +378,7 @@ export async function handleTranslate(
     const batches = splitByTokenBudget(state.newEntries, tokenBudget);
     for (let i = 0; i < batches.length; i++) {
       workUnits.push({
+        id: `${locale}:${i + 1}`,
         locale,
         languageName,
         batch: batches[i],
@@ -291,57 +399,83 @@ export async function handleTranslate(
   }
 
   const { value: concurrency, source: concurrencySource } = resolveConcurrency(options.concurrency);
-  ui.section('Translate');
-  ui.rows([
-    { label: 'batches', value: workUnits.length },
+  const translateRows: TerminalRow[] = [
+    { label: 'work locales', value: localesToTranslate.length },
     { label: 'concurrency', value: `${concurrency} (${concurrencySource === 'auto' ? 'auto-detected' : 'configured'})` },
-    { label: 'briefs created', value: generatedBriefs },
-    { label: 'briefs skipped', value: skippedBriefs },
-  ]);
+  ];
+  if (generatedBriefs > 0) translateRows.push({ label: 'briefs created', value: generatedBriefs });
+  if (skippedBriefs > 0) translateRows.push({ label: 'briefs skipped', value: skippedBriefs });
+  ui.section('Translate');
+  ui.rows(translateRows);
 
-  const progress = createProgress({
-    total: workUnits.length,
-    noun: 'batches',
-    interactive: interactiveTerminal,
-    decorated: interactiveTerminal,
-    writeLine: interactiveTerminal ? undefined : logger.log.bind(logger),
-  });
+  const reportRetry = (
+    unit: WorkUnit,
+    attempt: number,
+    error: Error,
+    activity?: TranslateActivityController,
+  ) => {
+    if (activity) {
+      activity.recordRetry(unit.id, attempt, error.message);
+      return;
+    }
+    ui.warn(`Retry ${attempt}/3 for ${unit.locale} batch ${unit.batchIndex + 1} — ${error.message}`);
+  };
 
-  const results = await runPool<WorkUnit, WorkUnitResult>(
-    workUnits,
-    concurrency,
-    async (unit) => {
-      try {
-        const session = await createSession();
-        const result = await withRetry(
-          () => translateBatch(session, unit.batch.entries, unit.locale, unit.languageName, unit.brief),
-          {
-            maxAttempts: 3,
-            baseDelayMs: 1000,
-            onRetry: (attempt, err) => {
-              ui.warn(`Retry ${attempt}/3 for ${unit.locale} batch ${unit.batchIndex + 1} — ${err.message}`);
-            },
-          },
-        );
+  let results: WorkUnitResult[];
 
-        progress.tick(`${unit.locale} batch ${unit.batchIndex + 1}`, result.failedHashes.length === 0);
-        return {
-          locale: unit.locale,
-          translations: result.translations,
-          failedHashes: result.failedHashes,
-        };
-      } catch {
-        progress.tick(`${unit.locale} batch ${unit.batchIndex + 1}`, false);
-        return {
-          locale: unit.locale,
-          translations: {},
-          failedHashes: unit.batch.entries.map((entry) => entry.hash),
-        };
-      }
-    },
-  );
+  if (interactiveTerminal) {
+    let activityError: unknown = null;
 
-  progress.done();
+    const activityResults = await runTui<WorkUnitResult[]>(({ resolve, requestRender }) => {
+      const activity = createTranslateActivityTui({ requestRender });
+      activity.setOverview(translateRows);
+
+      void runTranslationWorkUnits(
+        workUnits,
+        concurrency,
+        createSession,
+        null,
+        (unit, attempt, error) => reportRetry(unit, attempt, error, activity),
+        activity,
+      )
+        .then((completedResults) => {
+          activity.finish('Applying translated batches…');
+          resolve(completedResults);
+        })
+        .catch((error) => {
+          activity.finish(error instanceof Error ? `Translate failed: ${error.message}` : 'Translate failed.');
+          activityError = error;
+          resolve(null);
+        });
+
+      return activity.root;
+    }, { clearOnExit: true, rethrowSignals: true, renderIntervalMs: 1_000 });
+
+    if (activityError) {
+      throw activityError;
+    }
+    if (activityResults == null) {
+      return 1;
+    }
+    results = activityResults;
+  } else {
+    const progress = createProgress({
+      total: workUnits.length,
+      noun: 'batches',
+      interactive: false,
+      writeLine: logger.log.bind(logger),
+    });
+
+    results = await runTranslationWorkUnits(
+      workUnits,
+      concurrency,
+      createSession,
+      progress,
+      reportRetry,
+    );
+
+    progress.done();
+  }
 
   let translatedEntries = 0;
   let failedHashes = 0;
@@ -403,21 +537,21 @@ export async function runTranslate(flags: Record<string, string | boolean>): Pro
   const deps: TranslateDeps = {
     outputDir: config.output ?? 'public/_tyndale',
     projectRoot: process.cwd(),
-    createSession: async () => {
+    createSession: async (sessionOptions) => {
       if (isMock) {
         const { createMockSession } = await import('../translate/mock');
         return createMockSession();
       }
       const { createTranslationSession } = await import('../translate/pi-session');
-      return createTranslationSession();
+      return createTranslationSession(sessionOptions);
     },
-    createBriefSession: async () => {
+    createBriefSession: async (sessionOptions) => {
       if (isMock) {
         const { createMockDocSession } = await import('../translate/mock-docs');
         return createMockDocSession();
       }
       const { createTextSession } = await import('../translate/pi-session');
-      return createTextSession();
+      return createTextSession(sessionOptions);
     },
   };
 

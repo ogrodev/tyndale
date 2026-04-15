@@ -1,0 +1,55 @@
+---
+title: Configuração
+description: Referência completa para tyndale.config.json.
+---
+
+## Arquivo de configuração
+
+Crie `tyndale.config.json` na raiz do seu projeto ou execute `npx tyndale init` para gerar um.
+
+```json
+{
+  "defaultLocale": "en",
+  "locales": ["es", "fr", "ja"],
+  "source": ["src", "app"],
+  "extensions": [".ts", ".tsx", ".js", ".jsx"],
+  "output": "public/_tyndale",
+  "translate": {
+    "tokenBudget": 50000,
+    "concurrency": 8
+  },
+  "localeAliases": { "pt-BR": "pt" },
+  "dictionaries": {
+    "include": ["src/dictionaries/*.json"],
+    "format": "key-value"
+  },
+  "pi": {
+    "model": "claude-sonnet-4-20250514",
+    "thinkingLevel": "low"
+  },
+  "docs": {
+    "framework": "starlight",
+    "contentDir": "src/content/docs"
+  }
+}
+```
+
+## Campos
+
+| Campo | Tipo | Padrão | Descrição |
+|-------|------|---------|-------------|
+| `defaultLocale` | `string` | `"en"` | Código do idioma de origem |
+| `locales` | `string[]` | `[]` | Códigos de locale de destino |
+| `source` | `string[]` | `["src"]` | Diretórios a analisar em busca de conteúdo traduzível |
+| `extensions` | `string[]` | `[".ts", ".tsx", ".js", ".jsx"]` | Extensões de arquivo a incluir |
+| `output` | `string` | `"public/_tyndale"` | Diretório de saída para os arquivos de locale gerados |
+| `translate.tokenBudget` | `number` | `50000` | Orçamento de tokens por lote de tradução de IA |
+| `translate.concurrency` | `number` | auto | Máximo de sessões de tradução paralelas |
+| `localeAliases` | `object` | `{}` | Mapeia códigos de locale variantes para códigos canónicos |
+| `dictionaries.include` | `string[]` | `[]` | Padrões glob para arquivos de dicionário |
+| `dictionaries.format` | `string` | `"key-value"` | Formato do arquivo de dicionário |
+| `pi.model` | `string` | `"claude-sonnet-4-20250514"` | Modelo de IA a utilizar |
+| `pi.thinkingLevel` | `string` | `"low"` | Nível de raciocínio da IA |
+| `docs.framework` | `string` | — | Framework de documentação: `starlight`, `docusaurus`, `vitepress`, `mkdocs` ou `nextra` |
+| `docs.contentDir` | `string` | auto | Diretório de conteúdo (relativo à raiz do projeto) |
+| `docs.extensions` | `string[]` | auto | Substitui as extensões de arquivo para tradução da documentação |

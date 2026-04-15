@@ -7,7 +7,7 @@ description: Composants et hooks de tyndale-react.
 
 ### `<T>`
 
-Encapsule du contenu textuel traduisible. Prend en charge les variables et les composants imbriqués.
+Encapsule le contenu textuel traduisible. Prend en charge les variables et les composants imbriqués.
 
 ```tsx
 import { T } from 'tyndale-react';
@@ -28,7 +28,7 @@ import { Plural } from 'tyndale-react';
 
 ### `<DateTime>`
 
-Formate les dates selon la langue actuelle.
+Formate les dates selon la langue active.
 
 ```tsx
 import { DateTime } from 'tyndale-react';
@@ -38,7 +38,7 @@ import { DateTime } from 'tyndale-react';
 
 ### `<Currency>`
 
-Formate les montants monétaires selon la langue actuelle.
+Formate les montants monétaires selon la langue active.
 
 ```tsx
 import { Currency } from 'tyndale-react';
@@ -72,7 +72,7 @@ const errorMessages = {
 
 ### `msgString(text)`
 
-Marqueur retournant une chaîne pour les contextes non React (Astro, Node, TS simple). Fonctionne de manière identique à `msg()` pour l’extraction, mais retourne une `string` simple au lieu d’un élément React.
+Marqueur retournant une chaîne pour les contextes non React (Astro, Node, TS simple). Fonctionne de manière identique à `msg()` pour l’extraction, mais renvoie une `string` simple au lieu d’un élément React.
 
 ```ts
 import { msgString } from 'tyndale-react';

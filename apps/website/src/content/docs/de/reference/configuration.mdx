@@ -5,7 +5,7 @@ description: Vollständige Referenz für tyndale.config.json.
 
 ## Konfigurationsdatei
 
-Erstelle `tyndale.config.json` im Stammverzeichnis deines Projekts, oder führe `npx tyndale init` aus, um eine zu erzeugen.
+Erstelle `tyndale.config.json` im Projektstammverzeichnis oder führe `npx tyndale init` aus, um eine zu erzeugen.
 
 ```json
 {
@@ -26,6 +26,10 @@ Erstelle `tyndale.config.json` im Stammverzeichnis deines Projekts, oder führe 
   "pi": {
     "model": "claude-sonnet-4-20250514",
     "thinkingLevel": "low"
+  },
+  "docs": {
+    "framework": "starlight",
+    "contentDir": "src/content/docs"
   }
 }
 ```
@@ -39,10 +43,13 @@ Erstelle `tyndale.config.json` im Stammverzeichnis deines Projekts, oder führe 
 | `source` | `string[]` | `["src"]` | Verzeichnisse, die nach übersetzbaren Inhalten durchsucht werden |
 | `extensions` | `string[]` | `[".ts", ".tsx", ".js", ".jsx"]` | Einzubeziehende Dateierweiterungen |
 | `output` | `string` | `"public/_tyndale"` | Ausgabeverzeichnis für generierte Locale-Dateien |
-| `translate.tokenBudget` | `number` | `50000` | Token-Budget pro AI-Übersetzungs-Batch |
+| `translate.tokenBudget` | `number` | `50000` | Token-Budget pro AI-Übersetzungsbatch |
 | `translate.concurrency` | `number` | auto | Maximale Anzahl paralleler Übersetzungssitzungen |
 | `localeAliases` | `object` | `{}` | Ordnet Varianten-Locale-Codes kanonischen Codes zu |
 | `dictionaries.include` | `string[]` | `[]` | Glob-Muster für Wörterbuchdateien |
 | `dictionaries.format` | `string` | `"key-value"` | Format der Wörterbuchdatei |
 | `pi.model` | `string` | `"claude-sonnet-4-20250514"` | Zu verwendendes AI-Modell |
 | `pi.thinkingLevel` | `string` | `"low"` | AI-Denkstufe |
+| `docs.framework` | `string` | — | Dokumentations-Framework: `starlight`, `docusaurus`, `vitepress`, `mkdocs` oder `nextra` |
+| `docs.contentDir` | `string` | auto | Content-Verzeichnis (relativ zum Projektstammverzeichnis) |
+| `docs.extensions` | `string[]` | auto | Dateierweiterungen für die Dokumentübersetzung überschreiben |

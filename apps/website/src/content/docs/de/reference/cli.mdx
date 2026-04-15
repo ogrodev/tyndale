@@ -13,7 +13,7 @@ npx tyndale init
 
 ## `tyndale auth`
 
-Konfiguriert die Zugangsdaten Ihres AI-Providers.
+Konfiguriert Ihre Zugangsdaten für den AI-Provider.
 
 ```bash
 npx tyndale auth
@@ -37,7 +37,7 @@ npx tyndale translate [options]
 
 ## `tyndale validate`
 
-Prüft, ob alle Locales vollständige, korrekt formatierte Übersetzungen haben. Es werden keine AI-Aufrufe ausgeführt.
+Prüft, dass alle Locales vollständige, wohlgeformte Übersetzungen haben. Es werden keine AI-Aufrufe ausgeführt.
 
 ```bash
 npx tyndale validate
@@ -51,4 +51,39 @@ Extrahiert übersetzbare Strings, ohne sie zu übersetzen. Nützlich, um zu prü
 
 ```bash
 npx tyndale extract
+```
+
+
+## `tyndale translate-docs`
+
+Übersetzt Dokumentationsdateien (MDX/MD) für jedes unterstützte Framework. Erkennt Ihr Doku-Framework automatisch oder verwendet die Konfiguration aus `tyndale.config.json`.
+
+```bash
+npx tyndale translate-docs [options]
+```
+
+| Flag | Beschreibung |
+|------|-------------|
+| `--content-dir <path>` | Überschreibt das Content-Verzeichnis der Dokumentation |
+| `--force` | Übersetzt alle Doku-Dateien erneut, nicht nur fehlende Dateien |
+| `--concurrency <n>` | Maximale parallele Übersetzungssitzungen (automatisch erkannt) |
+
+Unterstützte Frameworks: Starlight, Docusaurus, VitePress, MkDocs, Nextra.
+
+### `tyndale translate-docs setup`
+
+Erkennt Ihr Dokumentations-Framework und speichert die Konfiguration in `tyndale.config.json`.
+
+```bash
+npx tyndale translate-docs setup
+```
+
+Durchsucht Ihr Projekt nach Framework-Signalen (Paketabhängigkeiten und Konfigurationsdateien), bestätigt das erkannte Framework und schreibt den Abschnitt `docs` in Ihre Konfiguration.
+
+## `tyndale model`
+
+Ändert das für Übersetzungen verwendete AI-Modell.
+
+```bash
+npx tyndale model
 ```

@@ -1,6 +1,6 @@
 ---
 title: 설정
-description: tyndale.config.json에 대한 전체 참조입니다.
+description: tyndale.config.json에 대한 완전한 참조입니다.
 ---
 
 ## 설정 파일
@@ -26,23 +26,30 @@ description: tyndale.config.json에 대한 전체 참조입니다.
   "pi": {
     "model": "claude-sonnet-4-20250514",
     "thinkingLevel": "low"
+  },
+  "docs": {
+    "framework": "starlight",
+    "contentDir": "src/content/docs"
   }
 }
 ```
 
 ## 필드
 
-| 필드 | 타입 | 기본값 | 설명 |
+| 필드 | 유형 | 기본값 | 설명 |
 |-------|------|---------|-------------|
-| `defaultLocale` | `string` | `"en"` | 소스 언어 코드 |
-| `locales` | `string[]` | `[]` | 대상 로캘 코드 |
-| `source` | `string[]` | `["src"]` | 번역 가능한 콘텐츠를 찾기 위해 스캔할 디렉터리 |
+| `defaultLocale` | `string` | `"en"` | 원본 언어 코드 |
+| `locales` | `string[]` | `[]` | 대상 로케일 코드 |
+| `source` | `string[]` | `["src"]` | 번역 가능한 콘텐츠를 스캔할 디렉터리 |
 | `extensions` | `string[]` | `[".ts", ".tsx", ".js", ".jsx"]` | 포함할 파일 확장자 |
-| `output` | `string` | `"public/_tyndale"` | 생성된 로캘 파일의 출력 디렉터리 |
+| `output` | `string` | `"public/_tyndale"` | 생성된 로케일 파일의 출력 디렉터리 |
 | `translate.tokenBudget` | `number` | `50000` | AI 번역 배치당 토큰 예산 |
 | `translate.concurrency` | `number` | auto | 최대 병렬 번역 세션 수 |
-| `localeAliases` | `object` | `{}` | 변형 로캘 코드를 표준 코드에 매핑 |
-| `dictionaries.include` | `string[]` | `[]` | 사전 파일용 Glob 패턴 |
+| `localeAliases` | `object` | `{}` | 변형 로케일 코드를 표준 코드에 매핑 |
+| `dictionaries.include` | `string[]` | `[]` | 사전 파일용 glob 패턴 |
 | `dictionaries.format` | `string` | `"key-value"` | 사전 파일 형식 |
 | `pi.model` | `string` | `"claude-sonnet-4-20250514"` | 사용할 AI 모델 |
 | `pi.thinkingLevel` | `string` | `"low"` | AI 사고 수준 |
+| `docs.framework` | `string` | — | 문서화 프레임워크: `starlight`, `docusaurus`, `vitepress`, `mkdocs`, 또는 `nextra` |
+| `docs.contentDir` | `string` | auto | 콘텐츠 디렉터리(프로젝트 루트 기준 상대 경로) |
+| `docs.extensions` | `string[]` | auto | 문서 번역용 파일 확장자 재정의 |

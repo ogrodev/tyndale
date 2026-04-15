@@ -113,4 +113,65 @@ describe('translateBatch', () => {
     await translateBatch(mockSession, entries, 'es', 'Spanish');
     expect(capturedPrompt).not.toContain('TRANSLATION BRIEF:');
   });
+
+  it('emits lifecycle phases for response wait, validation, and retry correction', async () => {
+    const entries: TranslationInput[] = [
+      { hash: 'h1', source: '<0>Hello</0>', context: 'a.tsx:T@1', type: 'jsx' },
+      { hash: 'h2', source: 'Plain text', context: 'b.tsx:T@2', type: 'string' },
+    ];
+
+    const phases: string[] = [];
+    const mockSession: TranslationSession = {
+      sendPromptCount: 0,
+      async sendPrompt() {
+        this.sendPromptCount++;
+        if (this.sendPromptCount === 1) {
+          return {
+            translations: {
+              h1: 'Hola',
+              h2: 'Texto plano',
+            },
+          };
+        }
+        return {
+          translations: {
+            h1: '<0>Hola</0>',
+          },
+        };
+      },
+    } as any;
+
+    const result = await translateBatch(
+      mockSession,
+      entries,
+      'es',
+      'Spanish',
+      undefined,
+      {
+        onPhase: (phase) => {
+          switch (phase.type) {
+            case 'awaiting_response':
+              phases.push(`${phase.type}:${phase.attempt}:${phase.totalEntries}`);
+              break;
+            case 'validating':
+              phases.push(`${phase.type}:${phase.attempt}:${phase.totalEntries}`);
+              break;
+            case 'retrying':
+              phases.push(`${phase.type}:${phase.retryEntries}/${phase.totalEntries}`);
+              break;
+          }
+        },
+      },
+    );
+
+    expect(result.translations).toEqual({ h1: '<0>Hola</0>', h2: 'Texto plano' });
+    expect(result.failedHashes).toEqual([]);
+    expect(phases).toEqual([
+      'awaiting_response:initial:2',
+      'validating:initial:2',
+      'retrying:1/2',
+      'awaiting_response:retry:1',
+      'validating:retry:1',
+    ]);
+  });
 });

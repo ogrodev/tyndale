@@ -81,6 +81,10 @@ export async function routeCommand(
       return runModel(flags);
     }
     case 'translate-docs': {
+      if (flags._sub === 'setup') {
+        const { runDocsSetup } = await import('./docs/setup');
+        return runDocsSetup(flags);
+      }
       const { runTranslateDocs } = await import('./commands/translate-docs');
       return runTranslateDocs(flags);
     }
@@ -109,7 +113,8 @@ function printHelp(): void {
   ui.rows([
     { label: 'extract', value: 'Extract translatable strings from source code' },
     { label: 'translate', value: 'Translate extracted strings using AI' },
-    { label: 'translate-docs', value: 'Translate documentation files (MDX/MD) using AI' },
+    { label: 'translate-docs', value: 'Translate documentation files (MDX/MD) for any supported framework' },
+    { label: 'translate-docs setup', value: 'Detect docs framework and save to config' },
     { label: 'auth', value: 'Configure AI provider authentication' },
     { label: 'model', value: 'Change the AI model for translations' },
     { label: 'init', value: 'Initialize tyndale in your project' },
@@ -123,6 +128,13 @@ function printHelp(): void {
     { label: '--dry-run', value: 'report delta without translating' },
     { label: '--token-budget', value: '<n> token budget per AI batch (default: 50000)' },
     { label: '--concurrency', value: '<n> max parallel translation sessions (auto-detected)' },
+  ]);
+
+  ui.section('Translate-docs options');
+  ui.rows([
+    { label: '--content-dir', value: '<path> override the docs content directory' },
+    { label: '--force', value: 'retranslate all docs, not just missing' },
+    { label: '--concurrency', value: '<n> max parallel translation sessions' },
   ]);
 
   ui.section('General');

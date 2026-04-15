@@ -18,7 +18,7 @@ import { TyndaleServerProvider } from 'tyndale-next/server';
 
 ## `withTyndaleConfig(config)`
 
-Avvolge la configurazione di Next.js per aggiungere riscritture e reindirizzamenti basati sulla lingua.
+Avvolge la configurazione di Next.js per aggiungere rewrite e redirect basati sulla lingua.
 
 ```js
 // next.config.mjs
@@ -41,6 +41,6 @@ export { tyndaleMiddleware as middleware } from 'tyndale-next/middleware';
 ### Comportamento
 
 1. Controlla la presenza di un prefisso della lingua nell'URL
-2. Usa come fallback l'header `Accept-Language`
-3. Usa come fallback la lingua predefinita dalla configurazione
+2. Ripiega sull'header `Accept-Language`
+3. Ripiega sulla lingua predefinita dalla configurazione
 4. Imposta un cookie della lingua per le richieste successive

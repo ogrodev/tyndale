@@ -5,7 +5,7 @@ description: Полный справочник по tyndale.config.json.
 
 ## Файл конфигурации
 
-Создайте `tyndale.config.json` в корне проекта или выполните `npx tyndale init`, чтобы сгенерировать его.
+Создайте `tyndale.config.json` в корне вашего проекта или выполните `npx tyndale init`, чтобы сгенерировать его.
 
 ```json
 {
@@ -26,6 +26,10 @@ description: Полный справочник по tyndale.config.json.
   "pi": {
     "model": "claude-sonnet-4-20250514",
     "thinkingLevel": "low"
+  },
+  "docs": {
+    "framework": "starlight",
+    "contentDir": "src/content/docs"
   }
 }
 ```
@@ -36,13 +40,16 @@ description: Полный справочник по tyndale.config.json.
 |-------|------|---------|-------------|
 | `defaultLocale` | `string` | `"en"` | Код исходного языка |
 | `locales` | `string[]` | `[]` | Коды целевых локалей |
-| `source` | `string[]` | `["src"]` | Каталоги для сканирования переводимого контента |
-| `extensions` | `string[]` | `[".ts", ".tsx", ".js", ".jsx"]` | Расширения файлов, которые нужно включить |
+| `source` | `string[]` | `["src"]` | Каталоги для сканирования на наличие переводимого контента |
+| `extensions` | `string[]` | `[".ts", ".tsx", ".js", ".jsx"]` | Включаемые расширения файлов |
 | `output` | `string` | `"public/_tyndale"` | Каталог вывода для сгенерированных файлов локалей |
 | `translate.tokenBudget` | `number` | `50000` | Бюджет токенов на один пакет AI-перевода |
 | `translate.concurrency` | `number` | auto | Максимальное число параллельных сессий перевода |
 | `localeAliases` | `object` | `{}` | Сопоставление кодов вариантов локалей с каноническими |
-| `dictionaries.include` | `string[]` | `[]` | Шаблоны glob для файлов словаря |
-| `dictionaries.format` | `string` | `"key-value"` | Формат файлов словаря |
+| `dictionaries.include` | `string[]` | `[]` | Glob-шаблоны для файлов словарей |
+| `dictionaries.format` | `string` | `"key-value"` | Формат файла словаря |
 | `pi.model` | `string` | `"claude-sonnet-4-20250514"` | Используемая AI-модель |
 | `pi.thinkingLevel` | `string` | `"low"` | Уровень рассуждений AI |
+| `docs.framework` | `string` | — | Фреймворк документации: `starlight`, `docusaurus`, `vitepress`, `mkdocs`, or `nextra` |
+| `docs.contentDir` | `string` | auto | Каталог контента (относительно корня проекта) |
+| `docs.extensions` | `string[]` | auto | Переопределяет расширения файлов для перевода документации |

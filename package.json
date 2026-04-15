@@ -24,7 +24,8 @@
     "test:cli": "bun test --cwd packages/tyndale",
     "typecheck": "tsc --build",
     "dev": "bun --cwd apps/website dev",
-    "build:website": "bun --cwd apps/website build"
+    "build:website": "bun --cwd apps/website build",
+    "build:packages": "bun run --cwd packages/tyndale-react build && bun run --cwd packages/tyndale-next build && bun run --cwd packages/tyndale build"
   },
   "devDependencies": {
     "@types/bun": "^1.3.12",

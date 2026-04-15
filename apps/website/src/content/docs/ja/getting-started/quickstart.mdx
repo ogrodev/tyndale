@@ -1,0 +1,68 @@
+---
+title: クイックスタート
+description: React アプリで 5 分以内に翻訳を動かしましょう。
+---
+
+import { Steps } from '@astrojs/starlight/components';
+
+<Steps>
+
+1. **Tyndale をインストール**
+
+   ```bash
+   npm install tyndale tyndale-react
+   ```
+
+2. **プロジェクトを初期化**
+
+   ```bash
+   npx tyndale init
+   ```
+
+   これにより、デフォルト設定を含む `tyndale.config.json` が作成されます。
+
+3. **AI provider で認証**
+
+   ```bash
+   npx tyndale auth
+   ```
+
+   プロンプトに従って API キー（Anthropic、OpenAI など）を設定します。
+
+4. **翻訳対象コンテンツをラップ**
+
+   ```tsx
+   import { T, useTranslation } from 'tyndale-react';
+
+   export function Welcome() {
+     const t = useTranslation();
+     return (
+       <div>
+         <T>Welcome to our app!</T>
+         <p>{t('You have {count} items', { count: 3 })}</p>
+       </div>
+     );
+   }
+   ```
+
+5. **抽出して翻訳**
+
+   ```bash
+   npx tyndale translate
+   ```
+
+   Tyndale はソースファイルをスキャンし、翻訳可能な文字列を抽出して、設定されたすべてのロケール向けの翻訳を生成します。
+
+</Steps>
+
+## 何が起きたのでしょうか？
+
+Tyndale は JSX 内の `<T>` コンポーネントと `useTranslation()` の呼び出しをスキャンし、英語のソーステキストを抽出して AI provider に翻訳を依頼し、ロケールファイルを `output` ディレクトリに書き出しました。
+
+キー用ファイルは不要です。JSON を手作業で編集する必要もありません。翻訳はすぐに使えます。
+
+## 次のステップ
+
+- [プロジェクトを設定する](/reference/configuration) — ロケール、AI モデル、出力ディレクトリ
+- [Next.js をセットアップする](/getting-started/nextjs-setup) — middleware、providers、静的生成
+- [React API を学ぶ](/reference/react-api) — すべてのコンポーネントとフック

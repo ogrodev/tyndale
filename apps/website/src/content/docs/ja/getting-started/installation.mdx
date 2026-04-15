@@ -1,0 +1,30 @@
+---
+title: インストール
+description: Tyndale と関連パッケージをインストールします。
+---
+
+## 前提条件
+
+- Node.js 20 以降
+- React 18.2+ または 19+
+- AI プロバイダーの API キー（Anthropic、OpenAI など）
+
+## パッケージをインストール
+
+```bash
+npm install tyndale tyndale-react
+```
+
+Next.js プロジェクトでは、アダプターもインストールしてください：
+
+```bash
+npm install tyndale-next
+```
+
+## プロジェクトを初期化
+
+```bash
+npx tyndale init
+```
+
+これにより、適切なデフォルト値を持つ `tyndale.config.json` がプロジェクトルートに作成されます。

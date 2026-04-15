@@ -1,11 +1,11 @@
 ---
 title: API Next.js
-description: Référence API pour tyndale-next.
+description: Référence de l’API pour tyndale-next.
 ---
 
 ## `TyndaleServerProvider`
 
-Fournisseur côté serveur qui charge les traductions et les rend disponibles à tous les composants enfants.
+Fournisseur côté serveur qui charge les traductions et les rend disponibles pour tous les composants enfants.
 
 ```tsx
 import { TyndaleServerProvider } from 'tyndale-next/server';
@@ -42,5 +42,5 @@ export { tyndaleMiddleware as middleware } from 'tyndale-next/middleware';
 
 1. Vérifie la présence d’un préfixe de locale dans l’URL
 2. Se rabat sur l’en-tête `Accept-Language`
-3. Se rabat sur la locale par défaut de la configuration
+3. Se rabat sur la locale par défaut de la config
 4. Définit un cookie de locale pour les requêtes suivantes

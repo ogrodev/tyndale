@@ -1,0 +1,46 @@
+---
+title: Next.js API リファレンス
+description: tyndale-next の API リファレンス。
+---
+
+## `TyndaleServerProvider`
+
+翻訳を読み込み、すべての子コンポーネントで利用できるようにするサーバーサイドプロバイダーです。
+
+```tsx
+import { TyndaleServerProvider } from 'tyndale-next/server';
+
+// In your layout
+<TyndaleServerProvider locale={locale}>
+  {children}
+</TyndaleServerProvider>
+```
+
+## `withTyndaleConfig(config)`
+
+ロケールベースの rewrites と redirects を追加するために、Next.js の設定をラップします。
+
+```js
+// next.config.mjs
+import { withTyndaleConfig } from 'tyndale-next/config';
+
+export default withTyndaleConfig({
+  // your existing config
+});
+```
+
+## `tyndaleMiddleware`
+
+ロケールの検出とルーティングを処理する Middleware です。
+
+```ts
+// middleware.ts
+export { tyndaleMiddleware as middleware } from 'tyndale-next/middleware';
+```
+
+### 動作
+
+1. URL にロケールのプレフィックスがあるかを確認します
+2. `Accept-Language` ヘッダーにフォールバックします
+3. config のデフォルトロケールにフォールバックします
+4. 後続のリクエストのためにロケール cookie を設定します

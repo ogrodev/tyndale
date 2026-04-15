@@ -21,15 +21,15 @@ npx tyndale auth
 
 ## `tyndale translate`
 
-Estrae le stringhe traducibili e genera traduzioni per tutte le lingue configurate.
+Estrae le stringhe traducibili e genera traduzioni per tutte le locale configurate.
 
 ```bash
 npx tyndale translate [options]
 ```
 
-| Opzione | Descrizione |
+| Flag | Descrizione |
 |------|-------------|
-| `--locale <code>` | Traduce solo una lingua specifica |
+| `--locale <code>` | Traduce solo una locale specifica |
 | `--force` | Ritraduce tutte le stringhe, non solo le modifiche |
 | `--dry-run` | Mostra cosa verrebbe tradotto senza scrivere file |
 | `--token-budget <n>` | Budget di token per batch AI (predefinito: 50000) |
@@ -37,13 +37,13 @@ npx tyndale translate [options]
 
 ## `tyndale validate`
 
-Controlla che tutte le lingue abbiano traduzioni complete e ben formate. Non vengono effettuate chiamate AI.
+Verifica che tutte le locale abbiano traduzioni complete e ben formate. Non viene effettuata alcuna chiamata AI.
 
 ```bash
 npx tyndale validate
 ```
 
-Esce con codice 1 se vengono trovati problemi. Ideale per pipeline CI.
+Termina con codice 1 se vengono trovati problemi. Ideale per le pipeline CI.
 
 ## `tyndale extract`
 
@@ -51,4 +51,39 @@ Estrae le stringhe traducibili senza tradurle. Utile per rivedere cosa verrà in
 
 ```bash
 npx tyndale extract
+```
+
+
+## `tyndale translate-docs`
+
+Traduce i file di documentazione (MDX/MD) per qualsiasi framework supportato. Rileva automaticamente il framework docs in uso oppure utilizza la configurazione di `tyndale.config.json`.
+
+```bash
+npx tyndale translate-docs [options]
+```
+
+| Flag | Descrizione |
+|------|-------------|
+| `--content-dir <path>` | Sovrascrive la directory dei contenuti docs |
+| `--force` | Ritraduce tutta la documentazione, non solo i file mancanti |
+| `--concurrency <n>` | Numero massimo di sessioni di traduzione parallele (rilevato automaticamente) |
+
+Framework supportati: Starlight, Docusaurus, VitePress, MkDocs, Nextra.
+
+### `tyndale translate-docs setup`
+
+Rileva il framework di documentazione e salva la configurazione in `tyndale.config.json`.
+
+```bash
+npx tyndale translate-docs setup
+```
+
+Analizza il tuo progetto alla ricerca di indicatori del framework (dipendenze dei package e file di configurazione), conferma il framework rilevato e scrive la sezione `docs` nella tua configurazione.
+
+## `tyndale model`
+
+Cambia il modello AI usato per le traduzioni.
+
+```bash
+npx tyndale model
 ```

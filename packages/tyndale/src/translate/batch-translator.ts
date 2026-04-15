@@ -15,6 +15,16 @@ export interface BatchResult {
   failedHashes: string[];
 }
 
+export type TranslateBatchPhase =
+  | { type: 'awaiting_response'; attempt: 'initial' | 'retry'; totalEntries: number }
+  | { type: 'validating'; attempt: 'initial' | 'retry'; totalEntries: number }
+  | { type: 'retrying'; retryEntries: number; totalEntries: number };
+
+export interface TranslateBatchObserver {
+  onPhase?(phase: TranslateBatchPhase): void;
+}
+
+
 /**
  * Translates a batch of entries via the Pi session.
  *
@@ -31,13 +41,14 @@ export async function translateBatch(
   localeCode: string,
   languageName: string,
   brief?: string,
-): Promise<BatchResult> {
-  const sourceMap = new Map(entries.map((e) => [e.hash, e.source]));
+  observer?: TranslateBatchObserver,
+ ): Promise<BatchResult> {
   const translations: Record<string, string> = {};
   const failedHashes: string[] = [];
 
   // First attempt
   const prompt = buildTranslationPrompt(entries, localeCode, languageName, brief);
+  observer?.onPhase?.({ type: 'awaiting_response', attempt: 'initial', totalEntries: entries.length });
   const rawResult = await session.sendPrompt(prompt);
   const parsed = parseTranslationResult(rawResult);
 
@@ -48,6 +59,7 @@ export async function translateBatch(
 
   // Validate each translation
   const needsRetry: TranslationInput[] = [];
+  observer?.onPhase?.({ type: 'validating', attempt: 'initial', totalEntries: entries.length });
 
   for (const entry of entries) {
     const translated = parsed[entry.hash];
@@ -66,9 +78,16 @@ export async function translateBatch(
 
   // Retry invalid entries once with error-correction prompt
   if (needsRetry.length > 0) {
+    observer?.onPhase?.({
+      type: 'retrying',
+      retryEntries: needsRetry.length,
+      totalEntries: entries.length,
+    });
     const retryPrompt = buildErrorCorrectionPrompt(needsRetry, parsed, localeCode, languageName, brief);
+    observer?.onPhase?.({ type: 'awaiting_response', attempt: 'retry', totalEntries: needsRetry.length });
     const retryRaw = await session.sendPrompt(retryPrompt);
     const retryParsed = parseTranslationResult(retryRaw);
+    observer?.onPhase?.({ type: 'validating', attempt: 'retry', totalEntries: needsRetry.length });
 
     for (const entry of needsRetry) {
       const retranslated = retryParsed?.[entry.hash];

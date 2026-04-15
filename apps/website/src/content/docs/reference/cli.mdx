@@ -52,3 +52,40 @@ Extract translatable strings without translating them. Useful for reviewing what
 ```bash
 npx tyndale extract
 ```
+
+
+## `tyndale translate-docs`
+
+Translate documentation files (MDX/MD) for any supported framework. Automatically detects your docs framework or uses the configuration from `tyndale.config.json`.
+
+```bash
+npx tyndale translate-docs [options]
+```
+
+| Flag | Description |
+|------|-------------|
+| `--content-dir <path>` | Override the docs content directory |
+| `--force` | Re-translate all docs, not just missing files |
+| `--concurrency <n>` | Max parallel translation sessions (auto-detected) |
+
+Supported frameworks: Starlight, Docusaurus, VitePress, MkDocs, Nextra.
+
+`translate-docs` writes `.tyndale-docs-state.json` at your project root to track source-document hashes. Commit this file so fresh clones can skip unchanged docs without retranslation.
+
+### `tyndale translate-docs setup`
+
+Detect your documentation framework and save the configuration to `tyndale.config.json`.
+
+```bash
+npx tyndale translate-docs setup
+```
+
+Scans your project for framework signals (package dependencies and config files), confirms the detected framework, and writes the `docs` section to your config.
+
+## `tyndale model`
+
+Change the AI model used for translations.
+
+```bash
+npx tyndale model
+```

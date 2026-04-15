@@ -7,6 +7,32 @@ export interface TranslationInput {
   type: string;
 }
 
+export interface TranslationSessionToolEvent {
+  toolCallId: string;
+  toolName: string;
+  args: unknown;
+  summary?: string;
+  isError?: boolean;
+}
+
+export type TranslationSessionActivityEvent =
+  | { type: 'prompt_start'; mode: 'json' | 'text' }
+  | { type: 'turn_start' }
+  | { type: 'text_delta'; delta: string; text: string }
+  | ({ type: 'tool_start' } & TranslationSessionToolEvent)
+  | ({ type: 'tool_update' } & TranslationSessionToolEvent)
+  | ({ type: 'tool_end' } & TranslationSessionToolEvent)
+  | { type: 'complete'; mode: 'json' | 'text'; text: string; response: unknown }
+  | { type: 'error'; message: string };
+
+export type TranslationSessionActivityListener = (
+  event: TranslationSessionActivityEvent,
+ ) => void;
+
+export interface CreateTranslationSessionOptions {
+  onActivity?: TranslationSessionActivityListener;
+}
+
 export function buildTranslationPrompt(
   entries: TranslationInput[],
   localeCode: string,
@@ -95,6 +121,8 @@ async function getSDK(): Promise<PiSDK> {
 
 // ── Response extractors ─────────────────────────────────────
 
+type ResponseMode = 'json' | 'text';
+
 function extractJsonResponse(textParts: string): unknown {
   try {
     const jsonMatch = textParts.match(/\{[\s\S]*\}/);
@@ -109,11 +137,77 @@ function extractTextResponse(textParts: string): unknown {
   return textParts || null;
 }
 
+function extractMessageText(content: unknown): string {
+  if (!Array.isArray(content)) return '';
+  return content
+    .filter(
+      (item): item is { type: 'text'; text: string } =>
+        item !== null
+        && typeof item === 'object'
+        && (item as { type?: unknown }).type === 'text'
+        && typeof (item as { text?: unknown }).text === 'string',
+    )
+    .map((item) => item.text)
+    .join('');
+}
+
+function findLastAssistantText(messages: unknown): string {
+  if (!Array.isArray(messages)) return '';
+
+  for (let i = messages.length - 1; i >= 0; i--) {
+    const message = messages[i];
+    if (message && typeof message === 'object' && (message as { role?: unknown }).role === 'assistant') {
+      return extractMessageText((message as { content?: unknown }).content);
+    }
+  }
+
+  return '';
+}
+
+function normalizeErrorMessage(error: unknown): string {
+  if (error instanceof Error && error.message) return error.message;
+  if (typeof error === 'string' && error.trim().length > 0) return error;
+  return 'Agent session error';
+}
+
+function collapseSummary(text: string, limit = 96): string | undefined {
+  const collapsed = text.replace(/\s+/g, ' ').trim();
+  if (collapsed.length === 0) return undefined;
+  return collapsed.length > limit ? `${collapsed.slice(0, limit - 1)}…` : collapsed;
+}
+
+function summarizeScalar(value: unknown): string | undefined {
+  if (typeof value === 'string') return collapseSummary(value);
+  if (typeof value === 'number' || typeof value === 'boolean') return String(value);
+  return undefined;
+}
+
+function summarizeToolPayload(payload: unknown): string | undefined {
+  if (payload == null) return undefined;
+  if (typeof payload !== 'object') return summarizeScalar(payload);
+
+  const contentSummary = extractMessageText((payload as { content?: unknown }).content);
+  if (contentSummary) {
+    return collapseSummary(contentSummary);
+  }
+
+  const details = (payload as { details?: unknown }).details;
+  return summarizeScalar(details);
+}
+
+function emitActivity(
+  listener: TranslationSessionActivityListener | undefined,
+  event: TranslationSessionActivityEvent,
+): void {
+  listener?.(event);
+}
+
 // ── Session factory ─────────────────────────────────────────
 
-type ResponseMode = 'json' | 'text';
-
-async function createSession(mode: ResponseMode): Promise<TranslationSession> {
+async function createSession(
+  mode: ResponseMode,
+  options?: CreateTranslationSessionOptions,
+): Promise<TranslationSession> {
   const sdk = await getSDK();
 
   const { session } = await sdk.createAgentSession({
@@ -128,39 +222,109 @@ async function createSession(mode: ResponseMode): Promise<TranslationSession> {
   return {
     async sendPrompt(prompt: string): Promise<unknown> {
       return new Promise<unknown>((resolve, reject) => {
+        let settled = false;
+        let streamedText = '';
+
+        const finish = (outcome: 'resolve' | 'reject', value: unknown) => {
+          if (settled) return;
+          settled = true;
+          unsubscribe();
+          if (outcome === 'resolve') {
+            resolve(value);
+            return;
+          }
+          reject(value);
+        };
+
+        emitActivity(options?.onActivity, { type: 'prompt_start', mode });
+
         const unsubscribe = session.subscribe((event: any) => {
-          if (event.type === 'agent_end') {
-            unsubscribe();
-            const messages: any[] = event.messages ?? [];
-            const assistantMsg = [...messages].reverse().find(
-              (m: any) => m.role === 'assistant'
-            );
-            if (!assistantMsg) {
-              resolve(null);
-              return;
+          if (event.type === 'turn_start') {
+            emitActivity(options?.onActivity, { type: 'turn_start' });
+            return;
+          }
+
+          if (event.type === 'message_update') {
+            const assistantMessageEvent = event.assistantMessageEvent;
+            if (assistantMessageEvent?.type === 'text_delta' && typeof assistantMessageEvent.delta === 'string') {
+              streamedText += assistantMessageEvent.delta;
+              emitActivity(options?.onActivity, {
+                type: 'text_delta',
+                delta: assistantMessageEvent.delta,
+                text: streamedText,
+              });
             }
-            const textParts = (assistantMsg.content ?? [])
-              .filter((c: any) => c.type === 'text')
-              .map((c: any) => c.text)
-              .join('');
-            resolve(extract(textParts));
-          } else if (event.type === 'error') {
-            unsubscribe();
-            reject(new Error(event.error?.message ?? 'Agent session error'));
+            return;
+          }
+
+          if (event.type === 'tool_execution_start') {
+            emitActivity(options?.onActivity, {
+              type: 'tool_start',
+              toolCallId: event.toolCallId,
+              toolName: event.toolName,
+              args: event.args,
+            });
+            return;
+          }
+
+          if (event.type === 'tool_execution_update') {
+            emitActivity(options?.onActivity, {
+              type: 'tool_update',
+              toolCallId: event.toolCallId,
+              toolName: event.toolName,
+              args: event.args,
+              summary: summarizeToolPayload(event.partialResult),
+            });
+            return;
+          }
+
+          if (event.type === 'tool_execution_end') {
+            emitActivity(options?.onActivity, {
+              type: 'tool_end',
+              toolCallId: event.toolCallId,
+              toolName: event.toolName,
+              args: event.args,
+              summary: summarizeToolPayload(event.result),
+              isError: event.isError === true,
+            });
+            return;
+          }
+
+          if (event.type === 'agent_end') {
+            const text = findLastAssistantText(event.messages) || streamedText;
+            const response = extract(text);
+            emitActivity(options?.onActivity, { type: 'complete', mode, text, response });
+            finish('resolve', response);
+            return;
+          }
+
+          if (event.type === 'error') {
+            const message = normalizeErrorMessage(event.error?.message ?? event.error);
+            emitActivity(options?.onActivity, { type: 'error', message });
+            finish('reject', new Error(message));
           }
         });
-        session.prompt(prompt).catch(reject);
+
+        session.prompt(prompt).catch((error: unknown) => {
+          const message = normalizeErrorMessage(error);
+          emitActivity(options?.onActivity, { type: 'error', message });
+          finish('reject', new Error(message));
+        });
       });
     },
   };
 }
 
 /** Creates a session that parses JSON from the AI response. */
-export async function createTranslationSession(): Promise<TranslationSession> {
-  return createSession('json');
+export async function createTranslationSession(
+  options?: CreateTranslationSessionOptions,
+): Promise<TranslationSession> {
+  return createSession('json', options);
 }
 
 /** Creates a session that returns raw text (for doc translation). */
-export async function createTextSession(): Promise<TranslationSession> {
-  return createSession('text');
+export async function createTextSession(
+  options?: CreateTranslationSessionOptions,
+): Promise<TranslationSession> {
+  return createSession('text', options);
 }

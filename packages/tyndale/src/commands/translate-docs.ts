@@ -1,11 +1,15 @@
 // packages/tyndale/src/commands/translate-docs.ts
+import { createHash } from 'crypto';
 import type { CommandResult } from '../cli';
 import { join, relative, dirname } from 'path';
 import { mkdirSync, writeFileSync, readFileSync, existsSync, readdirSync, statSync } from 'fs';
 import type { TranslationSession } from '../translate/batch-translator';
 import { resolveConcurrency } from '../translate/concurrency';
+import type { CreateTranslationSessionOptions } from '../translate/pi-session';
 import { runPool } from '../translate/pool';
-import { createProgress, createTerminalUi, type TerminalRow } from '../terminal/ui';
+import { createProgress, createTerminalUi, type ProgressReporter, type TerminalRow } from '../terminal/ui';
+import { createTranslateActivityTui, type TranslateActivityController } from '../tui/translate-activity';
+import { runTui } from '../tui/run-tui';
 
 /** Locale code → full language name. */
 const LOCALE_NAMES: Record<string, string> = {
@@ -19,6 +23,8 @@ const LOCALE_NAMES: Record<string, string> = {
   lt: 'Lithuanian', lv: 'Latvian', et: 'Estonian', sl: 'Slovenian',
   ca: 'Catalan', eu: 'Basque', gl: 'Galician',
 };
+
+const DOCS_STATE_FILENAME = '.tyndale-docs-state.json';
 
 function getLanguageName(locale: string): string {
   return LOCALE_NAMES[locale] ?? locale;
@@ -36,23 +42,36 @@ export interface TranslateDocsOptions {
   extensions: string[];
   concurrency?: number;
   force?: boolean;
+  provider?: import('../docs/types').DocsProvider;
+  cwd?: string;
 }
 
+type SessionFactory = (options?: CreateTranslationSessionOptions) => Promise<TranslationSession>;
+
 export interface TranslateDocsDeps {
-  createSession: () => Promise<TranslationSession>;
+  createSession: SessionFactory;
 }
 
 interface WorkUnit {
+  id: string;
   locale: string;
   languageName: string;
-  sourcePath: string;
+  relativePath: string;
   targetPath: string;
   content: string;
+  sourceHash: string;
+}
+
+interface DocsTranslationState {
+  version: 1;
+  entries: Record<string, string>;
 }
 
 interface ValidationError {
+  unitId: string;
   file: string;
   locale: string;
+  relativePath: string;
   error: string;
   translated: string;
   sourceContent: string;
@@ -221,6 +240,69 @@ function findFiles(dir: string, extensions: string[], locales: string[]): string
   return results;
 }
 
+function computeSourceHash(content: string): string {
+  return createHash('sha256').update(content).digest('hex');
+}
+
+function normalizeDocsStateSegment(value: string): string {
+  return value.replace(/\\/g, '/');
+}
+
+function getDocsStatePath(cwd: string): string {
+  return join(cwd, DOCS_STATE_FILENAME);
+}
+
+function getDocsStateKey(contentDir: string, locale: string, relativePath: string): string {
+  return `${normalizeDocsStateSegment(contentDir)}::${locale}::${normalizeDocsStateSegment(relativePath)}`;
+}
+
+function loadDocsState(cwd: string): DocsTranslationState {
+  const statePath = getDocsStatePath(cwd);
+  if (!existsSync(statePath)) return { version: 1, entries: {} };
+
+  try {
+    const parsed = JSON.parse(readFileSync(statePath, 'utf-8')) as unknown;
+    if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
+      return { version: 1, entries: {} };
+    }
+
+    const obj = parsed as Record<string, unknown>;
+    if (obj.version !== 1 || typeof obj.entries !== 'object' || obj.entries === null || Array.isArray(obj.entries)) {
+      return { version: 1, entries: {} };
+    }
+
+    const entries = obj.entries as Record<string, unknown>;
+    if (!Object.values(entries).every((value) => typeof value === 'string')) {
+      return { version: 1, entries: {} };
+    }
+
+    return { version: 1, entries: entries as Record<string, string> };
+  } catch {
+    return { version: 1, entries: {} };
+  }
+}
+
+function saveDocsState(cwd: string, state: DocsTranslationState): void {
+  writeFileSync(getDocsStatePath(cwd), `${JSON.stringify(state, null, 2)}\n`);
+}
+
+function isTranslationUpToDate(
+  state: DocsTranslationState,
+  contentDir: string,
+  locale: string,
+  relativePath: string,
+  sourceHash: string,
+  targetPath: string,
+): boolean {
+  if (!existsSync(targetPath)) return false;
+  return state.entries[getDocsStateKey(contentDir, locale, relativePath)] === sourceHash;
+}
+
+function markTranslationUpToDate(state: DocsTranslationState, contentDir: string, unit: WorkUnit): void {
+  state.entries[getDocsStateKey(contentDir, unit.locale, unit.relativePath)] = unit.sourceHash;
+}
+
+
 // ── Extract text from session result ────────────────────────
 
 function extractText(result: unknown): string | null {
@@ -232,6 +314,193 @@ function extractText(result: unknown): string | null {
   }
   return null;
 }
+
+interface TranslationPhaseResult {
+  translatedDocs: number;
+  validationErrors: ValidationError[];
+}
+
+interface CorrectionPhaseResult {
+  correctedDocs: number;
+  unresolvedFiles: string[];
+  retryResults: Array<{ file: string; success: boolean; error: string | null }>;
+}
+
+function createValidationError(unit: WorkUnit, error: string, translated: string): ValidationError {
+  return {
+    unitId: unit.id,
+    file: unit.id,
+    locale: unit.locale,
+    relativePath: unit.relativePath,
+    error,
+    translated,
+    sourceContent: unit.content,
+    languageName: unit.languageName,
+  };
+}
+
+async function runDocTranslationWorkUnits(
+  workUnits: WorkUnit[],
+  concurrency: number,
+  createSession: SessionFactory,
+  progress: ProgressReporter | null,
+  activity?: TranslateActivityController,
+  onTranslated?: (unit: WorkUnit) => void,
+ ): Promise<TranslationPhaseResult> {
+  activity?.registerBatches(
+    workUnits.map((unit, index) => ({
+      id: unit.id,
+      label: unit.id,
+      locale: unit.locale,
+      batchIndex: index,
+    })),
+  );
+
+  const results = await runPool<WorkUnit, { translated: boolean; validationError?: ValidationError }>(
+    workUnits,
+    concurrency,
+    async (unit) => {
+      activity?.startBatch(unit.id);
+
+      try {
+        const session = await createSession(
+          activity
+            ? {
+                onActivity: (event) => activity.recordSessionEvent(unit.id, event),
+              }
+            : undefined,
+        );
+        const prompt = buildDocTranslationPrompt(
+          unit.content,
+          unit.languageName,
+          unit.locale,
+          unit.relativePath,
+        );
+        const result = await session.sendPrompt(prompt);
+        const translated = extractText(result);
+
+        if (!translated) {
+          const error = 'No translation returned';
+          progress?.tick(unit.id, false);
+          activity?.finishBatch(unit.id, false, error);
+          return { translated: false, validationError: createValidationError(unit, error, '') };
+        }
+
+        const error = validateTranslatedDoc(translated, unit.content);
+        if (error) {
+          progress?.tick(unit.id, false);
+          activity?.finishBatch(unit.id, false, error);
+          return { translated: false, validationError: createValidationError(unit, error, translated) };
+        }
+
+        mkdirSync(dirname(unit.targetPath), { recursive: true });
+        writeFileSync(unit.targetPath, translated);
+        onTranslated?.(unit);
+        progress?.tick(unit.id, true);
+        activity?.finishBatch(unit.id, true, 'translated');
+        return { translated: true };
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        progress?.tick(unit.id, false);
+        activity?.finishBatch(unit.id, false, message);
+        return { translated: false, validationError: createValidationError(unit, message, '') };
+      }
+    },
+  );
+
+  return {
+    translatedDocs: results.filter((result) => result.translated).length,
+    validationErrors: results.flatMap((result) => result.validationError ? [result.validationError] : []),
+  };
+}
+
+async function runDocCorrectionWorkUnits(
+  validationErrors: ValidationError[],
+  concurrency: number,
+  createSession: SessionFactory,
+  workUnitById: Map<string, WorkUnit>,
+  progress: ProgressReporter | null,
+  activity?: TranslateActivityController,
+  onCorrected?: (unit: WorkUnit) => void,
+ ): Promise<CorrectionPhaseResult> {
+  activity?.registerBatches(
+    validationErrors.map((issue, index) => ({
+      id: issue.unitId,
+      label: issue.file,
+      locale: issue.locale,
+      batchIndex: index,
+    })),
+  );
+
+  const retryResults = await runPool<ValidationError, { file: string; success: boolean; error: string | null }>(
+    validationErrors,
+    concurrency,
+    async (issue) => {
+      const unit = workUnitById.get(issue.unitId);
+      if (!unit) {
+        const error = 'Unknown translation work unit';
+        progress?.tick(issue.file, false);
+        activity?.finishBatch(issue.unitId, false, error);
+        return { file: issue.file, success: false, error };
+      }
+
+      activity?.startBatch(issue.unitId);
+
+      try {
+        const session = await createSession(
+          activity
+            ? {
+                onActivity: (event) => activity.recordSessionEvent(issue.unitId, event),
+              }
+            : undefined,
+        );
+        const prompt = buildDocCorrectionPrompt(
+          issue.sourceContent,
+          issue.translated,
+          issue.error,
+          issue.languageName,
+          issue.locale,
+          issue.relativePath,
+        );
+        const result = await session.sendPrompt(prompt);
+        const corrected = extractText(result);
+
+        if (!corrected) {
+          const error = 'No correction returned';
+          progress?.tick(issue.file, false);
+          activity?.finishBatch(issue.unitId, false, error);
+          return { file: issue.file, success: false, error };
+        }
+
+        const error = validateTranslatedDoc(corrected, issue.sourceContent);
+        if (error) {
+          progress?.tick(issue.file, false);
+          activity?.finishBatch(issue.unitId, false, error);
+          return { file: issue.file, success: false, error };
+        }
+
+        mkdirSync(dirname(unit.targetPath), { recursive: true });
+        writeFileSync(unit.targetPath, corrected);
+        onCorrected?.(unit);
+        progress?.tick(issue.file, true);
+        activity?.finishBatch(issue.unitId, true, 'correction applied');
+        return { file: issue.file, success: true, error: null };
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        progress?.tick(issue.file, false);
+        activity?.finishBatch(issue.unitId, false, message);
+        return { file: issue.file, success: false, error: message };
+      }
+    },
+  );
+
+  return {
+    correctedDocs: retryResults.filter((result) => result.success).length,
+    unresolvedFiles: retryResults.filter((result) => !result.success).map((result) => result.file),
+    retryResults,
+  };
+}
+
 
 // ── Main handler ────────────────────────────────────────────
 
@@ -247,8 +516,8 @@ export async function handleTranslateDocs(
     error: logger.error.bind(logger),
     decorated: interactiveTerminal,
   });
-  const { contentDir, locales, defaultLocale, extensions, force } = options;
-  const modeLabel = force ? 'force retranslate' : 'missing docs only';
+  const { contentDir, locales, defaultLocale, extensions, force, provider, cwd = process.cwd() } = options;
+  const modeLabel = force ? 'force retranslate' : 'missing or changed docs only';
 
   ui.header('Translate documentation', 'Live document progress with validation retries and correction timing');
 
@@ -257,7 +526,9 @@ export async function handleTranslateDocs(
     return 1;
   }
 
-  const sourceFiles = findFiles(contentDir, extensions, locales);
+  const sourceFiles = provider
+    ? provider.findSourceFiles(contentDir, locales)
+    : findFiles(contentDir, extensions, locales);
   if (sourceFiles.length === 0) {
     ui.summary('Docs summary', [
       { label: 'status', value: 'no source docs found', tone: 'warning' },
@@ -266,6 +537,13 @@ export async function handleTranslateDocs(
     ]);
     return 0;
   }
+
+  const docsState = loadDocsState(cwd);
+  let docsStateDirty = false;
+  const markCurrent = (unit: WorkUnit): void => {
+    markTranslationUpToDate(docsState, contentDir, unit);
+    docsStateDirty = true;
+  };
 
   const { value: concurrency, source: concurrencySource } = resolveConcurrency(options.concurrency);
   ui.section('Preflight');
@@ -282,17 +560,28 @@ export async function handleTranslateDocs(
   for (const locale of locales) {
     const languageName = getLanguageName(locale);
     for (const sourcePath of sourceFiles) {
-      const relPath = relative(contentDir, sourcePath);
-      const targetPath = join(contentDir, locale, relPath);
-      if (!force && existsSync(targetPath)) continue;
+      const relativePath = relative(contentDir, sourcePath);
+      const targetPath = provider
+        ? provider.resolveTargetPath(sourcePath, contentDir, locale)
+        : join(contentDir, locale, relativePath);
       const content = readFileSync(sourcePath, 'utf-8');
-      workUnits.push({ locale, languageName, sourcePath, targetPath, content });
+      const sourceHash = computeSourceHash(content);
+      if (!force && isTranslationUpToDate(docsState, contentDir, locale, relativePath, sourceHash, targetPath)) continue;
+      workUnits.push({
+        id: `${locale}/${relativePath}`,
+        locale,
+        languageName,
+        relativePath,
+        targetPath,
+        content,
+        sourceHash,
+      });
     }
   }
 
   if (workUnits.length === 0) {
     ui.summary('Docs summary', [
-      { label: 'status', value: 'all docs already translated', tone: 'success' },
+      { label: 'status', value: 'all docs already translated and unchanged', tone: 'success' },
       { label: 'source docs', value: sourceFiles.length },
       { label: 'target locales', value: locales.length },
     ], 'Use --force to retranslate existing docs.');
@@ -316,78 +605,85 @@ export async function handleTranslateDocs(
   ]);
   ui.rows(localeRows);
 
-  const workUnitByLabel = new Map<string, WorkUnit>();
-  for (const unit of workUnits) {
-    const label = `${unit.locale}/${relative(contentDir, unit.sourcePath)}`;
-    workUnitByLabel.set(label, unit);
-  }
-
-  const validationErrors: ValidationError[] = [];
-  let translatedDocs = 0;
+  const workUnitById = new Map(workUnits.map((unit) => [unit.id, unit] as const));
+  const translateRows: TerminalRow[] = [
+    { label: 'source docs', value: sourceFiles.length },
+    { label: 'locales active', value: byLocale.size },
+    { label: 'concurrency', value: `${concurrency} (${concurrencySource === 'auto' ? 'auto-detected' : 'configured'})` },
+  ];
 
   ui.section('Translate');
-  const progress = createProgress({
-    total: workUnits.length,
-    noun: 'docs',
-    interactive: interactiveTerminal,
-    decorated: interactiveTerminal,
-    writeLine: interactiveTerminal ? undefined : logger.log.bind(logger),
-  });
+  ui.rows(translateRows);
 
-  await runPool(workUnits, concurrency, async (unit) => {
-    const relPath = relative(contentDir, unit.sourcePath);
-    const label = `${unit.locale}/${relPath}`;
-    try {
-      const session = await deps.createSession();
-      const prompt = buildDocTranslationPrompt(unit.content, unit.languageName, unit.locale, relPath);
-      const result = await session.sendPrompt(prompt);
-      const translated = extractText(result);
+  let translatedDocs = 0;
+  let validationErrors: ValidationError[] = [];
 
-      if (!translated) {
-        validationErrors.push({
-          file: label,
-          locale: unit.locale,
-          error: 'No translation returned',
-          translated: '',
-          sourceContent: unit.content,
-          languageName: unit.languageName,
+  if (interactiveTerminal) {
+    let activityError: unknown = null;
+
+    const translationResult = await runTui<TranslationPhaseResult>(({ resolve, requestRender }) => {
+      const activity = createTranslateActivityTui(
+        { requestRender },
+        {
+          title: 'LIVE DOCS TRANSLATION',
+          activitySectionTitle: 'Document activity',
+          idleActivityMessage: 'Waiting for document translation to start…',
+        },
+      );
+      activity.setOverview(translateRows);
+
+      void runDocTranslationWorkUnits(workUnits, concurrency, deps.createSession, null, activity, markCurrent)
+        .then((completed) => {
+          activity.finish(
+            completed.validationErrors.length > 0
+              ? 'Initial pass complete. Preparing validation retry…'
+              : 'Document translation complete.',
+          );
+          resolve(completed);
+        })
+        .catch((error) => {
+          activity.finish(
+            error instanceof Error
+              ? `Document translation failed: ${error.message}`
+              : 'Document translation failed.',
+          );
+          activityError = error;
+          resolve(null);
         });
-        progress.tick(label, false);
-        return;
-      }
 
-      const error = validateTranslatedDoc(translated, unit.content);
-      if (error) {
-        validationErrors.push({
-          file: label,
-          locale: unit.locale,
-          error,
-          translated,
-          sourceContent: unit.content,
-          languageName: unit.languageName,
-        });
-        progress.tick(label, false);
-        return;
-      }
+      return activity.root;
+    }, { clearOnExit: true, rethrowSignals: true, renderIntervalMs: 1_000 });
 
-      mkdirSync(dirname(unit.targetPath), { recursive: true });
-      writeFileSync(unit.targetPath, translated);
-      progress.tick(label, true);
-      translatedDocs++;
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      validationErrors.push({
-        file: label,
-        locale: unit.locale,
-        error: message,
-        translated: '',
-        sourceContent: unit.content,
-        languageName: unit.languageName,
-      });
-      progress.tick(label, false);
+    if (activityError) {
+      throw activityError;
     }
-  });
-  progress.done();
+    if (translationResult == null) {
+      return 1;
+    }
+
+    translatedDocs = translationResult.translatedDocs;
+    validationErrors = translationResult.validationErrors;
+  } else {
+    const progress = createProgress({
+      total: workUnits.length,
+      noun: 'docs',
+      interactive: false,
+      writeLine: logger.log.bind(logger),
+    });
+
+    const translationResult = await runDocTranslationWorkUnits(
+      workUnits,
+      concurrency,
+      deps.createSession,
+      progress,
+      undefined,
+      markCurrent,
+    );
+    progress.done();
+
+    translatedDocs = translationResult.translatedDocs;
+    validationErrors = translationResult.validationErrors;
+  }
 
   let correctedDocs = 0;
   let unresolvedAfterRetry: string[] = [];
@@ -401,77 +697,106 @@ export async function handleTranslateDocs(
       ui.issue('failure', issue.file, issue.error);
     }
 
-    const retryProgress = createProgress({
-      total: validationErrors.length,
-      noun: 'corrections',
-      interactive: interactiveTerminal,
-      decorated: interactiveTerminal,
-      writeLine: interactiveTerminal ? undefined : logger.log.bind(logger),
-    });
+    const affectedLocales = new Set(validationErrors.map((issue) => issue.locale)).size;
+    const correctionRows: TerminalRow[] = [
+      { label: 'affected locales', value: affectedLocales },
+      { label: 'concurrency', value: `${concurrency} (${concurrencySource === 'auto' ? 'auto-detected' : 'configured'})` },
+    ];
 
-    const retryResults = await runPool(validationErrors, concurrency, async (issue) => {
-      try {
-        const session = await deps.createSession();
-        const [locale, ...relParts] = issue.file.split('/');
-        const relPath = relParts.join('/');
+    let correctionResult: CorrectionPhaseResult;
 
-        const prompt = buildDocCorrectionPrompt(
-          issue.sourceContent,
-          issue.translated,
-          issue.error,
-          issue.languageName,
-          locale,
-          relPath,
+    if (interactiveTerminal) {
+      let activityError: unknown = null;
+
+      const completedCorrection = await runTui<CorrectionPhaseResult>(({ resolve, requestRender }) => {
+        const activity = createTranslateActivityTui(
+          { requestRender },
+          {
+            title: 'LIVE DOC CORRECTION',
+            activitySectionTitle: 'Correction activity',
+            idleActivityMessage: 'Waiting for corrections to start…',
+          },
         );
-        const result = await session.sendPrompt(prompt);
-        const corrected = extractText(result);
+        activity.setOverview(correctionRows);
 
-        if (!corrected) {
-          retryProgress.tick(issue.file, false);
-          return { file: issue.file, success: false, error: 'No correction returned' };
-        }
+        void runDocCorrectionWorkUnits(
+          validationErrors,
+          concurrency,
+          deps.createSession,
+          workUnitById,
+          null,
+          activity,
+          markCurrent,
+        )
+          .then((completed) => {
+            activity.finish(
+              completed.unresolvedFiles.length > 0
+                ? `${completed.unresolvedFiles.length} documents remain unresolved.`
+                : 'Document correction complete.',
+            );
+            resolve(completed);
+          })
+          .catch((error) => {
+            activity.finish(
+              error instanceof Error
+                ? `Document correction failed: ${error.message}`
+                : 'Document correction failed.',
+            );
+            activityError = error;
+            resolve(null);
+          });
 
-        const error = validateTranslatedDoc(corrected, issue.sourceContent);
-        if (error) {
-          retryProgress.tick(issue.file, false);
-          return { file: issue.file, success: false, error };
-        }
+        return activity.root;
+      }, { clearOnExit: true, rethrowSignals: true, renderIntervalMs: 1_000 });
 
-        const unit = workUnitByLabel.get(issue.file);
-        if (unit) {
-          mkdirSync(dirname(unit.targetPath), { recursive: true });
-          writeFileSync(unit.targetPath, corrected);
-        }
-        retryProgress.tick(issue.file, true);
-        return { file: issue.file, success: true, error: null };
-      } catch (err) {
-        const message = err instanceof Error ? err.message : String(err);
-        retryProgress.tick(issue.file, false);
-        return { file: issue.file, success: false, error: message };
+      if (activityError) {
+        throw activityError;
       }
-    });
-    retryProgress.done();
+      if (completedCorrection == null) {
+        return 1;
+      }
 
-    for (const result of retryResults) {
+      correctionResult = completedCorrection;
+    } else {
+      const retryProgress = createProgress({
+        total: validationErrors.length,
+        noun: 'corrections',
+        interactive: false,
+        writeLine: logger.log.bind(logger),
+      });
+
+      correctionResult = await runDocCorrectionWorkUnits(
+        validationErrors,
+        concurrency,
+        deps.createSession,
+        workUnitById,
+        retryProgress,
+        undefined,
+        markCurrent,
+      );
+      retryProgress.done();
+    }
+
+    correctedDocs = correctionResult.correctedDocs;
+    unresolvedAfterRetry = correctionResult.unresolvedFiles;
+
+    for (const result of correctionResult.retryResults) {
       if (result.success) {
-        correctedDocs++;
         ui.item(`${result.file} corrected`);
       } else {
         ui.fail(`${result.file}: ${result.error ?? 'unknown error'}`);
       }
     }
 
-    unresolvedAfterRetry = validationErrors
-      .filter((issue) => {
-        const unit = workUnitByLabel.get(issue.file);
-        return unit ? !existsSync(unit.targetPath) : true;
-      })
-      .map((issue) => issue.file);
-
     if (unresolvedAfterRetry.length > 0) {
       ui.warn(`${unresolvedAfterRetry.length} docs remain unresolved after retry.`);
     }
   }
+
+  if (docsStateDirty) {
+    saveDocsState(cwd, docsState);
+  }
+
 
   ui.summary('Docs summary', [
     {
@@ -498,30 +823,55 @@ export async function runTranslateDocs(flags: Record<string, string | boolean>):
   const config = loadConfig();
   const isMock = process.env.TYNDALE_MOCK_TRANSLATE === '1';
 
-  const contentDir = typeof flags['content-dir'] === 'string'
-    ? flags['content-dir']
-    : 'src/content/docs';
+  let contentDir: string;
+  let provider: import('../docs/types').DocsProvider | undefined;
+
+  if (config.docs) {
+    const { getDocsProvider } = await import('../docs/providers');
+    provider = getDocsProvider(config.docs.framework);
+    contentDir = config.docs.contentDir ?? (provider.framework.id === 'starlight' ? 'src/content/docs' : 'docs');
+  } else if (typeof flags['content-dir'] === 'string') {
+    contentDir = flags['content-dir'];
+  } else {
+    // Auto-detect framework from project files
+    const { detectDocFrameworks } = await import('../docs/detect');
+    const detected = detectDocFrameworks(process.cwd());
+    if (detected.length === 1 && detected[0].confidence === 'high') {
+      const { getDocsProvider } = await import('../docs/providers');
+      provider = getDocsProvider(detected[0].framework.id);
+      contentDir = detected[0].contentDir;
+    } else {
+      contentDir = 'src/content/docs'; // Legacy Starlight default
+    }
+  }
+
+  // CLI flag overrides config/detection for contentDir
+  if (typeof flags['content-dir'] === 'string') {
+    contentDir = flags['content-dir'];
+  }
 
   const deps: TranslateDocsDeps = {
-    createSession: async () => {
+    createSession: async (sessionOptions) => {
       if (isMock) {
         const { createMockDocSession } = await import('../translate/mock-docs');
         return createMockDocSession();
       }
       const { createTextSession } = await import('../translate/pi-session');
-      return createTextSession();
+      return createTextSession(sessionOptions);
     },
   };
 
   const options: TranslateDocsOptions = {
     contentDir,
+    provider,
     locales: config.locales,
     defaultLocale: config.defaultLocale,
-    extensions: ['.mdx', '.md'],
+    extensions: provider?.extensions ?? ['.mdx', '.md'],
     concurrency: typeof flags.concurrency === 'string'
       ? parseInt(flags.concurrency, 10)
       : config.translate?.concurrency,
     force: flags.force === true,
+    cwd: process.cwd(),
   };
 
   const exitCode = await handleTranslateDocs(deps, options, console);

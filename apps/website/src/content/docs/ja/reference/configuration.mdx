@@ -1,0 +1,55 @@
+---
+title: 設定
+description: tyndale.config.json の完全なリファレンス。
+---
+
+## 設定ファイル
+
+プロジェクトルートに `tyndale.config.json` を作成するか、`npx tyndale init` を実行して生成します。
+
+```json
+{
+  "defaultLocale": "en",
+  "locales": ["es", "fr", "ja"],
+  "source": ["src", "app"],
+  "extensions": [".ts", ".tsx", ".js", ".jsx"],
+  "output": "public/_tyndale",
+  "translate": {
+    "tokenBudget": 50000,
+    "concurrency": 8
+  },
+  "localeAliases": { "pt-BR": "pt" },
+  "dictionaries": {
+    "include": ["src/dictionaries/*.json"],
+    "format": "key-value"
+  },
+  "pi": {
+    "model": "claude-sonnet-4-20250514",
+    "thinkingLevel": "low"
+  },
+  "docs": {
+    "framework": "starlight",
+    "contentDir": "src/content/docs"
+  }
+}
+```
+
+## フィールド
+
+| 項目 | 型 | デフォルト | 説明 |
+|-------|------|---------|-------------|
+| `defaultLocale` | `string` | `"en"` | ソース言語コード |
+| `locales` | `string[]` | `[]` | 対象ロケールコード |
+| `source` | `string[]` | `["src"]` | 翻訳可能なコンテンツをスキャンするディレクトリ |
+| `extensions` | `string[]` | `[".ts", ".tsx", ".js", ".jsx"]` | 含めるファイル拡張子 |
+| `output` | `string` | `"public/_tyndale"` | 生成されたロケールファイルの出力ディレクトリ |
+| `translate.tokenBudget` | `number` | `50000` | AI 翻訳バッチごとのトークン予算 |
+| `translate.concurrency` | `number` | auto | 並列翻訳セッションの最大数 |
+| `localeAliases` | `object` | `{}` | バリアントのロケールコードを正規コードへマッピング |
+| `dictionaries.include` | `string[]` | `[]` | 辞書ファイル用の glob パターン |
+| `dictionaries.format` | `string` | `"key-value"` | 辞書ファイル形式 |
+| `pi.model` | `string` | `"claude-sonnet-4-20250514"` | 使用する AI モデル |
+| `pi.thinkingLevel` | `string` | `"low"` | AI の思考レベル |
+| `docs.framework` | `string` | — | ドキュメントフレームワーク: `starlight`, `docusaurus`, `vitepress`, `mkdocs`, または `nextra` |
+| `docs.contentDir` | `string` | auto | コンテンツディレクトリ（プロジェクトルートからの相対パス） |
+| `docs.extensions` | `string[]` | auto | ドキュメント翻訳用のファイル拡張子を上書き |

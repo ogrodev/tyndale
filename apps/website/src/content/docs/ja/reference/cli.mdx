@@ -1,0 +1,89 @@
+---
+title: CLI コマンド
+description: Tyndale CLI の完全なリファレンス。
+---
+
+## `tyndale init`
+
+新しい Tyndale プロジェクトを初期化します。適切なデフォルト値で `tyndale.config.json` を作成します。
+
+```bash
+npx tyndale init
+```
+
+## `tyndale auth`
+
+AI プロバイダーの認証情報を設定します。
+
+```bash
+npx tyndale auth
+```
+
+## `tyndale translate`
+
+翻訳可能な文字列を抽出し、設定されたすべてのロケール向けに翻訳を生成します。
+
+```bash
+npx tyndale translate [options]
+```
+
+| フラグ | 説明 |
+|------|-------------|
+| `--locale <code>` | 特定のロケールのみ翻訳します |
+| `--force` | 変更分だけでなく、すべての文字列を再翻訳します |
+| `--dry-run` | ファイルを書き込まずに、何が翻訳されるかを表示します |
+| `--token-budget <n>` | AI バッチごとのトークン予算（デフォルト: 50000） |
+| `--concurrency <n>` | 並列翻訳セッションの最大数（自動検出） |
+
+## `tyndale validate`
+
+すべてのロケールに完全で整合性のある翻訳があるか確認します。AI 呼び出しは行われません。
+
+```bash
+npx tyndale validate
+```
+
+問題が見つかった場合は終了コード 1 で終了します。CI パイプラインに最適です。
+
+## `tyndale extract`
+
+翻訳は行わず、翻訳可能な文字列だけを抽出します。AI プロバイダーに送信される内容の確認に便利です。
+
+```bash
+npx tyndale extract
+```
+
+
+## `tyndale translate-docs`
+
+任意のサポート対象フレームワーク向けにドキュメントファイル（MDX/MD）を翻訳します。ドキュメントフレームワークを自動検出するか、`tyndale.config.json` の設定を使用します。
+
+```bash
+npx tyndale translate-docs [options]
+```
+
+| フラグ | 説明 |
+|------|-------------|
+| `--content-dir <path>` | ドキュメントのコンテンツディレクトリを上書きします |
+| `--force` | 不足しているファイルだけでなく、すべてのドキュメントを再翻訳します |
+| `--concurrency <n>` | 並列翻訳セッションの最大数（自動検出） |
+
+サポート対象のフレームワーク: Starlight, Docusaurus, VitePress, MkDocs, Nextra.
+
+### `tyndale translate-docs setup`
+
+ドキュメントフレームワークを検出し、設定を `tyndale.config.json` に保存します。
+
+```bash
+npx tyndale translate-docs setup
+```
+
+プロジェクトをスキャンしてフレームワークのシグナル（パッケージ依存関係と設定ファイル）を検出し、検出結果を確認したうえで、設定に `docs` セクションを書き込みます。
+
+## `tyndale model`
+
+翻訳に使用する AI モデルを変更します。
+
+```bash
+npx tyndale model
+```

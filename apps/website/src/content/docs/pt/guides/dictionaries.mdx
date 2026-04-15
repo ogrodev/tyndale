@@ -1,0 +1,50 @@
+---
+title: Usando Dicionários
+description: Gerencie dicionários de tradução de chave-valor junto com suas traduções JSX.
+---
+
+## O que são dicionários?
+
+Dicionários são arquivos de tradução tradicionais de chave-valor. Eles são úteis para:
+- Strings compartilhadas entre muitos componentes (rótulos de botão, mensagens de erro)
+- Conteúdo gerenciado fora da sua base de código
+- Migração de configurações i18n existentes
+
+## Configuração
+
+```json
+{
+  "dictionaries": {
+    "include": ["src/dictionaries/*.json"],
+    "format": "key-value"
+  }
+}
+```
+
+## Criar um dicionário
+
+```json
+// src/dictionaries/common.json
+{
+  "save": "Save",
+  "cancel": "Cancel",
+  "delete": "Delete",
+  "loading": "Loading..."
+}
+```
+
+## Usar em componentes
+
+```tsx
+import { useDictionary } from 'tyndale-react';
+
+export function ActionButtons() {
+  const d = useDictionary();
+  return (
+    <div>
+      <button>{d('save')}</button>
+      <button>{d('cancel')}</button>
+    </div>
+  );
+}
+```

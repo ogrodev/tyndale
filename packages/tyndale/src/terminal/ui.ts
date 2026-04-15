@@ -34,7 +34,7 @@ const BAR_WIDTH = 28;
 const RENDER_INTERVAL_MS = 1000;
 const DEFAULT_ROW_LABEL_WIDTH = 14;
 
-interface Glyphs {
+export interface Glyphs {
   header: string;
   section: string;
   success: string;
@@ -45,7 +45,7 @@ interface Glyphs {
   barEmpty: string;
 }
 
-interface TerminalTheme {
+export interface TerminalTheme {
   decorated: boolean;
   glyphs: Glyphs;
   dim(text: string): string;
@@ -69,7 +69,9 @@ function shouldUseAscii(explicit?: boolean): boolean {
   return process.env.TERM === 'dumb';
 }
 
-function createTheme(options?: Pick<TerminalUiOptions, 'decorated' | 'ascii'>): TerminalTheme {
+export function createTerminalTheme(
+  options?: Pick<TerminalUiOptions, 'decorated' | 'ascii'>,
+): TerminalTheme {
   const decorated = shouldDecorate(options?.decorated);
   const ascii = shouldUseAscii(options?.ascii);
   const passthrough = (text: string) => text;
@@ -100,8 +102,8 @@ function createTheme(options?: Pick<TerminalUiOptions, 'decorated' | 'ascii'>): 
 
   const dim = color(chalk.hex('#9ca3af'));
   const muted = color(chalk.hex('#d1d5db'));
-  const accent = color(chalk.hex('#a78bfa'));
-  const accentBold = color(chalk.hex('#c4b5fd').bold);
+  const accent = color(chalk.hex('#d1476e'));
+  const accentBold = color(chalk.hex('#e2aaba').bold);
   const success = color(chalk.hex('#4ade80'));
   const warning = color(chalk.hex('#fbbf24'));
   const failure = color(chalk.hex('#f87171'));
@@ -166,7 +168,7 @@ export interface TerminalUi {
 }
 
 export function createTerminalUi(options?: TerminalUiOptions): TerminalUi {
-  const theme = createTheme(options);
+  const theme = createTerminalTheme(options);
   const out = options?.write ?? console.log.bind(console);
   const err = options?.error ?? console.error.bind(console);
   let hasOutput = false;
@@ -252,7 +254,7 @@ export function createTerminalUi(options?: TerminalUiOptions): TerminalUi {
 }
 
 export function createProgress(options: ProgressOptions): ProgressReporter {
-  const theme = createTheme(options);
+  const theme = createTerminalTheme(options);
   const stream = options.stream ?? process.stdout;
   const writeLine = options.writeLine ?? console.log.bind(console);
   const interactive = options.interactive ?? (options.writeLine == null && stream.isTTY === true);

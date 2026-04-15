@@ -7,7 +7,7 @@ description: Componenti e hook di tyndale-react.
 
 ### `<T>`
 
-Racchiude contenuti testuali traducibili. Supporta variabili e componenti annidati.
+Avvolge contenuti testuali traducibili. Supporta variabili e componenti annidati.
 
 ```tsx
 import { T } from 'tyndale-react';
@@ -28,7 +28,7 @@ import { Plural } from 'tyndale-react';
 
 ### `<DateTime>`
 
-Formatta le date in base alla locale corrente.
+Formatta le date in base alla lingua corrente.
 
 ```tsx
 import { DateTime } from 'tyndale-react';
@@ -38,7 +38,7 @@ import { DateTime } from 'tyndale-react';
 
 ### `<Currency>`
 
-Formatta i valori monetari in base alla locale corrente.
+Formatta i valori monetari in base alla lingua corrente.
 
 ```tsx
 import { Currency } from 'tyndale-react';
@@ -50,9 +50,9 @@ import { Currency } from 'tyndale-react';
 
 | Hook | Restituisce | Scopo |
 |------|---------|--------|
-| `useTranslation()` | `t(source, vars?)` | Tradurre stringhe a livello programmatico |
-| `useLocale()` | `string` | Codice della locale corrente |
-| `useChangeLocale()` | `(locale: string) => void` | Cambiare locale a runtime |
+| `useTranslation()` | `t(source, vars?)` | Tradurre stringhe programmaticamente |
+| `useLocale()` | `string` | Codice locale corrente |
+| `useChangeLocale()` | `(locale: string) => void` | Cambiare locale in fase di esecuzione |
 | `useDictionary()` | `d(key) => string` | Accedere alle traduzioni del dizionario |
 
 ## Funzioni
@@ -72,7 +72,7 @@ const errorMessages = {
 
 ### `msgString(text)`
 
-Marcatore che restituisce una stringa per contesti non-React (Astro, Node, TS puro). Funziona in modo identico a `msg()` per l'estrazione, ma restituisce una `string` semplice invece di un elemento React.
+Marcatore che restituisce una stringa per contesti non React (Astro, Node, TS semplice). Funziona in modo identico a `msg()` per l'estrazione, ma restituisce una `string` semplice invece di un elemento React.
 
 ```ts
 import { msgString } from 'tyndale-react';

@@ -1,0 +1,40 @@
+---
+title: 新しいロケールの追加
+description: Tyndale プロジェクトに新しい対象言語を追加する方法。
+---
+
+## ロケールを追加する
+
+`tyndale.config.json` を開き、`locales` 配列にロケールコードを追加します:
+
+```json
+{
+  "defaultLocale": "en",
+  "locales": ["es", "fr", "ja", "de"]
+}
+```
+
+次を実行します:
+
+```bash
+npx tyndale translate
+```
+
+Tyndale は既存の翻訳をそのままにしながら、新しいロケールの翻訳を生成します。
+
+## ロケールエイリアス
+
+`localeAliases` を使って、バリアントコードを正規コードにマッピングします:
+
+```json
+{
+  "localeAliases": {
+    "pt-BR": "pt",
+    "zh-TW": "zh"
+  }
+}
+```
+
+## RTL サポート
+
+Tyndale は RTL ロケール（アラビア語、ヘブライ語など）を自動的に検出します。`TyndaleServerProvider` は HTML 要素に `dir` 属性を設定します。RTL 専用のスタイルには Tailwind の `rtl:` バリアントを使用します。

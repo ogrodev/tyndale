@@ -1,0 +1,84 @@
+---
+title: React API
+description: tyndale-react のコンポーネントとフック。
+---
+
+## コンポーネント
+
+### `<T>`
+
+翻訳可能なテキストコンテンツをラップします。変数とネストされたコンポーネントをサポートします。
+
+```tsx
+import { T } from 'tyndale-react';
+
+<T>Welcome to our app!</T>
+<T>Hello, {name}!</T>
+```
+
+### `<Plural>`
+
+カウント値に基づいて複数形を処理します。
+
+```tsx
+import { Plural } from 'tyndale-react';
+
+<Plural value={count} one="1 item" other="{count} items" />
+```
+
+### `<DateTime>`
+
+現在のロケールに従って日付をフォーマットします。
+
+```tsx
+import { DateTime } from 'tyndale-react';
+
+<DateTime value={new Date()} />
+```
+
+### `<Currency>`
+
+現在のロケールに従って通貨の値をフォーマットします。
+
+```tsx
+import { Currency } from 'tyndale-react';
+
+<Currency value={49.99} currency="USD" />
+```
+
+## フック
+
+| フック | 戻り値 | 用途 |
+|------|---------|--------|
+| `useTranslation()` | `t(source, vars?)` | 文字列をプログラムから翻訳する |
+| `useLocale()` | `string` | 現在のロケールコード |
+| `useChangeLocale()` | `(locale: string) => void` | 実行時にロケールを切り替える |
+| `useDictionary()` | `d(key) => string` | 辞書の翻訳にアクセスする |
+
+## 関数
+
+### `msg(text)`
+
+コンポーネントコンテキスト外で文字列を翻訳可能としてマークします。
+
+```tsx
+import { msg } from 'tyndale-react';
+
+const errorMessages = {
+  notFound: msg('Page not found'),
+  unauthorized: msg('Please sign in to continue'),
+};
+```
+
+### `msgString(text)`
+
+React 以外のコンテキスト（Astro、Node、プレーンな TS）向けの文字列を返すマーカーです。抽出時の動作は `msg()` と同一ですが、React 要素ではなくプレーンな `string` を返します。
+
+```ts
+import { msgString } from 'tyndale-react';
+
+const labels = {
+  greeting: msgString('Hello'),
+  farewell: msgString('Goodbye'),
+};
+```
