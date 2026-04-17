@@ -1,6 +1,6 @@
 ---
 title: 設定
-description: tyndale.config.json の完全なリファレンス。
+description: tyndale.config.json の完全リファレンス。
 ---
 
 ## 設定ファイル
@@ -36,20 +36,20 @@ description: tyndale.config.json の完全なリファレンス。
 
 ## フィールド
 
-| 項目 | 型 | デフォルト | 説明 |
+| フィールド | 型 | デフォルト | 説明 |
 |-------|------|---------|-------------|
 | `defaultLocale` | `string` | `"en"` | ソース言語コード |
 | `locales` | `string[]` | `[]` | 対象ロケールコード |
 | `source` | `string[]` | `["src"]` | 翻訳可能なコンテンツをスキャンするディレクトリ |
 | `extensions` | `string[]` | `[".ts", ".tsx", ".js", ".jsx"]` | 含めるファイル拡張子 |
 | `output` | `string` | `"public/_tyndale"` | 生成されたロケールファイルの出力ディレクトリ |
-| `translate.tokenBudget` | `number` | `50000` | AI 翻訳バッチごとのトークン予算 |
+| `translate.tokenBudget` | `number` | `50000` | AI翻訳バッチごとのトークン予算 |
 | `translate.concurrency` | `number` | auto | 並列翻訳セッションの最大数 |
-| `localeAliases` | `object` | `{}` | バリアントのロケールコードを正規コードへマッピング |
-| `dictionaries.include` | `string[]` | `[]` | 辞書ファイル用の glob パターン |
+| `localeAliases` | `object` | `{}` | バリアントのロケールコードを正規ロケールコードにマッピング |
+| `dictionaries.include` | `string[]` | `[]` | 辞書ファイル用の Glob パターン |
 | `dictionaries.format` | `string` | `"key-value"` | 辞書ファイル形式 |
-| `pi.model` | `string` | `"claude-sonnet-4-20250514"` | 使用する AI モデル |
-| `pi.thinkingLevel` | `string` | `"low"` | AI の思考レベル |
-| `docs.framework` | `string` | — | ドキュメントフレームワーク: `starlight`, `docusaurus`, `vitepress`, `mkdocs`, または `nextra` |
+| `pi.model` | `string` | `"claude-sonnet-4-20250514"` | 使用するAIモデル |
+| `pi.thinkingLevel` | `string` | `"low"` | AIの思考レベル |
+| `docs.framework` | `string` | — | ドキュメントフレームワーク: `starlight`, `docusaurus`, `vitepress`, `mkdocs`, or `nextra` |
 | `docs.contentDir` | `string` | auto | コンテンツディレクトリ（プロジェクトルートからの相対パス） |
 | `docs.extensions` | `string[]` | auto | ドキュメント翻訳用のファイル拡張子を上書き |

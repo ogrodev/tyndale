@@ -1,0 +1,195 @@
+---
+title: ドキュメントの翻訳
+description: "`tyndale translate-docs` を使って、対応しているドキュメントフレームワーク向けに Markdown と MDX のドキュメントを翻訳します。"
+---
+
+## できること
+
+`tyndale translate-docs` は、デフォルト言語のソースドキュメントを `tyndale.config.json` にあるすべてのロケールへ翻訳します。
+
+これはアプリの UI 文字列ではなく、ドキュメントサイト向けに設計されています。
+- ソースのドキュメントディレクトリから Markdown と MDX のドキュメントを読み込みます
+- 利用しているドキュメントフレームワークの規約に従って翻訳ファイルを書き出します
+- すでに最新のファイルはスキップします
+- 失敗を報告する前に、生成されたドキュメントを検証し、無効な出力は自動的に再試行します
+
+`tyndale translate` で使っているのと同じ AI プロバイダー設定を利用してください。
+
+## 対応フレームワーク
+
+現在 `translate-docs` が対応しているのは次のとおりです。
+- Starlight
+- Docusaurus
+- VitePress
+- MkDocs
+- Nextra
+
+## クイックスタート
+
+```bash
+npx tyndale translate-docs setup
+npx tyndale translate-docs
+```
+
+`translate-docs setup` は現在のプロジェクトで対応フレームワークを検出し、`tyndale.config.json` に `docs` ブロックを書き込みます。
+
+その後 `translate-docs` はその設定を使って英語のソースドキュメントを見つけ、フレームワークに応じた正しい場所へ翻訳ドキュメントを書き出します。
+
+## 想定される設定
+
+通常の Tyndale 設定を維持したまま、`docs` ブロックを追加します。
+
+```json
+{
+  "defaultLocale": "en",
+  "locales": ["es", "fr", "ja"],
+  "docs": {
+    "framework": "starlight",
+    "contentDir": "src/content/docs"
+  }
+}
+```
+
+`docs.framework` は次のいずれかである必要があります。
+- `starlight`
+- `docusaurus`
+- `vitepress`
+- `mkdocs`
+- `nextra`
+
+`docs.contentDir` は、デフォルト言語のソースドキュメントディレクトリを指します。
+
+注意:
+- `defaultLocale` は `locales` に含めてはいけません
+- `translate-docs` はフレームワークごとのファイル拡張子を自動で使用します
+- `--content-dir` を使うと、実行時に設定済みのドキュメントディレクトリを上書きできます
+
+## setup の検出の仕組み
+
+`npx tyndale translate-docs setup` は、現在のプロジェクト内で対応フレームワークをスキャンします。
+
+検出は、次のようなフレームワーク固有のシグナルに基づいて行われます。
+- インストール済みのパッケージ依存関係
+- 既知のフレームワーク設定ファイル
+
+現在のデフォルトは以下です。
+- Starlight → `src/content/docs`
+- Docusaurus → `docs`
+- VitePress → `docs`
+- MkDocs → `docs`
+- Nextra → `pages`
+
+MkDocs の場合、`mkdocs.yml` または `mkdocs.yaml` があれば高信頼で検出できます。
+
+setup が複数候補を見つけた場合は、最初の高信頼マッチを優先します。その後、選択したフレームワークとコンテンツディレクトリを `tyndale.config.json` に書き込みます。
+
+setup をスキップしても、`translate-docs` が自動検出できる限定的なケースが 1 つあります。高信頼のフレームワークがちょうど 1 つ見つかった場合です。それ以外では、`--content-dir` を渡さない限り `src/content/docs` にフォールバックします。
+
+## インクリメンタルな動作
+
+`translate-docs` は、プロジェクトルートにインクリメンタル状態ファイルを保持します。
+
+```text
+.tyndale-docs-state.json
+```
+
+ロケールとソースファイルごとに、Tyndale は現在のソースドキュメントのハッシュを保存します。次回実行時には、次の場合にのみドキュメントを再翻訳します。
+- 翻訳先ファイルが存在しない
+- 英語のソースファイルが変更された
+- `--force` を指定した
+
+つまり通常実行では、不足しているドキュメントまたは変更されたドキュメントだけを処理します。
+
+すべてを再翻訳するには:
+
+```bash
+npx tyndale translate-docs --force
+```
+
+## 翻訳ファイルの出力先
+
+Tyndale は、選択したフレームワークに応じて翻訳ドキュメントを書き出します。
+
+### Starlight
+
+ソースドキュメントは `src/content/docs` にそのまま残り、翻訳ドキュメントはそのディレクトリ配下のロケールフォルダに出力されます。
+
+```text
+src/content/docs/getting-started.mdx
+src/content/docs/es/getting-started.mdx
+src/content/docs/fr/getting-started.mdx
+```
+
+### VitePress と MkDocs
+
+これらは、ドキュメントディレクトリ内でロケールごとのフォルダを使う同じ規約です。
+
+```text
+docs/guide.md
+docs/es/guide.md
+docs/fr/guide.md
+```
+
+### Docusaurus
+
+Docusaurus の翻訳は、Docusaurus の i18n ドキュメント構造に書き出されます。
+
+```text
+docs/intro.mdx
+i18n/es/docusaurus-plugin-content-docs/current/intro.mdx
+i18n/fr/docusaurus-plugin-content-docs/current/intro.mdx
+```
+
+### Nextra
+
+Nextra は、ソースファイルの横にロケール接尾辞付きで翻訳ファイルを書き出します。
+
+```text
+pages/docs/getting-started.mdx
+pages/docs/getting-started.es.mdx
+pages/docs/getting-started.fr.mdx
+```
+
+## Starlight の例
+
+このリポジトリは Starlight を使っているため、典型的な設定は次のようになります。
+
+```json
+{
+  "defaultLocale": "en",
+  "locales": ["de", "es", "fr", "it", "ja", "ko", "pt", "ru", "zh"],
+  "docs": {
+    "framework": "starlight",
+    "contentDir": "src/content/docs"
+  }
+}
+```
+
+次に以下を実行します。
+
+```bash
+npx tyndale translate-docs
+```
+
+Tyndale は `src/content/docs` から英語ドキュメントを読み込み、`src/content/docs/es/` や `src/content/docs/fr/` のようなロケールフォルダへ翻訳ドキュメントを書き出します。
+
+## CLI オプション
+
+```bash
+npx tyndale translate-docs --content-dir docs --concurrency 4
+```
+
+現在のオプションは次のとおりです。
+- ドキュメントのソースディレクトリを上書きする `--content-dir <path>`
+- 並列翻訳セッション数を制御する `--concurrency <n>`
+- すべてのドキュメントを再翻訳する `--force`
+
+## 検証される内容
+
+各翻訳の後、Tyndale は生成されたドキュメントを保持する前にチェックします。大まかには、結果が有効なドキュメントファイルとして成立していることを確認します。
+- frontmatter が引き続き存在し、利用可能である
+- `title` などの必須メタデータが存在する
+- ソースの import 行が保持されている
+- モデルがファイル全体をコードフェンスで囲っていない
+
+生成ファイルが検証に失敗した場合、Tyndale はモデルに修正を依頼して自動的に再試行します。それでも失敗するファイルは、実行の最後に報告されます。

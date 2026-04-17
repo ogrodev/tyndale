@@ -1,0 +1,195 @@
+---
+title: 文档翻译
+description: "使用 `tyndale translate-docs` 为受支持的文档框架翻译 Markdown 和 MDX 文档。"
+---
+
+## 功能说明
+
+`tyndale translate-docs` 会将你的源文档从默认语言翻译到 `tyndale.config.json` 中的每个 locale。
+
+它是为文档站点设计的，而不是用于应用的 UI 字符串：
+- 它会从源文档目录读取 Markdown 和 MDX 文档
+- 它会按照你的文档框架约定写入翻译后的文件
+- 它会跳过已经是最新状态的文件
+- 它会校验生成的文档，并在报告失败前自动重试无效输出
+
+请使用与 `tyndale translate` 相同的 AI provider 配置。
+
+## 支持的框架
+
+`translate-docs` 当前支持：
+- Starlight
+- Docusaurus
+- VitePress
+- MkDocs
+- Nextra
+
+## 快速开始
+
+```bash
+npx tyndale translate-docs setup
+npx tyndale translate-docs
+```
+
+`translate-docs setup` 会在当前项目中检测受支持的文档框架，并将 `docs` 配置块写入 `tyndale.config.json`。
+
+随后，`translate-docs` 会使用该配置查找英文源文档，并将翻译后的文档写入该框架对应的正确位置。
+
+## 预期配置
+
+保留你原有的 Tyndale 配置，然后添加一个 `docs` 配置块：
+
+```json
+{
+  "defaultLocale": "en",
+  "locales": ["es", "fr", "ja"],
+  "docs": {
+    "framework": "starlight",
+    "contentDir": "src/content/docs"
+  }
+}
+```
+
+`docs.framework` 必须是以下之一：
+- `starlight`
+- `docusaurus`
+- `vitepress`
+- `mkdocs`
+- `nextra`
+
+`docs.contentDir` 指向默认语言下的源文档目录。
+
+说明：
+- `defaultLocale` 不能出现在 `locales` 中
+- `translate-docs` 会自动使用框架特定的文件扩展名
+- `--content-dir` 会在单次运行中覆盖已配置的文档目录
+
+## setup 检测机制
+
+`npx tyndale translate-docs setup` 会扫描当前项目中的受支持框架。
+
+检测基于框架特定信号，例如：
+- 已安装的包依赖
+- 已知的框架配置文件
+
+当前默认目录为：
+- Starlight → `src/content/docs`
+- Docusaurus → `docs`
+- VitePress → `docs`
+- MkDocs → `docs`
+- Nextra → `pages`
+
+对于 MkDocs，只要存在 `mkdocs.yml` 或 `mkdocs.yaml` 文件，就足以进行高置信度检测。
+
+如果 setup 找到多个候选项，它会优先选择第一个高置信度匹配。然后它会把所选框架和内容目录写入 `tyndale.config.json`。
+
+如果你跳过 setup，`translate-docs` 在一种较窄的场景下仍可自动检测：当它只找到一个高置信度框架时。否则它会回退到 `src/content/docs`，除非你传入 `--content-dir`。
+
+## 增量行为
+
+`translate-docs` 会在项目根目录维护一个增量状态文件：
+
+```text
+.tyndale-docs-state.json
+```
+
+对于每个 locale 和源文件，Tyndale 都会存储当前源文档的哈希。下一次运行时，只有在以下情况才会重新翻译文档：
+- 翻译目标文件缺失
+- 英文源文件已更改
+- 你传入了 `--force`
+
+这意味着正常运行只会处理缺失或变更的文档。
+
+如需全部重新翻译：
+
+```bash
+npx tyndale translate-docs --force
+```
+
+## 翻译文件写入位置
+
+Tyndale 会根据所选框架写入翻译后的文档。
+
+### Starlight
+
+源文档保留在 `src/content/docs`，翻译文档会写入该目录下对应 locale 的文件夹：
+
+```text
+src/content/docs/getting-started.mdx
+src/content/docs/es/getting-started.mdx
+src/content/docs/fr/getting-started.mdx
+```
+
+### VitePress 和 MkDocs
+
+这两个框架都在文档目录内使用“每个 locale 一个文件夹”的约定：
+
+```text
+docs/guide.md
+docs/es/guide.md
+docs/fr/guide.md
+```
+
+### Docusaurus
+
+Docusaurus 的翻译会写入其 i18n 文档结构：
+
+```text
+docs/intro.mdx
+i18n/es/docusaurus-plugin-content-docs/current/intro.mdx
+i18n/fr/docusaurus-plugin-content-docs/current/intro.mdx
+```
+
+### Nextra
+
+Nextra 会在源文件旁边使用 locale 后缀写入翻译文件：
+
+```text
+pages/docs/getting-started.mdx
+pages/docs/getting-started.es.mdx
+pages/docs/getting-started.fr.mdx
+```
+
+## Starlight 示例
+
+这个仓库使用 Starlight，因此典型配置如下：
+
+```json
+{
+  "defaultLocale": "en",
+  "locales": ["de", "es", "fr", "it", "ja", "ko", "pt", "ru", "zh"],
+  "docs": {
+    "framework": "starlight",
+    "contentDir": "src/content/docs"
+  }
+}
+```
+
+然后运行：
+
+```bash
+npx tyndale translate-docs
+```
+
+Tyndale 会从 `src/content/docs` 读取英文文档，并将翻译文档写入 `src/content/docs/es/` 和 `src/content/docs/fr/` 等 locale 目录。
+
+## CLI 选项
+
+```bash
+npx tyndale translate-docs --content-dir docs --concurrency 4
+```
+
+当前可用选项：
+- `--content-dir <path>`：覆盖文档源目录
+- `--concurrency <n>`：控制并行翻译会话数
+- `--force`：重新翻译所有文档
+
+## 校验内容
+
+每次翻译后，Tyndale 在保留生成文档前都会先进行检查。概括来说，它会确保结果看起来仍然是一个有效的文档文件：
+- frontmatter 仍然存在且可用
+- `title` 等必需元数据仍然存在
+- 源文件中的 import 行被保留
+- 模型没有把整个文件包裹进代码围栏
+
+如果生成文件未通过校验，Tyndale 会请求模型修正并自动重试。仍然失败的文件会在运行结束时统一报告。

@@ -32,7 +32,7 @@ jobs:
 
 ## Pre-commit-Hook
 
-Verwende ihn mit `husky` oder `lint-staged`:
+Verwende es mit `husky` oder `lint-staged`:
 
 ```json
 {
@@ -44,8 +44,8 @@ Verwende ihn mit `husky` oder `lint-staged`:
 
 ## Übersetzungs-Workflow
 
-1. Entwickler kapseln Inhalte mit `<T>` oder `msg()`
-2. `npx tyndale translate` lokal ausführen (erfordert AI-Zugangsdaten)
-3. Die generierten Locale-Dateien in `public/_tyndale/` committen
+1. Entwickler umschließt Inhalte mit `<T>` oder `msg()`
+2. Führe `npx tyndale translate` lokal aus (erfordert AI-Credentials)
+3. Committe die generierten Locale-Dateien in `public/_tyndale/`
 4. CI führt `tyndale validate` aus, um fehlende Übersetzungen zu erkennen
-5. Mit Vertrauen ausliefern
+5. Mit Zuversicht ausliefern

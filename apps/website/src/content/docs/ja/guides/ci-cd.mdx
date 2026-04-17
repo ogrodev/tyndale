@@ -1,11 +1,11 @@
 ---
-title: CI/CD 連携
+title: CI/CD 統合
 description: CI パイプラインで翻訳を検証します。
 ---
 
 ## 翻訳を検証する
 
-`tyndale validate` は、AI 呼び出しを一切行わずに、すべてのロケールに完全で正しい形式の翻訳があるかを確認します:
+`tyndale validate` は、AI 呼び出しを一切行わずに、すべてのロケールに完全で整形式の翻訳があるかをチェックします。
 
 ```bash
 npx tyndale validate
@@ -30,9 +30,9 @@ jobs:
       - run: npx tyndale validate
 ```
 
-## pre-commit フック
+## Pre-commit フック
 
-`husky` または `lint-staged` と併用します:
+`husky` または `lint-staged` と組み合わせて使用します:
 
 ```json
 {
@@ -47,5 +47,5 @@ jobs:
 1. 開発者がコンテンツを `<T>` または `msg()` でラップする
 2. ローカルで `npx tyndale translate` を実行する（AI 認証情報が必要）
 3. 生成されたロケールファイルを `public/_tyndale/` にコミットする
-4. CI で `tyndale validate` を実行して翻訳漏れを検出する
-5. 安心してリリースする
+4. CI が `tyndale validate` を実行して不足している翻訳を検出する
+5. 自信を持ってリリースする

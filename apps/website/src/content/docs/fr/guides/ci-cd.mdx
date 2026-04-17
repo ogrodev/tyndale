@@ -5,7 +5,7 @@ description: Validez les traductions dans votre pipeline CI.
 
 ## Valider les traductions
 
-`tyndale validate` vérifie que toutes les locales disposent de traductions complètes et bien formées, sans effectuer d’appels IA :
+`tyndale validate` vérifie que toutes les locales disposent de traductions complètes et bien formées, sans effectuer d’appels à l’IA :
 
 ```bash
 npx tyndale validate
@@ -30,9 +30,9 @@ jobs:
       - run: npx tyndale validate
 ```
 
-## Hook de pré-commit
+## Hook pre-commit
 
-À utiliser avec `husky` ou `lint-staged` :
+Utilisez-le avec `husky` ou `lint-staged` :
 
 ```json
 {
@@ -42,10 +42,10 @@ jobs:
 }
 ```
 
-## Workflow de traduction
+## Flux de traduction
 
-1. Le développeur encapsule le contenu avec `<T>` ou `msg()`
-2. Exécutez `npx tyndale translate` en local (identifiants IA requis)
-3. Committez les fichiers de locale générés dans `public/_tyndale/`
+1. Le développeur enveloppe le contenu avec `<T>` ou `msg()`
+2. Exécutez `npx tyndale translate` en local (nécessite des identifiants IA)
+3. Commitez les fichiers de locale générés dans `public/_tyndale/`
 4. La CI exécute `tyndale validate` pour détecter les traductions manquantes
-5. Déployez en toute confiance
+5. Livrez en toute confiance

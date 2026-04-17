@@ -1,13 +1,13 @@
 ---
 title: 使用字典
-description: 在管理 JSX 翻译的同时管理键值翻译字典。
+description: 在 JSX 翻译旁边管理键值翻译字典。
 ---
 
 ## 什么是字典？
 
 字典是传统的键值翻译文件。它们适用于：
-- 在多个组件间共享字符串（按钮标签、错误消息）
-- 在代码库之外管理内容
+- 在许多组件之间共享的字符串（按钮标签、错误消息）
+- 在代码库之外管理的内容
 - 从现有 i18n 配置迁移
 
 ## 配置
@@ -33,18 +33,25 @@ description: 在管理 JSX 翻译的同时管理键值翻译字典。
 }
 ```
 
+`useDictionary(filenameKey)` 会查找一个字典文件，并返回一个 `Record<string, string>`。文件名键是去掉 `.json` 扩展名后的字典路径：
+- `src/dictionaries/common.json` → `common`
+- `src/dictionaries/pages/home.json` → `pages/home`
+
 ## 在组件中使用
 
 ```tsx
 import { useDictionary } from 'tyndale-react';
 
 export function ActionButtons() {
-  const d = useDictionary();
+  const labels = useDictionary('common');
+
   return (
     <div>
-      <button>{d('save')}</button>
-      <button>{d('cancel')}</button>
+      <button>{labels.save ?? 'Save'}</button>
+      <button>{labels.cancel ?? 'Cancel'}</button>
     </div>
   );
 }
 ```
+
+如果没有条目匹配该文件名键，`useDictionary(filenameKey)` 会返回一个空对象。

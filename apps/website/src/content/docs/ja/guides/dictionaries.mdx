@@ -1,12 +1,12 @@
 ---
 title: 辞書を使う
-description: JSX 翻訳と併せて、キーと値の翻訳辞書を管理します。
+description: JSX 翻訳とあわせて、キー・バリュー形式の翻訳辞書を管理します。
 ---
 
 ## 辞書とは？
 
-辞書は、従来のキーと値の翻訳ファイルです。次のような用途に役立ちます。
-- 多くのコンポーネントで共有される文字列（ボタンラベル、エラーメッセージ）
+辞書は、従来のキー・バリュー形式の翻訳ファイルです。次のような用途で役立ちます。
+- 多くのコンポーネントで共有する文字列（ボタンラベル、エラーメッセージ）
 - コードベースの外部で管理されるコンテンツ
 - 既存の i18n セットアップからの移行
 
@@ -33,18 +33,25 @@ description: JSX 翻訳と併せて、キーと値の翻訳辞書を管理しま
 }
 ```
 
-## コンポーネントで使用する
+`useDictionary(filenameKey)` は 1 つの辞書ファイルを参照し、`Record<string, string>` を返します。ファイル名キーは、辞書パスから `.json` 拡張子を除いたものです。
+- `src/dictionaries/common.json` → `common`
+- `src/dictionaries/pages/home.json` → `pages/home`
+
+## コンポーネントで使う
 
 ```tsx
 import { useDictionary } from 'tyndale-react';
 
 export function ActionButtons() {
-  const d = useDictionary();
+  const labels = useDictionary('common');
+
   return (
     <div>
-      <button>{d('save')}</button>
-      <button>{d('cancel')}</button>
+      <button>{labels.save ?? 'Save'}</button>
+      <button>{labels.cancel ?? 'Cancel'}</button>
     </div>
   );
 }
 ```
+
+ファイル名キーに一致するエントリがない場合、`useDictionary(filenameKey)` は空のオブジェクトを返します。

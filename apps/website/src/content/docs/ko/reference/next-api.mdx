@@ -1,46 +1,229 @@
 ---
-title: Next.js API
-description: tyndale-next를 위한 API 참조입니다.
+title: Next.js API 레퍼런스
+description: tyndale-next에 대한 API 레퍼런스입니다.
 ---
 
-## `TyndaleServerProvider`
+`tyndale-next`는 `tyndale-react` 위에 Next.js 전용 연결 구성을 추가합니다.
 
-번역을 로드하여 모든 하위 컴포넌트에서 사용할 수 있게 해주는 서버 사이드 provider입니다.
+## 임포트 경로
+
+- `tyndale-next` — 앱에서 사용하는 헬퍼와 컴포넌트
+- `tyndale-next/server` — RSC 코드에서 안전하게 사용할 수 있는 서버용 export
+- `tyndale-next/config` — Next 설정 래퍼
+- `tyndale-next/middleware` — 로케일 라우팅 미들웨어
+
+## App Router 핵심
+
+### `TyndaleServerProvider`
+
+디스크에서 `public/_tyndale/{locale}.json`과 `manifest.json`을 읽어 클라이언트 provider를 hydrate하는 서버 컴포넌트입니다.
 
 ```tsx
 import { TyndaleServerProvider } from 'tyndale-next/server';
 
-// In your layout
-<TyndaleServerProvider locale={locale}>
-  {children}
-</TyndaleServerProvider>
+export default async function LocaleLayout({
+  children,
+  params,
+}: {
+  children: React.ReactNode;
+  params: Promise<{ locale: string }>;
+}) {
+  const { locale } = await params;
+
+  return (
+    <html lang={locale}>
+      <body>
+        <TyndaleServerProvider locale={locale}>{children}</TyndaleServerProvider>
+      </body>
+    </html>
+  );
+}
 ```
 
-## `withTyndaleConfig(config)`
+**프롭스**
 
-locale 기반 rewrites와 redirects를 추가하도록 Next.js config를 래핑합니다.
+- `locale: string`
+- `children: React.ReactNode`
 
-```js
-// next.config.mjs
+참고:
+
+- `TYNDALE_DEFAULT_LOCALE`에서 기본 로케일을 읽습니다.
+- `TYNDALE_OUTPUT` 또는 `public/_tyndale`에서 번역 출력 결과를 읽습니다.
+- `<html dir>`는 자동으로 설정되지 않습니다. 클라이언트에서는 `useDirection()`, 서버에서는 `getDirection(locale)`를 사용하세요.
+
+### `TyndaleNextClientProvider`
+
+`TyndaleProvider`를 감싸는 클라이언트 래퍼입니다. 로케일 접두사가 붙은 URL을 push하여 `useChangeLocale()`을 Next 내비게이션과 연결합니다.
+
+대부분의 앱에서는 이것을 직접 마운트하기보다 `TyndaleServerProvider`를 사용해야 합니다.
+
+```tsx
+'use client';
+
+import { TyndaleNextClientProvider } from 'tyndale-next';
+
+export function Providers({
+  children,
+  locale,
+  defaultLocale,
+  translations,
+  manifest,
+}: {
+  children: React.ReactNode;
+  locale: string;
+  defaultLocale: string;
+  translations: Record<string, string>;
+  manifest: Record<string, unknown> | null;
+}) {
+  return (
+    <TyndaleNextClientProvider
+      locale={locale}
+      defaultLocale={defaultLocale}
+      translations={translations}
+      manifest={manifest}
+    >
+      {children}
+    </TyndaleNextClientProvider>
+  );
+}
+```
+
+### `generateStaticLocaleParams()`
+
+`tyndale.config.json`을 읽어 `generateStaticParams()`에 사용할 로케일 params를 반환합니다.
+
+```ts
+import { generateStaticLocaleParams } from 'tyndale-next/server';
+
+export function generateStaticParams() {
+  return generateStaticLocaleParams();
+}
+```
+
+반환 형태:
+
+```ts
+Array<{ locale: string }>
+```
+
+결과에는 기본 로케일이 먼저 포함되고, 그다음 `locales`의 모든 로케일이 포함됩니다.
+
+## 설정
+
+### `withTyndaleConfig(nextConfig)`
+
+Next 설정을 감싸고, Tyndale이 빌드 시점과 요청 시점에 읽는 런타임 환경 변수를 주입합니다.
+
+```ts
+// next.config.ts
 import { withTyndaleConfig } from 'tyndale-next/config';
 
 export default withTyndaleConfig({
-  // your existing config
+  reactStrictMode: true,
 });
 ```
 
-## `tyndaleMiddleware`
+추가되는 항목:
 
-locale 감지와 라우팅을 처리하는 middleware입니다.
+- `TYNDALE_DEFAULT_LOCALE`
+- `TYNDALE_LOCALES`
+- `TYNDALE_COOKIE_NAME`
+- `TYNDALE_LOCALE_ALIASES`
+- `TYNDALE_OUTPUT`
+- 서버와 클라이언트가 동일한 `tyndale-react` 인스턴스를 해석하도록 하는 webpack alias
+
+## 미들웨어
+
+### `createTyndaleMiddleware()`
+
+로케일 라우팅을 처리하는 Next 미들웨어를 생성합니다.
 
 ```ts
 // middleware.ts
-export { tyndaleMiddleware as middleware } from 'tyndale-next/middleware';
+import { createTyndaleMiddleware } from 'tyndale-next/middleware';
+
+export default createTyndaleMiddleware();
+
+export const config = {
+  matcher: ['/((?!api|_next|_tyndale|.*\\..*).*)'],
+};
 ```
 
-### 동작
+동작 순서:
 
-1. URL에서 locale 접두사를 확인합니다
-2. `Accept-Language` 헤더를 대체로 사용합니다
-3. config의 기본 locale을 대체로 사용합니다
-4. 이후 요청을 위해 locale 쿠키를 설정합니다
+1. URL에 로케일이 있으면 이를 사용합니다.
+2. 없으면 로케일 쿠키를 사용합니다.
+3. 없으면 `Accept-Language` 헤더를 사용합니다.
+4. 없으면 `defaultLocale`을 사용합니다.
+
+또한 다음을 수행합니다:
+
+- 별칭 로케일을 canonical 로케일로 리다이렉트
+- 지원되지 않는 로케일 접두사를 기본 로케일로 리다이렉트
+- 유효한 로케일 접두사 라우트에 `x-tyndale-locale` 요청 헤더 설정
+- 선택된 로케일을 `TYNDALE_LOCALE` 쿠키에 유지
+
+## 방향 및 로케일 헬퍼
+
+### `useDirection()`
+
+현재 로케일에 대해 `'ltr'` 또는 `'rtl'`을 반환하는 클라이언트 훅입니다.
+
+```tsx
+'use client';
+
+import { useDirection } from 'tyndale-next';
+
+export function HtmlShell({ children }: { children: React.ReactNode }) {
+  const dir = useDirection();
+  return <div dir={dir}>{children}</div>;
+}
+```
+
+### `getDirection(locale)`
+
+로케일 문자열에 대해 `'ltr'` 또는 `'rtl'`을 반환하는 서버 안전 헬퍼입니다.
+
+```tsx
+import { getDirection } from 'tyndale-next/server';
+
+const dir = getDirection(locale);
+```
+
+### `isRtlLocale(locale)`
+
+로케일이 오른쪽에서 왼쪽(RTL) 스크립트를 사용할 때 `true`를 반환합니다.
+
+```ts
+import { isRtlLocale } from 'tyndale-next/server';
+
+isRtlLocale('ar'); // true
+isRtlLocale('en-US'); // false
+```
+
+### `resolveAlias(locale, aliases)`
+
+로케일 별칭을 canonical 로케일로 매핑합니다.
+
+```ts
+import { resolveAlias } from 'tyndale-next/server';
+
+resolveAlias('pt-BR', { 'pt-BR': 'pt' }); // 'pt'
+```
+
+## 캐시 경계
+
+### `TyndaleCache`
+
+공유 레이아웃에서 번역된 콘텐츠를 위한 클라이언트 캐시 경계입니다. 캐시 키는 `id`와 현재 로케일 모두를 기준으로 스코프됩니다.
+
+```tsx
+import { TyndaleCache } from 'tyndale-next';
+import { T } from 'tyndale-react';
+
+<TyndaleCache id="footer-copy">
+  <T>Documentation, guides, and examples.</T>
+</TyndaleCache>
+```
+
+내비게이션 중 다시 렌더링되는 레이아웃에서 반복되는 번역 UI에 사용하세요. 일반적인 데이터 캐시 용도로는 사용하지 마세요.

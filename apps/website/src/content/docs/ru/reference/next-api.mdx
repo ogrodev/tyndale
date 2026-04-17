@@ -3,44 +3,227 @@ title: API Next.js
 description: Справочник API для tyndale-next.
 ---
 
-## `TyndaleServerProvider`
+`tyndale-next` добавляет специфичную для Next.js связку поверх `tyndale-react`.
 
-Провайдер для серверной стороны, который загружает переводы и делает их доступными для всех дочерних компонентов.
+## Пути импорта
+
+- `tyndale-next` — хелперы и компоненты для приложения
+- `tyndale-next/server` — безопасные для сервера экспорты для кода RSC
+- `tyndale-next/config` — обёртка для конфигурации Next
+- `tyndale-next/middleware` — middleware маршрутизации локалей
+
+## Основы App Router
+
+### `TyndaleServerProvider`
+
+Серверный компонент, который считывает `public/_tyndale/{locale}.json` и `manifest.json` с диска и гидратирует клиентский provider.
 
 ```tsx
 import { TyndaleServerProvider } from 'tyndale-next/server';
 
-// In your layout
-<TyndaleServerProvider locale={locale}>
-  {children}
-</TyndaleServerProvider>
+export default async function LocaleLayout({
+  children,
+  params,
+}: {
+  children: React.ReactNode;
+  params: Promise<{ locale: string }>;
+}) {
+  const { locale } = await params;
+
+  return (
+    <html lang={locale}>
+      <body>
+        <TyndaleServerProvider locale={locale}>{children}</TyndaleServerProvider>
+      </body>
+    </html>
+  );
+}
 ```
 
-## `withTyndaleConfig(config)`
+**Props**
 
-Оборачивает вашу конфигурацию Next.js, чтобы добавить rewrites и redirects на основе локали.
+- `locale: string`
+- `children: React.ReactNode`
 
-```js
-// next.config.mjs
+Примечания:
+
+- Читает локаль по умолчанию из `TYNDALE_DEFAULT_LOCALE`.
+- Читает результат сборки переводов из `TYNDALE_OUTPUT` или `public/_tyndale`.
+- Не устанавливает `<html dir>` за вас. Используйте `useDirection()` на клиенте или `getDirection(locale)` на сервере.
+
+### `TyndaleNextClientProvider`
+
+Клиентская обёртка вокруг `TyndaleProvider`. Она подключает `useChangeLocale()` к навигации Next, добавляя в URL префикс локали.
+
+В большинстве приложений следует использовать `TyndaleServerProvider` вместо прямого монтирования этого компонента.
+
+```tsx
+'use client';
+
+import { TyndaleNextClientProvider } from 'tyndale-next';
+
+export function Providers({
+  children,
+  locale,
+  defaultLocale,
+  translations,
+  manifest,
+}: {
+  children: React.ReactNode;
+  locale: string;
+  defaultLocale: string;
+  translations: Record<string, string>;
+  manifest: Record<string, unknown> | null;
+}) {
+  return (
+    <TyndaleNextClientProvider
+      locale={locale}
+      defaultLocale={defaultLocale}
+      translations={translations}
+      manifest={manifest}
+    >
+      {children}
+    </TyndaleNextClientProvider>
+  );
+}
+```
+
+### `generateStaticLocaleParams()`
+
+Возвращает параметры локали для `generateStaticParams()`, считывая `tyndale.config.json`.
+
+```ts
+import { generateStaticLocaleParams } from 'tyndale-next/server';
+
+export function generateStaticParams() {
+  return generateStaticLocaleParams();
+}
+```
+
+Форма возвращаемого значения:
+
+```ts
+Array<{ locale: string }>
+```
+
+Результат включает сначала локаль по умолчанию, затем каждую локаль из `locales`.
+
+## Конфигурация
+
+### `withTyndaleConfig(nextConfig)`
+
+Оборачивает вашу конфигурацию Next и добавляет runtime-переменные окружения, которые Tyndale читает во время сборки и обработки запросов.
+
+```ts
+// next.config.ts
 import { withTyndaleConfig } from 'tyndale-next/config';
 
 export default withTyndaleConfig({
-  // your existing config
+  reactStrictMode: true,
 });
 ```
 
-## `tyndaleMiddleware`
+Что добавляется:
 
-Middleware, который обрабатывает определение локали и маршрутизацию.
+- `TYNDALE_DEFAULT_LOCALE`
+- `TYNDALE_LOCALES`
+- `TYNDALE_COOKIE_NAME`
+- `TYNDALE_LOCALE_ALIASES`
+- `TYNDALE_OUTPUT`
+- webpack alias, чтобы сервер и клиент разрешали один и тот же экземпляр `tyndale-react`
+
+## Middleware
+
+### `createTyndaleMiddleware()`
+
+Создаёт middleware Next, которое обрабатывает маршрутизацию локалей.
 
 ```ts
 // middleware.ts
-export { tyndaleMiddleware as middleware } from 'tyndale-next/middleware';
+import { createTyndaleMiddleware } from 'tyndale-next/middleware';
+
+export default createTyndaleMiddleware();
+
+export const config = {
+  matcher: ['/((?!api|_next|_tyndale|.*\\..*).*)'],
+};
 ```
 
-### Поведение
+Поведение по порядку:
 
-1. Проверяет префикс локали в URL
-2. Использует заголовок `Accept-Language` как запасной вариант
-3. Использует локаль по умолчанию из конфигурации как запасной вариант
-4. Устанавливает cookie локали для последующих запросов
+1. Использует локаль из URL, если она присутствует.
+2. Если нет — использует cookie локали.
+3. Если нет — использует заголовок `Accept-Language`.
+4. Если нет — использует `defaultLocale`.
+
+Также:
+
+- перенаправляет alias-локали на их каноническую локаль
+- перенаправляет неподдерживаемые префиксы локали на локаль по умолчанию
+- устанавливает заголовок запроса `x-tyndale-locale` для валидных маршрутов с префиксом локали
+- сохраняет выбранную локаль в cookie `TYNDALE_LOCALE`
+
+## Хелперы направления и локали
+
+### `useDirection()`
+
+Клиентский хук, который возвращает `'ltr'` или `'rtl'` для текущей локали.
+
+```tsx
+'use client';
+
+import { useDirection } from 'tyndale-next';
+
+export function HtmlShell({ children }: { children: React.ReactNode }) {
+  const dir = useDirection();
+  return <div dir={dir}>{children}</div>;
+}
+```
+
+### `getDirection(locale)`
+
+Безопасный для сервера хелпер, который возвращает `'ltr'` или `'rtl'` для строки локали.
+
+```tsx
+import { getDirection } from 'tyndale-next/server';
+
+const dir = getDirection(locale);
+```
+
+### `isRtlLocale(locale)`
+
+Возвращает `true`, когда локаль использует письменность справа налево.
+
+```ts
+import { isRtlLocale } from 'tyndale-next/server';
+
+isRtlLocale('ar'); // true
+isRtlLocale('en-US'); // false
+```
+
+### `resolveAlias(locale, aliases)`
+
+Сопоставляет alias локали с её канонической локалью.
+
+```ts
+import { resolveAlias } from 'tyndale-next/server';
+
+resolveAlias('pt-BR', { 'pt-BR': 'pt' }); // 'pt'
+```
+
+## Граница кэша
+
+### `TyndaleCache`
+
+Клиентская граница кэша для переведённого контента в общих layout. Ключ кэша ограничен и `id`, и текущей локалью.
+
+```tsx
+import { TyndaleCache } from 'tyndale-next';
+import { T } from 'tyndale-react';
+
+<TyndaleCache id="footer-copy">
+  <T>Documentation, guides, and examples.</T>
+</TyndaleCache>
+```
+
+Используйте это для повторяющегося переведённого UI в layout, которые перерисовываются во время навигации. Не используйте это как общий кэш данных.

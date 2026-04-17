@@ -3,42 +3,224 @@ title: API React
 description: Компоненты и хуки из tyndale-react.
 ---
 
-## Компоненты
+`tyndale-react` предоставляет runtime-провайдер, хуки перевода, компоненты форматирования и серверные помощники, используемые приложениями Tyndale.
+
+## Провайдер и контекст
+
+### `TyndaleProvider`
+
+Корневой провайдер для обычных React-приложений. Он загружает файлы локалей, предоставляет состояние перевода и обеспечивает работу всех хуков и компонентов.
+
+```tsx
+import { TyndaleProvider } from 'tyndale-react';
+
+export function App() {
+  return (
+    <TyndaleProvider defaultLocale="en" locale="fr">
+      <Routes />
+    </TyndaleProvider>
+  );
+}
+```
+
+**Свойства**
+
+- `defaultLocale: string`
+- `locale?: string`
+- `basePath?: string` — по умолчанию `/_tyndale`
+- `initialTranslations?: Record<string, string>`
+- `initialManifest?: Manifest | null`
+- `onLocaleChange?: (locale: string) => void`
+- `children: React.ReactNode`
+
+Если `initialTranslations` не указан, провайдер загружает `{basePath}/{locale}.json` и `manifest.json` в браузере.
+
+### `TyndaleContext`
+
+React-контекст, содержащий текущую локаль, манифест, загруженные переводы, состояние загрузки и функцию `changeLocale()`.
+
+Используйте его напрямую только если вам нужен кастомный доступ к контексту. В большинстве приложений лучше использовать хуки ниже.
+
+### `useTyndaleContext()`
+
+Читает `TyndaleContext` и выбрасывает ошибку, если провайдер не подключён.
+
+```tsx
+import { useTyndaleContext } from 'tyndale-react';
+
+function LocaleBadge() {
+  const { locale, defaultLocale, isLoading } = useTyndaleContext();
+  return <span>{isLoading ? 'Loading…' : `${locale} / ${defaultLocale}`}</span>;
+}
+```
+
+## Базовые хуки
+
+### `useTranslation()`
+
+Возвращает функцию перевода с поддержкой интерполяции.
+
+```tsx
+import { useTranslation } from 'tyndale-react';
+
+function Greeting({ name }: { name: string }) {
+  const t = useTranslation();
+  return <p>{t('Hello, {name}!', { name })}</p>;
+}
+```
+
+Сигнатура:
+
+```ts
+(source: string, vars?: Record<string, string | number>) => string
+```
+
+### `useLocale()`
+
+Возвращает строку текущей локали.
+
+```tsx
+import { useLocale } from 'tyndale-react';
+
+const locale = useLocale();
+```
+
+Вне провайдера возвращает пустую строку и выводит предупреждение в режиме разработки.
+
+### `useChangeLocale()`
+
+Возвращает функцию, которая меняет активную локаль.
+
+```tsx
+import { useChangeLocale } from 'tyndale-react';
+
+function LocaleSwitcher() {
+  const changeLocale = useChangeLocale();
+
+  return <button onClick={() => changeLocale('es')}>Español</button>;
+}
+```
+
+В обычном React это загружает JSON новой локали и обновляет состояние провайдера. В `tyndale-next` этот же хук вместо этого запускает смену маршрута.
+
+### `useDictionary(filenameKey)`
+
+Возвращает записи словаря для файла словаря в виде обычного объекта.
+
+```tsx
+import { useDictionary } from 'tyndale-react';
+
+function Nav() {
+  const labels = useDictionary('common');
+  return <a href="/docs">{labels.docs}</a>;
+}
+```
+
+Сигнатура:
+
+```ts
+(filenameKey: string) => Record<string, string>
+```
+
+Хук ищет записи в манифесте с `type: 'dictionary'` и использует ключ словаря как fallback, если перевод отсутствует.
+
+## Серверный помощник
+
+### `getTranslation(options)`
+
+Асинхронный серверный помощник, который загружает файл локали с диска и возвращает функцию перевода.
+
+Доступен как из `tyndale-react`, так и из серверного подпути:
+
+```ts
+import { getTranslation } from 'tyndale-react/server';
+
+const t = await getTranslation({
+  locale: 'fr',
+  defaultLocale: 'en',
+  outputPath: 'public/_tyndale',
+});
+
+const title = t('Welcome, {name}!', { name: 'Ada' });
+```
+
+Параметры:
+
+- `locale: string`
+- `defaultLocale?: string`
+- `outputPath: string`
+
+Если `locale === defaultLocale`, загрузка файлов пропускается, и возвращается исходная строка с применённой интерполяцией.
+
+## Маркеры сообщений
+
+### `msg(source)`
+
+Помечает строковый литерал для извлечения вне рендера компонента и возвращает React-элемент, который разрешается во время рендера.
+
+```tsx
+import { msg } from 'tyndale-react';
+
+const nav = [{ href: '/', label: msg('Home') }];
+```
+
+### `msgString(source)`
+
+Помечает строковый литерал для извлечения и возвращает обычную строку вместо React-элемента.
+
+```ts
+import { msgString } from 'tyndale-react';
+
+export const copy = {
+  docs: msgString('Documentation'),
+};
+```
+
+Используйте `msgString()` в не-React контекстах, например в обычных TypeScript-модулях, Astro frontmatter или серверных утилитах.
+
+## Компоненты перевода и форматирования
 
 ### `<T>`
 
-Оборачивает переводимый текстовый контент. Поддерживает переменные и вложенные компоненты.
+Переводит JSX-содержимое, сериализуя дочерние элементы, выполняя поиск переведённого wire format и рендеря переведённый результат.
 
 ```tsx
-import { T } from 'tyndale-react';
+import { T, Var } from 'tyndale-react';
 
-<T>Welcome to our app!</T>
-<T>Hello, {name}!</T>
+<T>
+  Hello, <Var name="name">{name}</Var>!
+</T>
 ```
 
-### `<Plural>`
+Если перевод недоступен, рендерятся исходные дочерние элементы.
 
-Обрабатывает множественные формы на основе значения количества.
+### `<Var>`
+
+Помечает динамическое значение внутри `<T>`.
 
 ```tsx
-import { Plural } from 'tyndale-react';
+import { T, Var } from 'tyndale-react';
 
-<Plural value={count} one="1 item" other="{count} items" />
+<T>
+  Hello, <Var name="name">{name}</Var>!
+</T>
 ```
 
-### `<DateTime>`
+### `<Num>`
 
-Форматирует даты в соответствии с текущей локалью.
+Форматирует число с помощью `Intl.NumberFormat`. Внутри `<T>` также выступает как именованный плейсхолдер.
 
 ```tsx
-import { DateTime } from 'tyndale-react';
+import { T, Num } from 'tyndale-react';
 
-<DateTime value={new Date()} />
+<T>
+  You have <Num name="count" value={count} /> unread messages.
+</T>
 ```
 
 ### `<Currency>`
 
-Форматирует значения валют в соответствии с текущей локалью.
+Форматирует валюту в соответствии с активной локалью.
 
 ```tsx
 import { Currency } from 'tyndale-react';
@@ -46,39 +228,50 @@ import { Currency } from 'tyndale-react';
 <Currency value={49.99} currency="USD" />
 ```
 
-## Хуки
+### `<DateTime>`
 
-| Хук | Возвращает | Назначение |
-|------|---------|--------|
-| `useTranslation()` | `t(source, vars?)` | Переводить строки программно |
-| `useLocale()` | `string` | Код текущей локали |
-| `useChangeLocale()` | `(locale: string) => void` | Переключать локаль во время выполнения |
-| `useDictionary()` | `d(key) => string` | Получать доступ к переводам словаря |
-
-## Функции
-
-### `msg(text)`
-
-Помечает строку как переводимую вне контекста компонента.
+Форматирует дату или timestamp с помощью `Intl.DateTimeFormat`.
 
 ```tsx
-import { msg } from 'tyndale-react';
+import { DateTime } from 'tyndale-react';
 
-const errorMessages = {
-  notFound: msg('Page not found'),
-  unauthorized: msg('Please sign in to continue'),
-};
+<DateTime value={new Date()} options={{ dateStyle: 'long' }} />
 ```
 
-### `msgString(text)`
+### `<Plural>`
 
-Маркер, возвращающий строку, для контекстов вне React (Astro, Node, обычный TS). Работает идентично `msg()` для извлечения, но возвращает обычный `string` вместо React-элемента.
+Выбирает корректную форму множественного числа для активной локали. Внутри `<T>` сериализуется в ICU plural syntax.
+
+```tsx
+import { Plural } from 'tyndale-react';
+
+<Plural count={count} one="1 item" other="{count} items" />
+```
+
+## Расширенные помощники
+
+Это публичные экспорты, но большинству приложений они не нужны, если только вы не интегрируетесь с результатами извлечения или внутренними механизмами wire format.
+
+### `computeHash(content)` / `hash(content)`
+
+Вычисляет нормализованный SHA-256 hash, который Tyndale использует для поиска переводов.
 
 ```ts
-import { msgString } from 'tyndale-react';
+import { computeHash } from 'tyndale-react';
 
-const labels = {
-  greeting: msgString('Hello'),
-  farewell: msgString('Goodbye'),
-};
+const id = computeHash('Welcome to our app.');
 ```
+
+### `escapeWireFormat(text)` / `unescapeWireFormat(text)`
+
+Экранирует или восстанавливает буквальный текст для Tyndale wire format.
+
+### `serializeChildren(children)` / `deserializeWireFormat(...)`
+
+Преобразует дочерние элементы React в Tyndale wire format и обратно.
+
+### `parseIcuPlural(input)`
+
+Разбирает ICU plural block на имя переменной и ветки.
+
+Используйте их только когда вы создаёте tooling или продвинутые runtime-интеграции вокруг сериализованного формата переводов Tyndale.

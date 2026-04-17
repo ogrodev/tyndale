@@ -1,14 +1,14 @@
 ---
-title: Verwendung von Wörterbüchern
-description: Verwalte Schlüssel-Wert-Übersetzungswörterbücher zusammen mit deinen JSX-Übersetzungen.
+title: Dictionaries verwenden
+description: Verwalte Schlüssel-Wert-Übersetzungsdictionaries parallel zu deinen JSX-Übersetzungen.
 ---
 
-## Was sind Wörterbücher?
+## Was sind Dictionaries?
 
-Wörterbücher sind klassische Schlüssel-Wert-Übersetzungsdateien. Sie sind nützlich für:
+Dictionaries sind klassische Schlüssel-Wert-Übersetzungsdateien. Sie sind nützlich für:
 - Gemeinsam genutzte Strings über viele Komponenten hinweg (Button-Beschriftungen, Fehlermeldungen)
 - Inhalte, die außerhalb deiner Codebasis verwaltet werden
-- Migration von bestehenden i18n-Setups
+- Migration aus bestehenden i18n-Setups
 
 ## Konfiguration
 
@@ -21,7 +21,7 @@ Wörterbücher sind klassische Schlüssel-Wert-Übersetzungsdateien. Sie sind n�
 }
 ```
 
-## Ein Wörterbuch erstellen
+## Ein Dictionary erstellen
 
 ```json
 // src/dictionaries/common.json
@@ -33,18 +33,25 @@ Wörterbücher sind klassische Schlüssel-Wert-Übersetzungsdateien. Sie sind n�
 }
 ```
 
+`useDictionary(filenameKey)` sucht eine Dictionary-Datei und gibt ein `Record<string, string>` zurück. Der Dateiname-Schlüssel ist der Dictionary-Pfad ohne die `.json`-Erweiterung:
+- `src/dictionaries/common.json` → `common`
+- `src/dictionaries/pages/home.json` → `pages/home`
+
 ## In Komponenten verwenden
 
 ```tsx
 import { useDictionary } from 'tyndale-react';
 
 export function ActionButtons() {
-  const d = useDictionary();
+  const labels = useDictionary('common');
+
   return (
     <div>
-      <button>{d('save')}</button>
-      <button>{d('cancel')}</button>
+      <button>{labels.save ?? 'Save'}</button>
+      <button>{labels.cancel ?? 'Cancel'}</button>
     </div>
   );
 }
 ```
+
+Wenn keine Einträge zum Dateiname-Schlüssel passen, gibt `useDictionary(filenameKey)` ein leeres Objekt zurück.

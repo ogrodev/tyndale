@@ -1,9 +1,9 @@
 ---
 title: Next.js 설정
-description: 로캘 라우팅, 서버 렌더링, 정적 생성을 위해 Next.js에서 Tyndale을 설정합니다.
+description: locale 라우팅, 서버 렌더링, 정적 생성을 위해 Next.js에서 Tyndale을 설정합니다.
 ---
 
-import { Steps, Tabs, TabItem } from '@astrojs/starlight/components';
+import { Steps } from '@astrojs/starlight/components';
 
 ## 어댑터 설치
 
@@ -15,7 +15,7 @@ npm install tyndale-next
 
 <Steps>
 
-1. **Next.js config를 업데이트하세요**
+1. **Next.js config 업데이트**
 
    ```js
    // next.config.mjs
@@ -26,20 +26,26 @@ npm install tyndale-next
    });
    ```
 
-2. **middleware를 추가하세요**
+2. **middleware 추가**
 
    ```ts
    // middleware.ts
-   export { tyndaleMiddleware as middleware } from 'tyndale-next/middleware';
+   import { createTyndaleMiddleware } from 'tyndale-next/middleware';
+
+   export default createTyndaleMiddleware();
+
+   export const config = {
+     matcher: ['/((?!api|_next|_tyndale|.*\\..*).*)'],
+   };
    ```
 
-   이는 로캘 감지, URL 라우팅, 로캘 쿠키 설정을 처리합니다.
+   이렇게 하면 locale 감지, locale 접두사가 붙은 라우트로의 리디렉션, 그리고 활성 locale을 쿠키에 유지하는 처리를 수행합니다.
 
-3. **레이아웃에 서버 provider를 추가하세요**
+3. **레이아웃에 서버 provider 추가**
 
    ```tsx
    // app/[locale]/layout.tsx
-   import { TyndaleServerProvider } from 'tyndale-next/server';
+   import { getDirection, TyndaleServerProvider } from 'tyndale-next/server';
 
    export default async function RootLayout({
      children,
@@ -51,7 +57,7 @@ npm install tyndale-next
      const { locale } = await params;
 
      return (
-       <html lang={locale}>
+       <html lang={locale} dir={getDirection(locale)}>
          <body>
            <TyndaleServerProvider locale={locale}>
              {children}
@@ -62,10 +68,12 @@ npm install tyndale-next
    }
    ```
 
+   `TyndaleServerProvider`는 서버에서 locale 데이터를 로드합니다. 서버 컴포넌트에서는 `getDirection(locale)`로, 클라이언트 컴포넌트에서는 `useDirection()`으로 `<html dir>`를 직접 설정하세요.
+
 </Steps>
 
-## 작동 방식
+## 동작 방식
 
-- `withTyndaleConfig`는 Next.js config에 로캘 경로 rewrite를 추가합니다
-- middleware는 사용자의 선호 로캘을 감지하고 그에 맞게 리디렉션합니다
+- `withTyndaleConfig`는 `tyndale.config.json`을 읽고, 런타임에 Tyndale이 사용하는 빌드 타임 env var를 주입하며, 앱이 단일 provider context를 공유하도록 `tyndale-react`에 alias를 설정합니다
+- middleware는 요청을 locale 접두사가 붙은 라우트로 리디렉션하고, locale alias를 정규화하며, 후속 렌더링을 위해 locale cookie/header를 설정합니다
 - `TyndaleServerProvider`는 서버 사이드에서 번역을 로드하고 React context를 통해 모든 컴포넌트에서 사용할 수 있게 합니다

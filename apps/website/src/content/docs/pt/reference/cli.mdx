@@ -5,7 +5,7 @@ description: Referência completa para a CLI do Tyndale.
 
 ## `tyndale init`
 
-Inicializa um novo projeto Tyndale. Cria `tyndale.config.json` com padrões sensatos.
+Inicializa um novo projeto Tyndale. Cria `tyndale.config.json` com predefinições sensatas.
 
 ```bash
 npx tyndale init
@@ -13,7 +13,7 @@ npx tyndale init
 
 ## `tyndale auth`
 
-Configure as credenciais do seu provedor de IA.
+Configure as credenciais do seu fornecedor de IA.
 
 ```bash
 npx tyndale auth
@@ -27,27 +27,27 @@ Extrai strings traduzíveis e gera traduções para todos os locales configurado
 npx tyndale translate [options]
 ```
 
-| Opção | Descrição |
+| Flag | Descrição |
 |------|-------------|
 | `--locale <code>` | Traduz apenas um locale específico |
 | `--force` | Retraduz todas as strings, não apenas as alterações |
-| `--dry-run` | Mostra o que seria traduzido sem gravar arquivos |
-| `--token-budget <n>` | Orçamento de tokens por lote de IA (padrão: 50000) |
-| `--concurrency <n>` | Máximo de sessões de tradução paralelas (detectado automaticamente) |
+| `--dry-run` | Mostra o que seria traduzido sem escrever ficheiros |
+| `--token-budget <n>` | Orçamento de tokens por lote de IA (predefinição: 50000) |
+| `--concurrency <n>` | Máximo de sessões de tradução paralelas (detetado automaticamente) |
 
 ## `tyndale validate`
 
-Verifica se todos os locales têm traduções completas e bem formadas. Nenhuma chamada de IA é feita.
+Verifica se todos os locales têm traduções completas e bem formadas. Não são feitas chamadas de IA.
 
 ```bash
 npx tyndale validate
 ```
 
-Encerra com código 1 se forem encontrados problemas. Ideal para pipelines de CI.
+Termina com código 1 se forem encontrados problemas. Ideal para pipelines de CI.
 
 ## `tyndale extract`
 
-Extrai strings traduzíveis sem traduzi-las. Útil para revisar o que será enviado ao provedor de IA.
+Extrai strings traduzíveis sem as traduzir. Útil para rever o que será enviado para o fornecedor de IA.
 
 ```bash
 npx tyndale extract
@@ -56,29 +56,31 @@ npx tyndale extract
 
 ## `tyndale translate-docs`
 
-Traduz arquivos de documentação (MDX/MD) para qualquer framework suportado. Detecta automaticamente o framework de documentação ou usa a configuração de `tyndale.config.json`.
+Traduz ficheiros de documentação (MDX/MD) para qualquer framework suportado. Deteta automaticamente o framework de documentação ou usa a configuração de `tyndale.config.json`.
 
 ```bash
 npx tyndale translate-docs [options]
 ```
 
-| Opção | Descrição |
+| Flag | Descrição |
 |------|-------------|
-| `--content-dir <path>` | Sobrescreve o diretório de conteúdo da documentação |
-| `--force` | Retraduz toda a documentação, não apenas os arquivos ausentes |
-| `--concurrency <n>` | Máximo de sessões de tradução paralelas (detectado automaticamente) |
+| `--content-dir <path>` | Substitui a pasta de conteúdo da documentação |
+| `--force` | Retraduz toda a documentação, não apenas os ficheiros em falta |
+| `--concurrency <n>` | Máximo de sessões de tradução paralelas (detetado automaticamente) |
 
 Frameworks suportados: Starlight, Docusaurus, VitePress, MkDocs, Nextra.
 
+`translate-docs` escreve `.tyndale-docs-state.json` na raiz do seu projeto para acompanhar os hashes dos documentos de origem. Faça commit deste ficheiro para que novos clones possam ignorar documentação inalterada sem retradução.
+
 ### `tyndale translate-docs setup`
 
-Detecta seu framework de documentação e salva a configuração em `tyndale.config.json`.
+Deteta o framework de documentação e guarda a configuração em `tyndale.config.json`.
 
 ```bash
 npx tyndale translate-docs setup
 ```
 
-Analisa seu projeto em busca de sinais do framework (dependências de pacote e arquivos de configuração), confirma o framework detectado e grava a seção `docs` na sua configuração.
+Analisa o seu projeto em busca de sinais do framework (dependências de pacote e ficheiros de configuração), confirma o framework detetado e escreve a secção `docs` na sua configuração.
 
 ## `tyndale model`
 

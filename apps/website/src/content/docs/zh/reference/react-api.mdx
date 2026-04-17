@@ -1,44 +1,226 @@
 ---
 title: React API 参考
-description: 来自 tyndale-react 的组件和 Hook。
+description: 来自 tyndale-react 的组件与 Hooks。
 ---
 
-## 组件
+`tyndale-react` 提供运行时 provider、翻译 hooks、格式化组件，以及 Tyndale 应用使用的服务端辅助方法。
+
+## Provider 与上下文
+
+### `TyndaleProvider`
+
+适用于纯 React 应用的根 provider。它会加载 locale 文件、暴露翻译状态，并驱动所有 hooks 和组件。
+
+```tsx
+import { TyndaleProvider } from 'tyndale-react';
+
+export function App() {
+  return (
+    <TyndaleProvider defaultLocale="en" locale="fr">
+      <Routes />
+    </TyndaleProvider>
+  );
+}
+```
+
+**属性**
+
+- `defaultLocale: string`
+- `locale?: string`
+- `basePath?: string` — 默认为 `/_tyndale`
+- `initialTranslations?: Record<string, string>`
+- `initialManifest?: Manifest | null`
+- `onLocaleChange?: (locale: string) => void`
+- `children: React.ReactNode`
+
+如果省略 `initialTranslations`，provider 会在浏览器中拉取 `{basePath}/{locale}.json` 和 `manifest.json`。
+
+### `TyndaleContext`
+
+用于承载当前 locale、manifest、已加载翻译、加载状态以及 `changeLocale()` 函数的 React 上下文。
+
+仅当你需要自定义上下文访问时才直接使用它。大多数应用应优先使用下面的 hooks。
+
+### `useTyndaleContext()`
+
+读取 `TyndaleContext`，如果未挂载 provider 则抛出错误。
+
+```tsx
+import { useTyndaleContext } from 'tyndale-react';
+
+function LocaleBadge() {
+  const { locale, defaultLocale, isLoading } = useTyndaleContext();
+  return <span>{isLoading ? 'Loading…' : `${locale} / ${defaultLocale}`}</span>;
+}
+```
+
+## 核心 hooks
+
+### `useTranslation()`
+
+返回一个支持插值的翻译函数。
+
+```tsx
+import { useTranslation } from 'tyndale-react';
+
+function Greeting({ name }: { name: string }) {
+  const t = useTranslation();
+  return <p>{t('Hello, {name}!', { name })}</p>;
+}
+```
+
+签名：
+
+```ts
+(source: string, vars?: Record<string, string | number>) => string
+```
+
+### `useLocale()`
+
+返回当前 locale 字符串。
+
+```tsx
+import { useLocale } from 'tyndale-react';
+
+const locale = useLocale();
+```
+
+在 provider 外部调用时，它会返回空字符串，并在开发环境记录警告。
+
+### `useChangeLocale()`
+
+返回一个用于切换当前 locale 的函数。
+
+```tsx
+import { useChangeLocale } from 'tyndale-react';
+
+function LocaleSwitcher() {
+  const changeLocale = useChangeLocale();
+
+  return <button onClick={() => changeLocale('es')}>Español</button>;
+}
+```
+
+在纯 React 中，这会拉取新的 locale JSON 并更新 provider 状态。而在 `tyndale-next` 中，同一个 hook 会改为触发路由切换。
+
+### `useDictionary(filenameKey)`
+
+以普通对象形式返回某个字典文件的字典条目。
+
+```tsx
+import { useDictionary } from 'tyndale-react';
+
+function Nav() {
+  const labels = useDictionary('common');
+  return <a href="/docs">{labels.docs}</a>;
+}
+```
+
+签名：
+
+```ts
+(filenameKey: string) => Record<string, string>
+```
+
+该 hook 会查找 `type: 'dictionary'` 的 manifest 条目，并在翻译缺失时回退到字典键名。
+
+## 服务端辅助方法
+
+### `getTranslation(options)`
+
+异步服务端辅助方法：从磁盘加载 locale 文件并返回翻译函数。
+
+可从 `tyndale-react` 和仅服务端子路径中使用：
+
+```ts
+import { getTranslation } from 'tyndale-react/server';
+
+const t = await getTranslation({
+  locale: 'fr',
+  defaultLocale: 'en',
+  outputPath: 'public/_tyndale',
+});
+
+const title = t('Welcome, {name}!', { name: 'Ada' });
+```
+
+选项：
+
+- `locale: string`
+- `defaultLocale?: string`
+- `outputPath: string`
+
+如果 `locale === defaultLocale`，它会跳过文件加载，并返回应用了插值的源字符串。
+
+## 消息标记器
+
+### `msg(source)`
+
+在组件渲染之外将字面量字符串标记为可提取，并返回一个在渲染时解析的 React 元素。
+
+```tsx
+import { msg } from 'tyndale-react';
+
+const nav = [{ href: '/', label: msg('Home') }];
+```
+
+### `msgString(source)`
+
+将字面量字符串标记为可提取，并返回普通字符串，而不是 React 元素。
+
+```ts
+import { msgString } from 'tyndale-react';
+
+export const copy = {
+  docs: msgString('Documentation'),
+};
+```
+
+在非 React 场景中使用 `msgString()`，例如普通 TypeScript 模块、Astro frontmatter 或服务端工具。
+
+## 翻译与格式化组件
 
 ### `<T>`
 
-包裹可翻译的文本内容。支持变量和嵌套组件。
+通过序列化其子节点、查找翻译后的 wire format 并渲染翻译结果来翻译 JSX 内容。
 
 ```tsx
-import { T } from 'tyndale-react';
+import { T, Var } from 'tyndale-react';
 
-<T>Welcome to our app!</T>
-<T>Hello, {name}!</T>
+<T>
+  Hello, <Var name="name">{name}</Var>!
+</T>
 ```
 
-### `<Plural>`
+如果没有可用翻译，它会渲染原始子节点。
 
-根据计数值处理复数形式。
+### `<Var>`
+
+在 `<T>` 内标记动态值。
 
 ```tsx
-import { Plural } from 'tyndale-react';
+import { T, Var } from 'tyndale-react';
 
-<Plural value={count} one="1 item" other="{count} items" />
+<T>
+  Hello, <Var name="name">{name}</Var>!
+</T>
 ```
 
-### `<DateTime>`
+### `<Num>`
 
-根据当前语言环境格式化日期。
+使用 `Intl.NumberFormat` 格式化数字。在 `<T>` 内，它也会作为命名占位符使用。
 
 ```tsx
-import { DateTime } from 'tyndale-react';
+import { T, Num } from 'tyndale-react';
 
-<DateTime value={new Date()} />
+<T>
+  You have <Num name="count" value={count} /> unread messages.
+</T>
 ```
 
 ### `<Currency>`
 
-根据当前语言环境格式化货币值。
+使用当前 locale 格式化货币。
 
 ```tsx
 import { Currency } from 'tyndale-react';
@@ -46,39 +228,50 @@ import { Currency } from 'tyndale-react';
 <Currency value={49.99} currency="USD" />
 ```
 
-## Hook
+### `<DateTime>`
 
-| Hook | 返回值 | 用途 |
-|------|---------|--------|
-| `useTranslation()` | `t(source, vars?)` | 以编程方式翻译字符串 |
-| `useLocale()` | `string` | 当前语言环境代码 |
-| `useChangeLocale()` | `(locale: string) => void` | 在运行时切换语言环境 |
-| `useDictionary()` | `d(key) => string` | 访问字典翻译 |
-
-## 函数
-
-### `msg(text)`
-
-在组件上下文之外将字符串标记为可翻译。
+使用 `Intl.DateTimeFormat` 格式化日期或时间戳。
 
 ```tsx
-import { msg } from 'tyndale-react';
+import { DateTime } from 'tyndale-react';
 
-const errorMessages = {
-  notFound: msg('Page not found'),
-  unauthorized: msg('Please sign in to continue'),
-};
+<DateTime value={new Date()} options={{ dateStyle: 'long' }} />
 ```
 
-### `msgString(text)`
+### `<Plural>`
 
-用于非 React 上下文（Astro、Node、纯 TS）的返回字符串标记器。在提取时与 `msg()` 的行为完全一致，但返回的是普通 `string`，而不是 React 元素。
+为当前 locale 选择正确的复数分支。在 `<T>` 内，它会被序列化为 ICU plural 语法。
+
+```tsx
+import { Plural } from 'tyndale-react';
+
+<Plural count={count} one="1 item" other="{count} items" />
+```
+
+## 高级辅助方法
+
+这些是公开导出的能力，但除非你在与提取产物或 wire-format 内部机制集成，否则大多数应用并不需要它们。
+
+### `computeHash(content)` / `hash(content)`
+
+计算 Tyndale 用于翻译查找的标准化 SHA-256 哈希。
 
 ```ts
-import { msgString } from 'tyndale-react';
+import { computeHash } from 'tyndale-react';
 
-const labels = {
-  greeting: msgString('Hello'),
-  farewell: msgString('Goodbye'),
-};
+const id = computeHash('Welcome to our app.');
 ```
+
+### `escapeWireFormat(text)` / `unescapeWireFormat(text)`
+
+对 Tyndale wire format 的字面文本进行转义或还原。
+
+### `serializeChildren(children)` / `deserializeWireFormat(...)`
+
+将 React 子节点转换为 Tyndale wire format 并可反向还原。
+
+### `parseIcuPlural(input)`
+
+将 ICU plural 代码块解析为变量名及其分支。
+
+仅当你在围绕 Tyndale 序列化翻译格式构建工具或高级运行时集成时，才需要使用这些方法。

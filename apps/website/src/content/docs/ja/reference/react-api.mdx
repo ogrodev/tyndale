@@ -3,42 +3,224 @@ title: React API
 description: tyndale-react のコンポーネントとフック。
 ---
 
-## コンポーネント
+`tyndale-react` は、Tyndale アプリで使われるランタイムプロバイダー、翻訳フック、フォーマット用コンポーネント、サーバーヘルパーを提供します。
+
+## プロバイダーとコンテキスト
+
+### `TyndaleProvider`
+
+プレーンな React アプリ向けのルートプロバイダーです。ロケールファイルを読み込み、翻訳状態を公開し、すべてのフックとコンポーネントを動作させます。
+
+```tsx
+import { TyndaleProvider } from 'tyndale-react';
+
+export function App() {
+  return (
+    <TyndaleProvider defaultLocale="en" locale="fr">
+      <Routes />
+    </TyndaleProvider>
+  );
+}
+```
+
+**プロパティ**
+
+- `defaultLocale: string`
+- `locale?: string`
+- `basePath?: string` — デフォルトは `/_tyndale`
+- `initialTranslations?: Record<string, string>`
+- `initialManifest?: Manifest | null`
+- `onLocaleChange?: (locale: string) => void`
+- `children: React.ReactNode`
+
+`initialTranslations` を省略した場合、プロバイダーはブラウザで `{basePath}/{locale}.json` と `manifest.json` を取得します。
+
+### `TyndaleContext`
+
+現在のロケール、マニフェスト、読み込み済み翻訳、読み込み状態、`changeLocale()` 関数を保持する React コンテキストです。
+
+カスタムなコンテキストアクセスが必要な場合のみ直接使用してください。ほとんどのアプリでは、以下のフックを使うことを推奨します。
+
+### `useTyndaleContext()`
+
+`TyndaleContext` を読み取り、プロバイダーがマウントされていない場合は例外を投げます。
+
+```tsx
+import { useTyndaleContext } from 'tyndale-react';
+
+function LocaleBadge() {
+  const { locale, defaultLocale, isLoading } = useTyndaleContext();
+  return <span>{isLoading ? 'Loading…' : `${locale} / ${defaultLocale}`}</span>;
+}
+```
+
+## コアフック
+
+### `useTranslation()`
+
+補間をサポートした翻訳関数を返します。
+
+```tsx
+import { useTranslation } from 'tyndale-react';
+
+function Greeting({ name }: { name: string }) {
+  const t = useTranslation();
+  return <p>{t('Hello, {name}!', { name })}</p>;
+}
+```
+
+シグネチャ:
+
+```ts
+(source: string, vars?: Record<string, string | number>) => string
+```
+
+### `useLocale()`
+
+現在のロケール文字列を返します。
+
+```tsx
+import { useLocale } from 'tyndale-react';
+
+const locale = useLocale();
+```
+
+プロバイダーの外側では空文字列を返し、開発時には警告をログ出力します。
+
+### `useChangeLocale()`
+
+アクティブなロケールを変更する関数を返します。
+
+```tsx
+import { useChangeLocale } from 'tyndale-react';
+
+function LocaleSwitcher() {
+  const changeLocale = useChangeLocale();
+
+  return <button onClick={() => changeLocale('es')}>Español</button>;
+}
+```
+
+プレーンな React では、新しいロケール JSON を取得してプロバイダーの状態を更新します。`tyndale-next` では、同じフックが代わりにルート変更をトリガーします。
+
+### `useDictionary(filenameKey)`
+
+辞書ファイルの辞書エントリをプレーンオブジェクトとして返します。
+
+```tsx
+import { useDictionary } from 'tyndale-react';
+
+function Nav() {
+  const labels = useDictionary('common');
+  return <a href="/docs">{labels.docs}</a>;
+}
+```
+
+シグネチャ:
+
+```ts
+(filenameKey: string) => Record<string, string>
+```
+
+このフックは `type: 'dictionary'` を持つマニフェストエントリを参照し、翻訳が見つからない場合は辞書キーにフォールバックします。
+
+## サーバーヘルパー
+
+### `getTranslation(options)`
+
+ディスクからロケールファイルを読み込み、翻訳関数を返す非同期サーバーヘルパーです。
+
+`tyndale-react` とサーバー専用サブパスの両方から利用できます。
+
+```ts
+import { getTranslation } from 'tyndale-react/server';
+
+const t = await getTranslation({
+  locale: 'fr',
+  defaultLocale: 'en',
+  outputPath: 'public/_tyndale',
+});
+
+const title = t('Welcome, {name}!', { name: 'Ada' });
+```
+
+オプション:
+
+- `locale: string`
+- `defaultLocale?: string`
+- `outputPath: string`
+
+`locale === defaultLocale` の場合、ファイル読み込みをスキップし、補間を適用したソース文字列を返します。
+
+## メッセージマーカー
+
+### `msg(source)`
+
+コンポーネントのレンダー外で抽出対象としてリテラル文字列をマークし、レンダー時に解決される React 要素を返します。
+
+```tsx
+import { msg } from 'tyndale-react';
+
+const nav = [{ href: '/', label: msg('Home') }];
+```
+
+### `msgString(source)`
+
+抽出対象としてリテラル文字列をマークし、React 要素ではなくプレーン文字列を返します。
+
+```ts
+import { msgString } from 'tyndale-react';
+
+export const copy = {
+  docs: msgString('Documentation'),
+};
+```
+
+`msgString()` は、プレーンな TypeScript モジュール、Astro frontmatter、サーバーユーティリティなどの非 React コンテキストで使用してください。
+
+## 翻訳とフォーマット用コンポーネント
 
 ### `<T>`
 
-翻訳可能なテキストコンテンツをラップします。変数とネストされたコンポーネントをサポートします。
+子要素をシリアライズし、翻訳済みの wire format を参照して、翻訳結果をレンダーすることで JSX コンテンツを翻訳します。
 
 ```tsx
-import { T } from 'tyndale-react';
+import { T, Var } from 'tyndale-react';
 
-<T>Welcome to our app!</T>
-<T>Hello, {name}!</T>
+<T>
+  Hello, <Var name="name">{name}</Var>!
+</T>
 ```
 
-### `<Plural>`
+翻訳がない場合は、元の子要素をレンダーします。
 
-カウント値に基づいて複数形を処理します。
+### `<Var>`
+
+`<T>` 内の動的な値をマークします。
 
 ```tsx
-import { Plural } from 'tyndale-react';
+import { T, Var } from 'tyndale-react';
 
-<Plural value={count} one="1 item" other="{count} items" />
+<T>
+  Hello, <Var name="name">{name}</Var>!
+</T>
 ```
 
-### `<DateTime>`
+### `<Num>`
 
-現在のロケールに従って日付をフォーマットします。
+`Intl.NumberFormat` で数値をフォーマットします。`<T>` 内では名前付きプレースホルダーとしても機能します。
 
 ```tsx
-import { DateTime } from 'tyndale-react';
+import { T, Num } from 'tyndale-react';
 
-<DateTime value={new Date()} />
+<T>
+  You have <Num name="count" value={count} /> unread messages.
+</T>
 ```
 
 ### `<Currency>`
 
-現在のロケールに従って通貨の値をフォーマットします。
+アクティブなロケールで通貨をフォーマットします。
 
 ```tsx
 import { Currency } from 'tyndale-react';
@@ -46,39 +228,50 @@ import { Currency } from 'tyndale-react';
 <Currency value={49.99} currency="USD" />
 ```
 
-## フック
+### `<DateTime>`
 
-| フック | 戻り値 | 用途 |
-|------|---------|--------|
-| `useTranslation()` | `t(source, vars?)` | 文字列をプログラムから翻訳する |
-| `useLocale()` | `string` | 現在のロケールコード |
-| `useChangeLocale()` | `(locale: string) => void` | 実行時にロケールを切り替える |
-| `useDictionary()` | `d(key) => string` | 辞書の翻訳にアクセスする |
-
-## 関数
-
-### `msg(text)`
-
-コンポーネントコンテキスト外で文字列を翻訳可能としてマークします。
+`Intl.DateTimeFormat` で日付またはタイムスタンプをフォーマットします。
 
 ```tsx
-import { msg } from 'tyndale-react';
+import { DateTime } from 'tyndale-react';
 
-const errorMessages = {
-  notFound: msg('Page not found'),
-  unauthorized: msg('Please sign in to continue'),
-};
+<DateTime value={new Date()} options={{ dateStyle: 'long' }} />
 ```
 
-### `msgString(text)`
+### `<Plural>`
 
-React 以外のコンテキスト（Astro、Node、プレーンな TS）向けの文字列を返すマーカーです。抽出時の動作は `msg()` と同一ですが、React 要素ではなくプレーンな `string` を返します。
+アクティブなロケールに対して正しい複数形ブランチを選択します。`<T>` 内では ICU 複数形構文にシリアライズされます。
+
+```tsx
+import { Plural } from 'tyndale-react';
+
+<Plural count={count} one="1 item" other="{count} items" />
+```
+
+## 高度なヘルパー
+
+これらは公開エクスポートですが、抽出出力や wire-format の内部仕様と連携する場合を除き、ほとんどのアプリでは必要ありません。
+
+### `computeHash(content)` / `hash(content)`
+
+翻訳参照に使われる、Tyndale の正規化済み SHA-256 ハッシュを計算します。
 
 ```ts
-import { msgString } from 'tyndale-react';
+import { computeHash } from 'tyndale-react';
 
-const labels = {
-  greeting: msgString('Hello'),
-  farewell: msgString('Goodbye'),
-};
+const id = computeHash('Welcome to our app.');
 ```
+
+### `escapeWireFormat(text)` / `unescapeWireFormat(text)`
+
+Tyndale wire format 用にリテラルテキストをエスケープまたは復元します。
+
+### `serializeChildren(children)` / `deserializeWireFormat(...)`
+
+React の子要素を Tyndale wire format に変換し、逆変換します。
+
+### `parseIcuPlural(input)`
+
+ICU 複数形ブロックを、その変数名とブランチに解析します。
+
+これらは、Tyndale のシリアライズされた翻訳フォーマットを中心にツールや高度なランタイム連携を構築する場合にのみ使用してください。

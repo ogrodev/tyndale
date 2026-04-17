@@ -7,13 +7,13 @@ import { Steps } from '@astrojs/starlight/components';
 
 <Steps>
 
-1. **Tyndale installieren**
+1. **Installiere Tyndale**
 
    ```bash
    npm install tyndale tyndale-react
    ```
 
-2. **Dein Projekt initialisieren**
+2. **Initialisiere dein Projekt**
 
    ```bash
    npx tyndale init
@@ -21,7 +21,7 @@ import { Steps } from '@astrojs/starlight/components';
 
    Dadurch wird `tyndale.config.json` mit Standardeinstellungen erstellt.
 
-3. **Mit deinem KI-Provider authentifizieren**
+3. **Authentifiziere dich bei deinem AI-Provider**
 
    ```bash
    npx tyndale auth
@@ -29,7 +29,7 @@ import { Steps } from '@astrojs/starlight/components';
 
    Folge den Anweisungen, um deinen API-Schlüssel zu konfigurieren (Anthropic, OpenAI usw.).
 
-4. **Übersetzbare Inhalte umschließen**
+4. **Umschließe übersetzbare Inhalte**
 
    ```tsx
    import { T, useTranslation } from 'tyndale-react';
@@ -45,7 +45,7 @@ import { Steps } from '@astrojs/starlight/components';
    }
    ```
 
-5. **Extrahieren und übersetzen**
+5. **Extrahiere und übersetze**
 
    ```bash
    npx tyndale translate
@@ -57,12 +57,12 @@ import { Steps } from '@astrojs/starlight/components';
 
 ## Was ist gerade passiert?
 
-Tyndale hat dein JSX nach `<T>`-Komponenten und `useTranslation()`-Aufrufen durchsucht, den englischen Quelltext extrahiert, ihn zur Übersetzung an deinen KI-Provider gesendet und Locale-Dateien in dein `output`-Verzeichnis geschrieben.
+Tyndale hat dein JSX nach `<T>`-Komponenten und `useTranslation()`-Aufrufen durchsucht, den englischen Quelltext extrahiert, ihn zur Übersetzung an deinen AI-Provider gesendet und Locale-Dateien in dein `output`-Verzeichnis geschrieben.
 
 Keine Key-Dateien. Keine manuelle JSON-Bearbeitung. Deine Übersetzungen sind bereit.
 
 ## Nächste Schritte
 
-- [Projekt konfigurieren](/reference/configuration) — Locales, KI-Modell, Output-Verzeichnis
-- [Next.js einrichten](/getting-started/nextjs-setup) — Middleware, Provider, statische Generierung
-- [Die React-API kennenlernen](/reference/react-api) — alle Komponenten und Hooks
+- [Konfiguriere dein Projekt](/reference/configuration) — Locales, AI-Modell, Output-Verzeichnis
+- [Richte Next.js ein](/getting-started/nextjs-setup) — Middleware, Provider, statische Generierung
+- [Lerne die React API kennen](/reference/react-api) — alle Komponenten und Hooks

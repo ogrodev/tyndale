@@ -1,12 +1,12 @@
 ---
 title: Usando Dicionários
-description: Gerencie dicionários de tradução de chave-valor junto com suas traduções JSX.
+description: Gerencie dicionários de tradução chave-valor junto com suas traduções JSX.
 ---
 
 ## O que são dicionários?
 
 Dicionários são arquivos de tradução tradicionais de chave-valor. Eles são úteis para:
-- Strings compartilhadas entre muitos componentes (rótulos de botão, mensagens de erro)
+- Strings compartilhadas entre muitos componentes (rótulos de botões, mensagens de erro)
 - Conteúdo gerenciado fora da sua base de código
 - Migração de configurações i18n existentes
 
@@ -21,7 +21,7 @@ Dicionários são arquivos de tradução tradicionais de chave-valor. Eles são 
 }
 ```
 
-## Criar um dicionário
+## Crie um dicionário
 
 ```json
 // src/dictionaries/common.json
@@ -33,18 +33,25 @@ Dicionários são arquivos de tradução tradicionais de chave-valor. Eles são 
 }
 ```
 
-## Usar em componentes
+`useDictionary(filenameKey)` procura um arquivo de dicionário e retorna um `Record<string, string>`. A chave do nome do arquivo é o caminho do dicionário sem a extensão `.json`:
+- `src/dictionaries/common.json` → `common`
+- `src/dictionaries/pages/home.json` → `pages/home`
+
+## Use em componentes
 
 ```tsx
 import { useDictionary } from 'tyndale-react';
 
 export function ActionButtons() {
-  const d = useDictionary();
+  const labels = useDictionary('common');
+
   return (
     <div>
-      <button>{d('save')}</button>
-      <button>{d('cancel')}</button>
+      <button>{labels.save ?? 'Save'}</button>
+      <button>{labels.cancel ?? 'Cancel'}</button>
     </div>
   );
 }
 ```
+
+Se nenhuma entrada corresponder à chave do nome do arquivo, `useDictionary(filenameKey)` retorna um objeto vazio.

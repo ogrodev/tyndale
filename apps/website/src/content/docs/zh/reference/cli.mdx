@@ -5,7 +5,7 @@ description: Tyndale CLI 的完整参考。
 
 ## `tyndale init`
 
-初始化一个新的 Tyndale 项目。会使用合理的默认值创建 `tyndale.config.json`。
+初始化一个新的 Tyndale 项目。会创建带有合理默认值的 `tyndale.config.json`。
 
 ```bash
 npx tyndale init
@@ -13,7 +13,7 @@ npx tyndale init
 
 ## `tyndale auth`
 
-配置你的 AI 提供商凭据。
+配置你的 AI provider 凭证。
 
 ```bash
 npx tyndale auth
@@ -21,33 +21,33 @@ npx tyndale auth
 
 ## `tyndale translate`
 
-提取可翻译字符串，并为所有已配置的语言区域生成翻译。
+提取可翻译字符串，并为所有已配置的 locale 生成翻译。
 
 ```bash
 npx tyndale translate [options]
 ```
 
-| 参数 | 描述 |
+| 标志 | 说明 |
 |------|-------------|
-| `--locale <code>` | 仅翻译指定的语言区域 |
-| `--force` | 重新翻译所有字符串，而不只是变更部分 |
-| `--dry-run` | 显示将要翻译的内容，但不写入文件 |
-| `--token-budget <n>` | 每个 AI 批次的 token 预算（默认：50000） |
+| `--locale <code>` | 仅翻译指定 locale |
+| `--force` | 重新翻译所有字符串，而不仅是变更部分 |
+| `--dry-run` | 在不写入文件的情况下显示将要翻译的内容 |
+| `--token-budget <n>` | 每个 AI 批次的 Token 预算（默认：50000） |
 | `--concurrency <n>` | 最大并行翻译会话数（自动检测） |
 
 ## `tyndale validate`
 
-检查所有语言区域是否具有完整且格式正确的翻译。不会发起 AI 调用。
+检查所有 locale 是否具有完整且格式正确的翻译。不会发起 AI 调用。
 
 ```bash
 npx tyndale validate
 ```
 
-如果发现问题，将以退出码 1 结束。非常适合用于 CI 流水线。
+如果发现问题，将以状态码 1 退出。非常适合 CI 流水线。
 
 ## `tyndale extract`
 
-仅提取可翻译字符串而不执行翻译。适用于审查将发送给 AI 提供商的内容。
+提取可翻译字符串而不执行翻译。适合用于审查将发送给 AI provider 的内容。
 
 ```bash
 npx tyndale extract
@@ -56,19 +56,21 @@ npx tyndale extract
 
 ## `tyndale translate-docs`
 
-为任意受支持框架翻译文档文件（MDX/MD）。会自动检测你的文档框架，或使用 `tyndale.config.json` 中的配置。
+为任何受支持框架翻译文档文件（MDX/MD）。会自动检测你的文档框架，或使用 `tyndale.config.json` 中的配置。
 
 ```bash
 npx tyndale translate-docs [options]
 ```
 
-| 参数 | 描述 |
+| 标志 | 说明 |
 |------|-------------|
 | `--content-dir <path>` | 覆盖文档内容目录 |
-| `--force` | 重新翻译所有文档，而不只是缺失文件 |
+| `--force` | 重新翻译所有文档，而不仅是缺失文件 |
 | `--concurrency <n>` | 最大并行翻译会话数（自动检测） |
 
-支持的框架：Starlight、Docusaurus、VitePress、MkDocs、Nextra。
+支持的框架：Starlight, Docusaurus, VitePress, MkDocs, Nextra。
+
+`translate-docs` 会在项目根目录写入 `.tyndale-docs-state.json`，用于跟踪源文档哈希。请提交此文件，以便新克隆的仓库在文档未变更时可跳过重新翻译。
 
 ### `tyndale translate-docs setup`
 
@@ -78,7 +80,7 @@ npx tyndale translate-docs [options]
 npx tyndale translate-docs setup
 ```
 
-扫描你的项目以查找框架信号（package 依赖和配置文件），确认检测到的框架，并将 `docs` 部分写入你的配置。
+扫描你的项目中的框架信号（package 依赖和配置文件），确认检测到的框架，并将 `docs` 部分写入你的配置。
 
 ## `tyndale model`
 

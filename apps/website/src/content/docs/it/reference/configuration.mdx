@@ -5,7 +5,7 @@ description: Riferimento completo per tyndale.config.json.
 
 ## File di configurazione
 
-Crea `tyndale.config.json` nella root del progetto, oppure esegui `npx tyndale init` per generarne uno.
+Crea `tyndale.config.json` nella radice del tuo progetto, oppure esegui `npx tyndale init` per generarne uno.
 
 ```json
 {
@@ -38,18 +38,18 @@ Crea `tyndale.config.json` nella root del progetto, oppure esegui `npx tyndale i
 
 | Campo | Tipo | Predefinito | Descrizione |
 |-------|------|---------|-------------|
-| `defaultLocale` | `string` | `"en"` | Codice lingua di origine |
+| `defaultLocale` | `string` | `"en"` | Codice lingua sorgente |
 | `locales` | `string[]` | `[]` | Codici locale di destinazione |
 | `source` | `string[]` | `["src"]` | Directory da analizzare per i contenuti traducibili |
 | `extensions` | `string[]` | `[".ts", ".tsx", ".js", ".jsx"]` | Estensioni di file da includere |
-| `output` | `string` | `"public/_tyndale"` | Directory di output per i file locale generati |
+| `output` | `string` | `"public/_tyndale"` | Directory di output per i file di locale generati |
 | `translate.tokenBudget` | `number` | `50000` | Budget di token per ogni batch di traduzione AI |
 | `translate.concurrency` | `number` | auto | Numero massimo di sessioni di traduzione parallele |
-| `localeAliases` | `object` | `{}` | Mappa i codici locale varianti a quelli canonici |
+| `localeAliases` | `object` | `{}` | Mappa i codici locale variante a quelli canonici |
 | `dictionaries.include` | `string[]` | `[]` | Pattern glob per i file di dizionario |
-| `dictionaries.format` | `string` | `"key-value"` | Formato dei file di dizionario |
+| `dictionaries.format` | `string` | `"key-value"` | Formato del file di dizionario |
 | `pi.model` | `string` | `"claude-sonnet-4-20250514"` | Modello AI da usare |
 | `pi.thinkingLevel` | `string` | `"low"` | Livello di ragionamento AI |
 | `docs.framework` | `string` | — | Framework di documentazione: `starlight`, `docusaurus`, `vitepress`, `mkdocs`, o `nextra` |
-| `docs.contentDir` | `string` | auto | Directory dei contenuti (relativa alla root del progetto) |
+| `docs.contentDir` | `string` | auto | Directory dei contenuti (relativa alla radice del progetto) |
 | `docs.extensions` | `string[]` | auto | Sovrascrive le estensioni dei file per la traduzione della documentazione |

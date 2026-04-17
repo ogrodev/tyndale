@@ -1,9 +1,9 @@
 ---
-title: Adicionar Novos Locales
+title: Adicionando novos locales
 description: Como adicionar um novo idioma de destino ao seu projeto Tyndale.
 ---
 
-## Adicione um locale
+## Adicionar um locale
 
 Abra `tyndale.config.json` e adicione o código do locale ao array `locales`:
 
@@ -14,17 +14,19 @@ Abra `tyndale.config.json` e adicione o código do locale ao array `locales`:
 }
 ```
 
-Depois execute:
+`defaultLocale` é seu idioma de origem, então ele não deve aparecer em `locales`.
+
+Depois, execute:
 
 ```bash
 npx tyndale translate
 ```
 
-O Tyndale irá gerar traduções para o novo locale, mantendo as traduções existentes inalteradas.
+`translate` executa automaticamente a extração primeiro e, em seguida, gera traduções para o novo locale, mantendo os arquivos de locale existentes inalterados, a menos que entradas obsoletas precisem de limpeza.
 
 ## Aliases de locale
 
-Mapeie códigos de variante para códigos canónicos usando `localeAliases`:
+Mapeie códigos de variante para os canônicos com `localeAliases`:
 
 ```json
 {
@@ -35,6 +37,29 @@ Mapeie códigos de variante para códigos canónicos usando `localeAliases`:
 }
 ```
 
-## Suporte RTL
+## Suporte a RTL
 
-O Tyndale deteta automaticamente locales RTL (árabe, hebraico, etc.). O `TyndaleServerProvider` define o atributo `dir` no elemento HTML. Use a variante `rtl:` do Tailwind para estilos específicos de RTL.
+O Tyndale detecta locales RTL, mas não altera `<html dir>` para você. Conecte a direção explicitamente com os helpers de locale atuais:
+
+```tsx
+// app/[locale]/layout.tsx
+import { getDirection } from 'tyndale-next/server';
+
+export default async function RootLayout({
+  children,
+  params,
+}: {
+  children: React.ReactNode;
+  params: Promise<{ locale: string }>;
+}) {
+  const { locale } = await params;
+
+  return (
+    <html lang={locale} dir={getDirection(locale)}>
+      <body>{children}</body>
+    </html>
+  );
+}
+```
+
+Em componentes de cliente, use `useDirection()` quando precisar do valor de direção ativa dentro da UI renderizada.

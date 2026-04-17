@@ -19,9 +19,9 @@ import { Steps } from '@astrojs/starlight/components';
    npx tyndale init
    ```
 
-   这会创建包含默认设置的 `tyndale.config.json`。
+   这会使用默认设置创建 `tyndale.config.json`。
 
-3. **使用你的 AI provider 进行身份验证**
+3. **通过你的 AI provider 进行认证**
 
    ```bash
    npx tyndale auth
@@ -51,18 +51,18 @@ import { Steps } from '@astrojs/starlight/components';
    npx tyndale translate
    ```
 
-   Tyndale 会扫描你的源文件，提取可翻译字符串，并为所有已配置的 locales 生成翻译。
+   Tyndale 会扫描你的源文件，提取可翻译字符串，并为所有已配置的 locale 生成翻译。
 
 </Steps>
 
 ## 刚刚发生了什么？
 
-Tyndale 扫描了你 JSX 中的 `<T>` 组件和 `useTranslation()` 调用，提取英文源文本，将其发送给你的 AI provider 进行翻译，并将 locale 文件写入你的 `output` 目录。
+Tyndale 扫描了你 JSX 中的 `<T>` 组件和 `useTranslation()` 调用，提取英文源文本，将其发送给你的 AI provider 进行翻译，并把 locale 文件写入你的 `output` 目录。
 
-不需要 key 文件。无需手动编辑 JSON。你的翻译已经就绪。
+不需要 key 文件。不需要手动编辑 JSON。你的翻译已经就绪。
 
 ## 下一步
 
-- [配置你的项目](/reference/configuration) — locales、AI model、output directory
+- [配置你的项目](/reference/configuration) — locale、AI model、输出目录
 - [设置 Next.js](/getting-started/nextjs-setup) — middleware、providers、静态生成
 - [了解 React API](/reference/react-api) — 所有组件和 hooks

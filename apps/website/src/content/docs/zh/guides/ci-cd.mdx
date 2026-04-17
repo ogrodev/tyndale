@@ -5,13 +5,13 @@ description: 在你的 CI 流水线中验证翻译。
 
 ## 验证翻译
 
-`tyndale validate` 会检查所有 locale 是否具备完整且格式正确的翻译，并且不会发起任何 AI 调用：
+`tyndale validate` 会检查所有 locale 是否都有完整且格式正确的翻译，并且不会进行任何 AI 调用：
 
 ```bash
 npx tyndale validate
 ```
 
-如果发现任何问题，它会以退出码 1 结束，因此非常适合用于 CI。
+如果发现任何问题，它会以代码 1 退出，因此非常适合用于 CI。
 
 ## GitHub Actions
 
@@ -32,7 +32,7 @@ jobs:
 
 ## Pre-commit 钩子
 
-可配合 `husky` 或 `lint-staged` 使用：
+可与 `husky` 或 `lint-staged` 一起使用：
 
 ```json
 {
@@ -44,8 +44,8 @@ jobs:
 
 ## 翻译工作流
 
-1. 开发者用 `<T>` 或 `msg()` 包裹内容
+1. 开发者使用 `<T>` 或 `msg()` 包装内容
 2. 在本地运行 `npx tyndale translate`（需要 AI 凭据）
-3. 提交在 `public/_tyndale/` 中生成的 locale 文件
-4. CI 运行 `tyndale validate` 以捕获缺失的翻译
-5. 自信发布
+3. 提交生成的 locale 文件到 `public/_tyndale/`
+4. CI 运行 `tyndale validate` 以捕获缺失翻译
+5. 充满信心地发布

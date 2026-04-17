@@ -1,11 +1,11 @@
 ---
-title: Añadir nuevos locales
-description: Cómo añadir un nuevo idioma de destino a tu proyecto Tyndale.
+title: Agregar nuevos locales
+description: Cómo agregar un nuevo idioma de destino a tu proyecto de Tyndale.
 ---
 
-## Añadir un locale
+## Agregar un locale
 
-Abre `tyndale.config.json` y añade el código de locale al array `locales`:
+Abre `tyndale.config.json` y agrega el código del locale al arreglo `locales`:
 
 ```json
 {
@@ -14,17 +14,19 @@ Abre `tyndale.config.json` y añade el código de locale al array `locales`:
 }
 ```
 
+`defaultLocale` es tu idioma de origen, por lo que no debe aparecer en `locales`.
+
 Luego ejecuta:
 
 ```bash
 npx tyndale translate
 ```
 
-Tyndale generará traducciones para el nuevo locale y dejará intactas las traducciones existentes.
+`translate` ejecuta automáticamente la extracción primero y luego genera traducciones para el nuevo locale, dejando intactos los archivos de locale existentes, salvo que sea necesario limpiar entradas obsoletas.
 
 ## Alias de locales
 
-Asocia códigos de variante con sus códigos canónicos mediante `localeAliases`:
+Mapea códigos de variantes a códigos canónicos con `localeAliases`:
 
 ```json
 {
@@ -35,6 +37,29 @@ Asocia códigos de variante con sus códigos canónicos mediante `localeAliases`
 }
 ```
 
-## Compatibilidad RTL
+## Soporte RTL
 
-Tyndale detecta automáticamente los locales RTL (árabe, hebreo, etc.). `TyndaleServerProvider` establece el atributo `dir` en el elemento HTML. Usa la variante `rtl:` de Tailwind para estilos específicos de RTL.
+Tyndale detecta locales RTL, pero no modifica `<html dir>` por ti. Configura la dirección explícitamente con los helpers actuales de locale:
+
+```tsx
+// app/[locale]/layout.tsx
+import { getDirection } from 'tyndale-next/server';
+
+export default async function RootLayout({
+  children,
+  params,
+}: {
+  children: React.ReactNode;
+  params: Promise<{ locale: string }>;
+}) {
+  const { locale } = await params;
+
+  return (
+    <html lang={locale} dir={getDirection(locale)}>
+      <body>{children}</body>
+    </html>
+  );
+}
+```
+
+En componentes de cliente, usa `useDirection()` cuando necesites el valor de dirección activo dentro de la UI renderizada.

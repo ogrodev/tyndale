@@ -1,0 +1,195 @@
+---
+title: Dokumentation übersetzen
+description: "Verwende `tyndale translate-docs`, um Markdown- und MDX-Dokumente für unterstützte Docs-Frameworks zu übersetzen."
+---
+
+## Was es macht
+
+`tyndale translate-docs` übersetzt deine Quelldokumentation aus der Standardsprache in jedes Gebietsschema in `tyndale.config.json`.
+
+Es ist für Dokumentationsseiten gedacht, nicht für UI-Strings von Apps:
+- Es liest Markdown- und MDX-Dokumente aus deinem Quell-Dokumentationsverzeichnis
+- Es schreibt übersetzte Dateien gemäß den Konventionen deines Docs-Frameworks
+- Es überspringt Dateien, die bereits auf dem neuesten Stand sind
+- Es validiert generierte Dokumente und versucht ungültige Ausgaben automatisch erneut, bevor ein Fehler gemeldet wird
+
+Verwende dieselbe AI-Provider-Konfiguration, die du auch für `tyndale translate` nutzt.
+
+## Unterstützte Frameworks
+
+`translate-docs` unterstützt derzeit:
+- Starlight
+- Docusaurus
+- VitePress
+- MkDocs
+- Nextra
+
+## Schnellstart
+
+```bash
+npx tyndale translate-docs setup
+npx tyndale translate-docs
+```
+
+`translate-docs setup` erkennt ein unterstütztes Docs-Framework im aktuellen Projekt und schreibt einen `docs`-Block in `tyndale.config.json`.
+
+Danach verwendet `translate-docs` diese Konfiguration, um englische Quelldokumente zu finden und übersetzte Dokumente an die richtige Stelle für dein Framework zu schreiben.
+
+## Erwartete Konfiguration
+
+Behalte deine normale Tyndale-Konfiguration bei und füge dann einen `docs`-Block hinzu:
+
+```json
+{
+  "defaultLocale": "en",
+  "locales": ["es", "fr", "ja"],
+  "docs": {
+    "framework": "starlight",
+    "contentDir": "src/content/docs"
+  }
+}
+```
+
+`docs.framework` muss eines der folgenden sein:
+- `starlight`
+- `docusaurus`
+- `vitepress`
+- `mkdocs`
+- `nextra`
+
+`docs.contentDir` zeigt auf das Quell-Dokumentationsverzeichnis in deiner Standardsprache.
+
+Hinweise:
+- `defaultLocale` darf nicht in `locales` erscheinen
+- `translate-docs` verwendet framework-spezifische Dateiendungen automatisch
+- `--content-dir` überschreibt das konfigurierte Docs-Verzeichnis für einen Lauf
+
+## So funktioniert die Setup-Erkennung
+
+`npx tyndale translate-docs setup` durchsucht das aktuelle Projekt nach unterstützten Frameworks.
+
+Die Erkennung basiert auf framework-spezifischen Signalen wie:
+- installierten Paketabhängigkeiten
+- bekannten Framework-Konfigurationsdateien
+
+Aktuelle Standardwerte sind:
+- Starlight → `src/content/docs`
+- Docusaurus → `docs`
+- VitePress → `docs`
+- MkDocs → `docs`
+- Nextra → `pages`
+
+Für MkDocs reicht eine Datei `mkdocs.yml` oder `mkdocs.yaml` für eine Erkennung mit hoher Sicherheit aus.
+
+Wenn das Setup mehrere Kandidaten findet, bevorzugt es den ersten Treffer mit hoher Sicherheit. Anschließend schreibt es das ausgewählte Framework und das Content-Verzeichnis in `tyndale.config.json`.
+
+Wenn du das Setup überspringst, kann `translate-docs` in einem engen Sonderfall trotzdem automatisch erkennen: wenn genau ein Framework mit hoher Sicherheit gefunden wird. Andernfalls fällt es auf `src/content/docs` zurück, außer du übergibst `--content-dir`.
+
+## Inkrementelles Verhalten
+
+`translate-docs` führt eine inkrementelle Zustandsdatei im Projektstamm:
+
+```text
+.tyndale-docs-state.json
+```
+
+Für jedes Gebietsschema und jede Quelldatei speichert Tyndale einen Hash des aktuellen Quelldokuments. Beim nächsten Lauf wird ein Dokument nur dann erneut übersetzt, wenn:
+- die übersetzte Zieldatei fehlt
+- sich die englische Quelldatei geändert hat
+- du `--force` übergibst
+
+Das bedeutet, ein normaler Lauf verarbeitet nur fehlende oder geänderte Dokumente.
+
+Um alles neu zu übersetzen:
+
+```bash
+npx tyndale translate-docs --force
+```
+
+## Wohin übersetzte Dateien geschrieben werden
+
+Tyndale schreibt übersetzte Dokumente entsprechend dem ausgewählten Framework.
+
+### Starlight
+
+Quelldokumente bleiben in `src/content/docs`, und übersetzte Dokumente landen in Sprachordnern unter diesem Verzeichnis:
+
+```text
+src/content/docs/getting-started.mdx
+src/content/docs/es/getting-started.mdx
+src/content/docs/fr/getting-started.mdx
+```
+
+### VitePress und MkDocs
+
+Diese verwenden dieselbe Konvention mit einem Ordner pro Gebietsschema innerhalb des Docs-Verzeichnisses:
+
+```text
+docs/guide.md
+docs/es/guide.md
+docs/fr/guide.md
+```
+
+### Docusaurus
+
+Docusaurus-Übersetzungen werden in seine i18n-Dokumentstruktur geschrieben:
+
+```text
+docs/intro.mdx
+i18n/es/docusaurus-plugin-content-docs/current/intro.mdx
+i18n/fr/docusaurus-plugin-content-docs/current/intro.mdx
+```
+
+### Nextra
+
+Nextra schreibt übersetzte Dateien neben die Quelldatei und verwendet ein Locale-Suffix:
+
+```text
+pages/docs/getting-started.mdx
+pages/docs/getting-started.es.mdx
+pages/docs/getting-started.fr.mdx
+```
+
+## Starlight-Beispiel
+
+Dieses Repo verwendet Starlight, daher sieht eine typische Konfiguration so aus:
+
+```json
+{
+  "defaultLocale": "en",
+  "locales": ["de", "es", "fr", "it", "ja", "ko", "pt", "ru", "zh"],
+  "docs": {
+    "framework": "starlight",
+    "contentDir": "src/content/docs"
+  }
+}
+```
+
+Dann ausführen:
+
+```bash
+npx tyndale translate-docs
+```
+
+Tyndale liest die englischen Dokumente aus `src/content/docs` und schreibt übersetzte Dokumente in Locale-Ordner wie `src/content/docs/es/` und `src/content/docs/fr/`.
+
+## CLI-Optionen
+
+```bash
+npx tyndale translate-docs --content-dir docs --concurrency 4
+```
+
+Aktuelle Optionen sind:
+- `--content-dir <path>` zum Überschreiben des Docs-Quellverzeichnisses
+- `--concurrency <n>` zur Steuerung paralleler Übersetzungssitzungen
+- `--force` zum erneuten Übersetzen aller Dokumente
+
+## Was validiert wird
+
+Nach jeder Übersetzung prüft Tyndale das generierte Dokument, bevor es übernommen wird. Auf hoher Ebene stellt es sicher, dass das Ergebnis weiterhin wie eine gültige Dokumentdatei aussieht:
+- Frontmatter ist weiterhin vorhanden und nutzbar
+- erforderliche Metadaten wie `title` sind weiterhin vorhanden
+- Quell-Importzeilen bleiben erhalten
+- das Modell hat nicht die gesamte Datei in Code-Fences eingeschlossen
+
+Wenn eine generierte Datei die Validierung nicht besteht, fordert Tyndale das Modell zur Korrektur auf und versucht es automatisch erneut. Dateien, die weiterhin fehlschlagen, werden am Ende des Laufs gemeldet.

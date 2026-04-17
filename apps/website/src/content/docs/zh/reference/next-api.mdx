@@ -1,46 +1,229 @@
 ---
-title: Next.js API
-description: tyndale-next 的 API 参考。
+title: Next.js API 参考
+description: tyndale-next 的 API 参考文档。
 ---
 
-## `TyndaleServerProvider`
+`tyndale-next` 在 `tyndale-react` 的基础上增加了 Next.js 专用的集成能力。
 
-服务端 provider，用于加载翻译并让所有子组件都可访问这些翻译。
+## 导入路径
+
+- `tyndale-next` — 面向应用侧的辅助函数和组件
+- `tyndale-next/server` — 用于 RSC 代码的服务端安全导出
+- `tyndale-next/config` — Next 配置包装器
+- `tyndale-next/middleware` — locale 路由中间件
+
+## App Router 核心
+
+### `TyndaleServerProvider`
+
+一个服务端组件，会从磁盘读取 `public/_tyndale/{locale}.json` 和 `manifest.json`，并为客户端 provider 注水。
 
 ```tsx
 import { TyndaleServerProvider } from 'tyndale-next/server';
 
-// In your layout
-<TyndaleServerProvider locale={locale}>
-  {children}
-</TyndaleServerProvider>
+export default async function LocaleLayout({
+  children,
+  params,
+}: {
+  children: React.ReactNode;
+  params: Promise<{ locale: string }>;
+}) {
+  const { locale } = await params;
+
+  return (
+    <html lang={locale}>
+      <body>
+        <TyndaleServerProvider locale={locale}>{children}</TyndaleServerProvider>
+      </body>
+    </html>
+  );
+}
 ```
 
-## `withTyndaleConfig(config)`
+**属性**
 
-包装你的 Next.js 配置，以添加基于 locale 的 rewrites 和 redirects。
+- `locale: string`
+- `children: React.ReactNode`
 
-```js
-// next.config.mjs
+说明：
+
+- 从 `TYNDALE_DEFAULT_LOCALE` 读取默认 locale。
+- 从 `TYNDALE_OUTPUT` 或 `public/_tyndale` 读取翻译输出。
+- 不会自动为你设置 `<html dir>`。请在客户端使用 `useDirection()`，或在服务端使用 `getDirection(locale)`。
+
+### `TyndaleNextClientProvider`
+
+`TyndaleProvider` 的客户端包装器。它会把 `useChangeLocale()` 连接到 Next 导航，通过 push 带 locale 前缀的 URL 来切换语言。
+
+大多数应用应使用 `TyndaleServerProvider`，而不是直接挂载这个组件。
+
+```tsx
+'use client';
+
+import { TyndaleNextClientProvider } from 'tyndale-next';
+
+export function Providers({
+  children,
+  locale,
+  defaultLocale,
+  translations,
+  manifest,
+}: {
+  children: React.ReactNode;
+  locale: string;
+  defaultLocale: string;
+  translations: Record<string, string>;
+  manifest: Record<string, unknown> | null;
+}) {
+  return (
+    <TyndaleNextClientProvider
+      locale={locale}
+      defaultLocale={defaultLocale}
+      translations={translations}
+      manifest={manifest}
+    >
+      {children}
+    </TyndaleNextClientProvider>
+  );
+}
+```
+
+### `generateStaticLocaleParams()`
+
+通过读取 `tyndale.config.json`，为 `generateStaticParams()` 返回 locale 参数。
+
+```ts
+import { generateStaticLocaleParams } from 'tyndale-next/server';
+
+export function generateStaticParams() {
+  return generateStaticLocaleParams();
+}
+```
+
+返回结构：
+
+```ts
+Array<{ locale: string }>
+```
+
+结果会先包含默认 locale，然后包含 `locales` 中的每个 locale。
+
+## 配置
+
+### `withTyndaleConfig(nextConfig)`
+
+包装你的 Next 配置，并注入 Tyndale 在构建和请求阶段读取的运行时环境变量。
+
+```ts
+// next.config.ts
 import { withTyndaleConfig } from 'tyndale-next/config';
 
 export default withTyndaleConfig({
-  // your existing config
+  reactStrictMode: true,
 });
 ```
 
-## `tyndaleMiddleware`
+它会添加：
 
-用于处理 locale 检测和路由的 middleware。
+- `TYNDALE_DEFAULT_LOCALE`
+- `TYNDALE_LOCALES`
+- `TYNDALE_COOKIE_NAME`
+- `TYNDALE_LOCALE_ALIASES`
+- `TYNDALE_OUTPUT`
+- 一个 webpack alias，使服务端和客户端解析到同一个 `tyndale-react` 实例
+
+## 中间件
+
+### `createTyndaleMiddleware()`
+
+创建用于处理 locale 路由的 Next 中间件。
 
 ```ts
 // middleware.ts
-export { tyndaleMiddleware as middleware } from 'tyndale-next/middleware';
+import { createTyndaleMiddleware } from 'tyndale-next/middleware';
+
+export default createTyndaleMiddleware();
+
+export const config = {
+  matcher: ['/((?!api|_next|_tyndale|.*\\..*).*)'],
+};
 ```
 
-### 行为
+行为顺序如下：
 
-1. 检查 URL 中是否包含 locale 前缀
-2. 回退到 `Accept-Language` 请求头
-3. 回退到配置中的默认 locale
-4. 为后续请求设置 locale cookie
+1. 若 URL 中存在 locale，则优先使用它。
+2. 否则回退到 locale cookie。
+3. 否则回退到 `Accept-Language` 请求头。
+4. 最后回退到 `defaultLocale`。
+
+此外它还会：
+
+- 将别名 locale 重定向到其规范 locale
+- 将不受支持的 locale 前缀重定向到默认 locale
+- 为有效的 locale 前缀路由设置 `x-tyndale-locale` 请求头
+- 将选中的 locale 持久化到 `TYNDALE_LOCALE` cookie 中
+
+## 方向与 locale 辅助函数
+
+### `useDirection()`
+
+客户端 hook，会根据当前 locale 返回 `'ltr'` 或 `'rtl'`。
+
+```tsx
+'use client';
+
+import { useDirection } from 'tyndale-next';
+
+export function HtmlShell({ children }: { children: React.ReactNode }) {
+  const dir = useDirection();
+  return <div dir={dir}>{children}</div>;
+}
+```
+
+### `getDirection(locale)`
+
+服务端安全辅助函数，会根据 locale 字符串返回 `'ltr'` 或 `'rtl'`。
+
+```tsx
+import { getDirection } from 'tyndale-next/server';
+
+const dir = getDirection(locale);
+```
+
+### `isRtlLocale(locale)`
+
+当 locale 使用从右到左书写的文字系统时返回 `true`。
+
+```ts
+import { isRtlLocale } from 'tyndale-next/server';
+
+isRtlLocale('ar'); // true
+isRtlLocale('en-US'); // false
+```
+
+### `resolveAlias(locale, aliases)`
+
+将 locale 别名映射为其规范 locale。
+
+```ts
+import { resolveAlias } from 'tyndale-next/server';
+
+resolveAlias('pt-BR', { 'pt-BR': 'pt' }); // 'pt'
+```
+
+## 缓存边界
+
+### `TyndaleCache`
+
+用于共享布局中翻译内容的客户端缓存边界。缓存键同时受 `id` 和当前 locale 作用域控制。
+
+```tsx
+import { TyndaleCache } from 'tyndale-next';
+import { T } from 'tyndale-react';
+
+<TyndaleCache id="footer-copy">
+  <T>Documentation, guides, and examples.</T>
+</TyndaleCache>
+```
+
+可用于在导航期间会重新渲染的布局中，复用重复的翻译 UI。不要把它当作通用数据缓存来使用。

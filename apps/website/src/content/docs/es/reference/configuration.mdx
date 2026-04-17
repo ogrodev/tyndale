@@ -38,14 +38,14 @@ Crea `tyndale.config.json` en la raíz de tu proyecto, o ejecuta `npx tyndale in
 
 | Campo | Tipo | Predeterminado | Descripción |
 |-------|------|---------|-------------|
-| `defaultLocale` | `string` | `"en"` | Código del idioma de origen |
+| `defaultLocale` | `string` | `"en"` | Código de idioma de origen |
 | `locales` | `string[]` | `[]` | Códigos de locale de destino |
-| `source` | `string[]` | `["src"]` | Directorios que se analizarán para contenido traducible |
-| `extensions` | `string[]` | `[".ts", ".tsx", ".js", ".jsx"]` | Extensiones de archivo a incluir |
+| `source` | `string[]` | `["src"]` | Directorios que se escanean en busca de contenido traducible |
+| `extensions` | `string[]` | `[".ts", ".tsx", ".js", ".jsx"]` | Extensiones de archivo que se incluirán |
 | `output` | `string` | `"public/_tyndale"` | Directorio de salida para los archivos de locale generados |
 | `translate.tokenBudget` | `number` | `50000` | Presupuesto de tokens por lote de traducción de IA |
 | `translate.concurrency` | `number` | auto | Máximo de sesiones de traducción paralelas |
-| `localeAliases` | `object` | `{}` | Mapa de códigos de locale variantes a los canónicos |
+| `localeAliases` | `object` | `{}` | Mapea códigos de locale variantes a códigos canónicos |
 | `dictionaries.include` | `string[]` | `[]` | Patrones glob para archivos de diccionario |
 | `dictionaries.format` | `string` | `"key-value"` | Formato de archivo de diccionario |
 | `pi.model` | `string` | `"claude-sonnet-4-20250514"` | Modelo de IA que se utilizará |

@@ -1,9 +1,9 @@
 ---
 title: Configuration Next.js
-description: Configurez Tyndale avec Next.js pour le routage des locales, le rendu côté serveur et la génération statique.
+description: Configurez Tyndale avec Next.js pour le routage par locale, le rendu serveur et la génération statique.
 ---
 
-import { Steps, Tabs, TabItem } from '@astrojs/starlight/components';
+import { Steps } from '@astrojs/starlight/components';
 
 ## Installer l’adaptateur
 
@@ -30,16 +30,22 @@ npm install tyndale-next
 
    ```ts
    // middleware.ts
-   export { tyndaleMiddleware as middleware } from 'tyndale-next/middleware';
+   import { createTyndaleMiddleware } from 'tyndale-next/middleware';
+
+   export default createTyndaleMiddleware();
+
+   export const config = {
+     matcher: ['/((?!api|_next|_tyndale|.*\\..*).*)'],
+   };
    ```
 
-   Cela gère la détection de la locale, le routage des URL et la définition du cookie de locale.
+   Cela gère la détection de la locale, les redirections vers des routes préfixées par la locale, et conserve la locale active dans un cookie.
 
 3. **Ajoutez le provider serveur à votre layout**
 
    ```tsx
    // app/[locale]/layout.tsx
-   import { TyndaleServerProvider } from 'tyndale-next/server';
+   import { getDirection, TyndaleServerProvider } from 'tyndale-next/server';
 
    export default async function RootLayout({
      children,
@@ -51,7 +57,7 @@ npm install tyndale-next
      const { locale } = await params;
 
      return (
-       <html lang={locale}>
+       <html lang={locale} dir={getDirection(locale)}>
          <body>
            <TyndaleServerProvider locale={locale}>
              {children}
@@ -62,10 +68,12 @@ npm install tyndale-next
    }
    ```
 
+   `TyndaleServerProvider` charge les données de locale côté serveur. Définissez vous-même `<html dir>` avec `getDirection(locale)` dans les composants serveur ou `useDirection()` dans les composants client.
+
 </Steps>
 
-## Comment ça fonctionne
+## Fonctionnement
 
-- `withTyndaleConfig` ajoute des réécritures de chemins de locale à votre configuration Next.js
-- Le middleware détecte la locale préférée de l’utilisateur et redirige en conséquence
-- `TyndaleServerProvider` charge les traductions côté serveur et les rend disponibles à tous les composants via le contexte React
+- `withTyndaleConfig` lit `tyndale.config.json`, injecte les variables d’environnement au moment du build que Tyndale utilise à l’exécution, et crée un alias vers `tyndale-react` afin que votre application partage un contexte de provider unique
+- Le middleware redirige les requêtes vers des routes préfixées par la locale, normalise les alias de locale, et définit le cookie/header de locale pour le rendu en aval
+- `TyndaleServerProvider` charge les traductions côté serveur et les met à disposition de tous les composants via le contexte React

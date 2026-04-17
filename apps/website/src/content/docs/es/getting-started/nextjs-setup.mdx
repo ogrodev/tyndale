@@ -1,9 +1,9 @@
 ---
 title: Configuración de Next.js
-description: Configura Tyndale con Next.js para enrutamiento por configuración regional, renderizado del servidor y generación estática.
+description: Configura Tyndale con Next.js para enrutamiento por locales, renderizado en servidor y generación estática.
 ---
 
-import { Steps, Tabs, TabItem } from '@astrojs/starlight/components';
+import { Steps } from '@astrojs/starlight/components';
 
 ## Instala el adaptador
 
@@ -15,7 +15,7 @@ npm install tyndale-next
 
 <Steps>
 
-1. **Actualiza tu configuración de Next.js**
+1. **Actualiza la configuración de Next.js**
 
    ```js
    // next.config.mjs
@@ -30,16 +30,22 @@ npm install tyndale-next
 
    ```ts
    // middleware.ts
-   export { tyndaleMiddleware as middleware } from 'tyndale-next/middleware';
+   import { createTyndaleMiddleware } from 'tyndale-next/middleware';
+
+   export default createTyndaleMiddleware();
+
+   export const config = {
+     matcher: ['/((?!api|_next|_tyndale|.*\\..*).*)'],
+   };
    ```
 
-   Esto se encarga de detectar la configuración regional, enrutar URLs y establecer la cookie de configuración regional.
+   Esto gestiona la detección del locale, redirige a rutas con prefijo de locale y mantiene el locale activo en una cookie.
 
-3. **Agrega el proveedor del servidor a tu layout**
+3. **Agrega el proveedor de servidor a tu layout**
 
    ```tsx
    // app/[locale]/layout.tsx
-   import { TyndaleServerProvider } from 'tyndale-next/server';
+   import { getDirection, TyndaleServerProvider } from 'tyndale-next/server';
 
    export default async function RootLayout({
      children,
@@ -51,7 +57,7 @@ npm install tyndale-next
      const { locale } = await params;
 
      return (
-       <html lang={locale}>
+       <html lang={locale} dir={getDirection(locale)}>
          <body>
            <TyndaleServerProvider locale={locale}>
              {children}
@@ -62,10 +68,12 @@ npm install tyndale-next
    }
    ```
 
+   `TyndaleServerProvider` carga los datos del locale en el servidor. Establece `<html dir>` tú mismo con `getDirection(locale)` en componentes de servidor o `useDirection()` en componentes de cliente.
+
 </Steps>
 
 ## Cómo funciona
 
-- `withTyndaleConfig` agrega reescrituras de rutas de configuración regional a tu configuración de Next.js
-- El middleware detecta la configuración regional preferida del usuario y redirige en consecuencia
-- `TyndaleServerProvider` carga las traducciones del lado del servidor y las pone a disposición de todos los componentes a través del contexto de React
+- `withTyndaleConfig` lee `tyndale.config.json`, inyecta las variables de entorno de build-time que Tyndale usa en runtime y crea un alias de `tyndale-react` para que tu aplicación comparta un único contexto de proveedor
+- El middleware redirige las solicitudes a rutas con prefijo de locale, normaliza alias de locale y establece la cookie/header de locale para el renderizado posterior
+- `TyndaleServerProvider` carga traducciones del lado del servidor y las pone a disposición de todos los componentes mediante el contexto de React

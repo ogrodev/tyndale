@@ -13,7 +13,7 @@ npx tyndale init
 
 ## `tyndale auth`
 
-Konfiguriert Ihre Zugangsdaten für den AI-Provider.
+Konfiguriert die Zugangsdaten für deinen AI-Provider.
 
 ```bash
 npx tyndale auth
@@ -33,11 +33,11 @@ npx tyndale translate [options]
 | `--force` | Übersetzt alle Strings erneut, nicht nur Änderungen |
 | `--dry-run` | Zeigt, was übersetzt würde, ohne Dateien zu schreiben |
 | `--token-budget <n>` | Token-Budget pro AI-Batch (Standard: 50000) |
-| `--concurrency <n>` | Maximale parallele Übersetzungssitzungen (automatisch erkannt) |
+| `--concurrency <n>` | Maximale Anzahl paralleler Übersetzungssitzungen (automatisch erkannt) |
 
 ## `tyndale validate`
 
-Prüft, dass alle Locales vollständige, wohlgeformte Übersetzungen haben. Es werden keine AI-Aufrufe ausgeführt.
+Prüft, ob alle Locales vollständige, korrekt formatierte Übersetzungen haben. Es werden keine AI-Aufrufe ausgeführt.
 
 ```bash
 npx tyndale validate
@@ -56,7 +56,7 @@ npx tyndale extract
 
 ## `tyndale translate-docs`
 
-Übersetzt Dokumentationsdateien (MDX/MD) für jedes unterstützte Framework. Erkennt Ihr Doku-Framework automatisch oder verwendet die Konfiguration aus `tyndale.config.json`.
+Übersetzt Dokumentationsdateien (MDX/MD) für jedes unterstützte Framework. Erkennt dein Doku-Framework automatisch oder verwendet die Konfiguration aus `tyndale.config.json`.
 
 ```bash
 npx tyndale translate-docs [options]
@@ -64,21 +64,23 @@ npx tyndale translate-docs [options]
 
 | Flag | Beschreibung |
 |------|-------------|
-| `--content-dir <path>` | Überschreibt das Content-Verzeichnis der Dokumentation |
+| `--content-dir <path>` | Überschreibt das Content-Verzeichnis der Doku |
 | `--force` | Übersetzt alle Doku-Dateien erneut, nicht nur fehlende Dateien |
-| `--concurrency <n>` | Maximale parallele Übersetzungssitzungen (automatisch erkannt) |
+| `--concurrency <n>` | Maximale Anzahl paralleler Übersetzungssitzungen (automatisch erkannt) |
 
 Unterstützte Frameworks: Starlight, Docusaurus, VitePress, MkDocs, Nextra.
 
+`translate-docs` schreibt `.tyndale-docs-state.json` im Stammverzeichnis deines Projekts, um Hashes der Quelldokumente zu verfolgen. Committe diese Datei, damit frische Klone unveränderte Doku ohne erneute Übersetzung überspringen können.
+
 ### `tyndale translate-docs setup`
 
-Erkennt Ihr Dokumentations-Framework und speichert die Konfiguration in `tyndale.config.json`.
+Erkennt dein Dokumentations-Framework und speichert die Konfiguration in `tyndale.config.json`.
 
 ```bash
 npx tyndale translate-docs setup
 ```
 
-Durchsucht Ihr Projekt nach Framework-Signalen (Paketabhängigkeiten und Konfigurationsdateien), bestätigt das erkannte Framework und schreibt den Abschnitt `docs` in Ihre Konfiguration.
+Durchsucht dein Projekt nach Framework-Hinweisen (Paketabhängigkeiten und Konfigurationsdateien), bestätigt das erkannte Framework und schreibt den Abschnitt `docs` in deine Konfiguration.
 
 ## `tyndale model`
 

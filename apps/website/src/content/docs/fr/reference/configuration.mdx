@@ -1,6 +1,6 @@
 ---
 title: Configuration
-description: "Référence complète de `tyndale.config.json`."
+description: Référence complète pour tyndale.config.json.
 ---
 
 ## Fichier de configuration
@@ -37,7 +37,7 @@ Créez `tyndale.config.json` à la racine de votre projet, ou exécutez `npx tyn
 ## Champs
 
 | Champ | Type | Par défaut | Description |
-|-------|------|---------|-------------|
+|-------|------|------------|-------------|
 | `defaultLocale` | `string` | `"en"` | Code de langue source |
 | `locales` | `string[]` | `[]` | Codes de locale cibles |
 | `source` | `string[]` | `["src"]` | Répertoires à analyser pour le contenu traduisible |
@@ -48,8 +48,8 @@ Créez `tyndale.config.json` à la racine de votre projet, ou exécutez `npx tyn
 | `localeAliases` | `object` | `{}` | Associe les codes de locale variantes aux codes canoniques |
 | `dictionaries.include` | `string[]` | `[]` | Motifs glob pour les fichiers de dictionnaire |
 | `dictionaries.format` | `string` | `"key-value"` | Format de fichier de dictionnaire |
-| `pi.model` | `string` | `"claude-sonnet-4-20250514"` | Modèle d’IA à utiliser |
+| `pi.model` | `string` | `"claude-sonnet-4-20250514"` | Modèle IA à utiliser |
 | `pi.thinkingLevel` | `string` | `"low"` | Niveau de réflexion de l’IA |
-| `docs.framework` | `string` | — | Framework de documentation : `starlight`, `docusaurus`, `vitepress`, `mkdocs`, ou `nextra` |
+| `docs.framework` | `string` | — | Framework de documentation : `starlight`, `docusaurus`, `vitepress`, `mkdocs` ou `nextra` |
 | `docs.contentDir` | `string` | auto | Répertoire de contenu (relatif à la racine du projet) |
 | `docs.extensions` | `string[]` | auto | Remplace les extensions de fichier pour la traduction de la documentation |

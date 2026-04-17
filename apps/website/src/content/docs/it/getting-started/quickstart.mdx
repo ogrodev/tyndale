@@ -1,6 +1,6 @@
 ---
-title: Guida rapida
-description: Fai funzionare le traduzioni nella tua app React in 5 minuti.
+title: Avvio rapido
+description: Avvia le traduzioni nella tua app React in 5 minuti.
 ---
 
 import { Steps } from '@astrojs/starlight/components';
@@ -27,9 +27,9 @@ import { Steps } from '@astrojs/starlight/components';
    npx tyndale auth
    ```
 
-   Segui i prompt per configurare la tua chiave API (Anthropic, OpenAI, ecc.).
+   Segui le istruzioni per configurare la tua API key (Anthropic, OpenAI, ecc.).
 
-4. **Avvolgi il contenuto traducibile**
+4. **Racchiudi i contenuti traducibili**
 
    ```tsx
    import { T, useTranslation } from 'tyndale-react';
@@ -57,9 +57,9 @@ import { Steps } from '@astrojs/starlight/components';
 
 ## Cosa è appena successo?
 
-Tyndale ha analizzato il tuo JSX alla ricerca di componenti `<T>` e chiamate `useTranslation()`, ha estratto il testo sorgente in inglese, lo ha inviato al tuo provider AI per la traduzione e ha scritto i file delle lingue nella directory `output`.
+Tyndale ha analizzato il tuo JSX alla ricerca di componenti `<T>` e chiamate a `useTranslation()`, ha estratto il testo sorgente in inglese, lo ha inviato al tuo provider AI per la traduzione e ha scritto i file di lingua nella tua directory `output`.
 
-Nessun file di chiavi. Nessuna modifica manuale del JSON. Le tue traduzioni sono pronte.
+Nessun file di chiavi. Nessuna modifica manuale dei file JSON. Le tue traduzioni sono pronte.
 
 ## Prossimi passi
 

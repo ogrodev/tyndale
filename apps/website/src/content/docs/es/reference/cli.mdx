@@ -1,11 +1,11 @@
 ---
 title: Comandos de CLI
-description: Referencia completa de la CLI de Tyndale.
+description: Referencia completa para la CLI de Tyndale.
 ---
 
 ## `tyndale init`
 
-Inicializa un nuevo proyecto de Tyndale. Crea `tyndale.config.json` con valores predeterminados razonables.
+Inicializa un nuevo proyecto de Tyndale. Crea `tyndale.config.json` con valores predeterminados sensatos.
 
 ```bash
 npx tyndale init
@@ -13,7 +13,7 @@ npx tyndale init
 
 ## `tyndale auth`
 
-Configura las credenciales de tu proveedor de IA.
+Configura las credenciales de tu proveedor de AI.
 
 ```bash
 npx tyndale auth
@@ -32,12 +32,12 @@ npx tyndale translate [options]
 | `--locale <code>` | Traduce solo un locale específico |
 | `--force` | Vuelve a traducir todas las cadenas, no solo los cambios |
 | `--dry-run` | Muestra qué se traduciría sin escribir archivos |
-| `--token-budget <n>` | Presupuesto de tokens por lote de IA (predeterminado: 50000) |
+| `--token-budget <n>` | Presupuesto de tokens por lote de AI (predeterminado: 50000) |
 | `--concurrency <n>` | Máximo de sesiones de traducción en paralelo (detectado automáticamente) |
 
 ## `tyndale validate`
 
-Verifica que todos los locales tengan traducciones completas y bien formadas. No se realizan llamadas a IA.
+Comprueba que todos los locales tengan traducciones completas y bien formadas. No se realizan llamadas a AI.
 
 ```bash
 npx tyndale validate
@@ -47,7 +47,7 @@ Sale con código 1 si se encuentran problemas. Ideal para pipelines de CI.
 
 ## `tyndale extract`
 
-Extrae cadenas traducibles sin traducirlas. Útil para revisar qué se enviará al proveedor de IA.
+Extrae cadenas traducibles sin traducirlas. Útil para revisar qué se enviará al proveedor de AI.
 
 ```bash
 npx tyndale extract
@@ -70,6 +70,8 @@ npx tyndale translate-docs [options]
 
 Frameworks compatibles: Starlight, Docusaurus, VitePress, MkDocs, Nextra.
 
+`translate-docs` escribe `.tyndale-docs-state.json` en la raíz de tu proyecto para rastrear los hashes de los documentos fuente. Haz commit de este archivo para que los clones nuevos puedan omitir la documentación sin cambios sin volver a traducirla.
+
 ### `tyndale translate-docs setup`
 
 Detecta tu framework de documentación y guarda la configuración en `tyndale.config.json`.
@@ -82,7 +84,7 @@ Escanea tu proyecto en busca de señales del framework (dependencias de paquetes
 
 ## `tyndale model`
 
-Cambia el modelo de IA usado para las traducciones.
+Cambia el modelo de AI usado para las traducciones.
 
 ```bash
 npx tyndale model

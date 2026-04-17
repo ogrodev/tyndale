@@ -1,9 +1,9 @@
 ---
 title: Next.js 设置
-description: 在 Next.js 中设置 Tyndale，以实现语言环境路由、服务端渲染和静态生成。
+description: 使用 Next.js 设置 Tyndale，以实现 locale 路由、服务器渲染和静态生成。
 ---
 
-import { Steps, Tabs, TabItem } from '@astrojs/starlight/components';
+import { Steps } from '@astrojs/starlight/components';
 
 ## 安装适配器
 
@@ -30,16 +30,22 @@ npm install tyndale-next
 
    ```ts
    // middleware.ts
-   export { tyndaleMiddleware as middleware } from 'tyndale-next/middleware';
+   import { createTyndaleMiddleware } from 'tyndale-next/middleware';
+
+   export default createTyndaleMiddleware();
+
+   export const config = {
+     matcher: ['/((?!api|_next|_tyndale|.*\\..*).*)'],
+   };
    ```
 
-   这会处理语言环境检测、URL 路由以及设置语言环境 cookie。
+   这会处理 locale 检测、重定向到带有 locale 前缀的路由，并将当前激活的 locale 持久化到 cookie 中。
 
-3. **将服务端 Provider 添加到你的布局中**
+3. **将服务端 provider 添加到你的布局中**
 
    ```tsx
    // app/[locale]/layout.tsx
-   import { TyndaleServerProvider } from 'tyndale-next/server';
+   import { getDirection, TyndaleServerProvider } from 'tyndale-next/server';
 
    export default async function RootLayout({
      children,
@@ -51,7 +57,7 @@ npm install tyndale-next
      const { locale } = await params;
 
      return (
-       <html lang={locale}>
+       <html lang={locale} dir={getDirection(locale)}>
          <body>
            <TyndaleServerProvider locale={locale}>
              {children}
@@ -62,10 +68,12 @@ npm install tyndale-next
    }
    ```
 
+   `TyndaleServerProvider` 会在服务器端加载 locale 数据。请在服务端组件中使用 `getDirection(locale)`，或在客户端组件中使用 `useDirection()`，自行设置 `<html dir>`。
+
 </Steps>
 
 ## 工作原理
 
-- `withTyndaleConfig` 会在你的 Next.js 配置中添加语言环境路径重写规则
-- 中间件会检测用户首选的语言环境并进行相应重定向
-- `TyndaleServerProvider` 会在服务端加载翻译，并通过 React context 将其提供给所有组件
+- `withTyndaleConfig` 会读取 `tyndale.config.json`，注入 Tyndale 在运行时使用的构建期环境变量，并为 `tyndale-react` 设置别名，让你的应用共享同一个 provider 上下文
+- 中间件会将请求重定向到带 locale 前缀的路由，规范化 locale 别名，并为下游渲染设置 locale cookie/header
+- `TyndaleServerProvider` 会在服务器端加载翻译，并通过 React context 提供给所有组件

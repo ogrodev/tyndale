@@ -1,17 +1,17 @@
 ---
-title: Integração de CI/CD
+title: Integração CI/CD
 description: Valide traduções no seu pipeline de CI.
 ---
 
 ## Validar traduções
 
-`tyndale validate` verifica se todos os locales têm traduções completas e bem formadas, sem fazer chamadas de IA:
+`tyndale validate` verifica se todos os locales têm traduções completas e bem formadas sem fazer nenhuma chamada de IA:
 
 ```bash
 npx tyndale validate
 ```
 
-Termina com o código 1 se forem encontrados problemas, tornando-o perfeito para CI.
+Ele sai com código 1 se qualquer problema for encontrado, tornando-o perfeito para CI.
 
 ## GitHub Actions
 
@@ -30,7 +30,7 @@ jobs:
       - run: npx tyndale validate
 ```
 
-## Hook de pre-commit
+## Hook de pré-commit
 
 Use com `husky` ou `lint-staged`:
 
@@ -44,8 +44,8 @@ Use com `husky` ou `lint-staged`:
 
 ## Fluxo de tradução
 
-1. O programador envolve o conteúdo com `<T>` ou `msg()`
+1. O desenvolvedor envolve o conteúdo com `<T>` ou `msg()`
 2. Execute `npx tyndale translate` localmente (requer credenciais de IA)
-3. Faça commit dos ficheiros de locale gerados em `public/_tyndale/`
-4. O CI executa `tyndale validate` para detetar traduções em falta
-5. Publique com confiança
+3. Faça commit dos arquivos de locale gerados em `public/_tyndale/`
+4. O CI executa `tyndale validate` para detectar traduções ausentes
+5. Faça o deploy com confiança

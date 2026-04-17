@@ -1,13 +1,13 @@
 ---
 title: Utiliser les dictionnaires
-description: Gérez des dictionnaires de traduction clé-valeur en parallèle de vos traductions JSX.
+description: Gérez des dictionnaires de traduction clé-valeur aux côtés de vos traductions JSX.
 ---
 
 ## Que sont les dictionnaires ?
 
-Les dictionnaires sont des fichiers de traduction traditionnels clé-valeur. Ils sont utiles pour :
-- Les chaînes partagées entre de nombreux composants (libellés de boutons, messages d’erreur)
-- Le contenu géré en dehors de votre base de code
+Les dictionnaires sont des fichiers de traduction clé-valeur traditionnels. Ils sont utiles pour :
+- Des chaînes partagées entre de nombreux composants (libellés de boutons, messages d’erreur)
+- Du contenu géré en dehors de votre base de code
 - La migration depuis des configurations i18n existantes
 
 ## Configuration
@@ -33,18 +33,25 @@ Les dictionnaires sont des fichiers de traduction traditionnels clé-valeur. Ils
 }
 ```
 
-## Utiliser dans les composants
+`useDictionary(filenameKey)` recherche un fichier de dictionnaire et renvoie un `Record<string, string>`. La clé de nom de fichier est le chemin du dictionnaire sans l’extension `.json` :
+- `src/dictionaries/common.json` → `common`
+- `src/dictionaries/pages/home.json` → `pages/home`
+
+## Utilisation dans les composants
 
 ```tsx
 import { useDictionary } from 'tyndale-react';
 
 export function ActionButtons() {
-  const d = useDictionary();
+  const labels = useDictionary('common');
+
   return (
     <div>
-      <button>{d('save')}</button>
-      <button>{d('cancel')}</button>
+      <button>{labels.save ?? 'Save'}</button>
+      <button>{labels.cancel ?? 'Cancel'}</button>
     </div>
   );
 }
 ```
+
+Si aucune entrée ne correspond à la clé de nom de fichier, `useDictionary(filenameKey)` renvoie un objet vide.

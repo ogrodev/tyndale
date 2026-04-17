@@ -1,6 +1,6 @@
 ---
 title: クイックスタート
-description: React アプリで 5 分以内に翻訳を動かしましょう。
+description: React アプリで 5 分で翻訳を動かし始めましょう。
 ---
 
 import { Steps } from '@astrojs/starlight/components';
@@ -21,13 +21,13 @@ import { Steps } from '@astrojs/starlight/components';
 
    これにより、デフォルト設定を含む `tyndale.config.json` が作成されます。
 
-3. **AI provider で認証**
+3. **AI プロバイダーで認証**
 
    ```bash
    npx tyndale auth
    ```
 
-   プロンプトに従って API キー（Anthropic、OpenAI など）を設定します。
+   プロンプトに従って API キー（Anthropic、OpenAI など）を設定してください。
 
 4. **翻訳対象コンテンツをラップ**
 
@@ -51,15 +51,15 @@ import { Steps } from '@astrojs/starlight/components';
    npx tyndale translate
    ```
 
-   Tyndale はソースファイルをスキャンし、翻訳可能な文字列を抽出して、設定されたすべてのロケール向けの翻訳を生成します。
+   Tyndale はソースファイルをスキャンし、翻訳対象文字列を抽出して、設定されたすべてのロケール向けの翻訳を生成します。
 
 </Steps>
 
-## 何が起きたのでしょうか？
+## 何が起こったのでしょうか？
 
-Tyndale は JSX 内の `<T>` コンポーネントと `useTranslation()` の呼び出しをスキャンし、英語のソーステキストを抽出して AI provider に翻訳を依頼し、ロケールファイルを `output` ディレクトリに書き出しました。
+Tyndale は JSX 内の `<T>` コンポーネントと `useTranslation()` 呼び出しをスキャンし、英語のソーステキストを抽出して、翻訳のために AI プロバイダーへ送信し、`output` ディレクトリにロケールファイルを書き出しました。
 
-キー用ファイルは不要です。JSON を手作業で編集する必要もありません。翻訳はすぐに使えます。
+キーファイルは不要です。JSON を手動で編集する必要もありません。翻訳はすぐに使えます。
 
 ## 次のステップ
 

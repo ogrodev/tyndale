@@ -1,16 +1,16 @@
 ---
-title: 사전 사용하기
-description: JSX 번역과 함께 키-값 번역 사전을 관리하세요.
+title: 딕셔너리 사용하기
+description: JSX 번역과 함께 키-값 번역 딕셔너리를 관리하세요.
 ---
 
-## 사전이란 무엇인가요?
+## 딕셔너리란?
 
-사전은 전통적인 키-값 번역 파일입니다. 다음과 같은 경우에 유용합니다:
-- 여러 컴포넌트에서 공유되는 문자열(버튼 레이블, 오류 메시지)
+딕셔너리는 전통적인 키-값 번역 파일입니다. 다음과 같은 경우에 유용합니다:
+- 여러 컴포넌트에서 공통으로 사용하는 문자열(버튼 라벨, 오류 메시지)
 - 코드베이스 외부에서 관리되는 콘텐츠
 - 기존 i18n 설정에서의 마이그레이션
 
-## 구성
+## 설정
 
 ```json
 {
@@ -21,7 +21,7 @@ description: JSX 번역과 함께 키-값 번역 사전을 관리하세요.
 }
 ```
 
-## 사전 만들기
+## 딕셔너리 만들기
 
 ```json
 // src/dictionaries/common.json
@@ -33,18 +33,25 @@ description: JSX 번역과 함께 키-값 번역 사전을 관리하세요.
 }
 ```
 
+`useDictionary(filenameKey)`는 하나의 딕셔너리 파일을 조회하고 `Record<string, string>`을 반환합니다. 파일명 키는 `.json` 확장자를 제외한 딕셔너리 경로입니다:
+- `src/dictionaries/common.json` → `common`
+- `src/dictionaries/pages/home.json` → `pages/home`
+
 ## 컴포넌트에서 사용하기
 
 ```tsx
 import { useDictionary } from 'tyndale-react';
 
 export function ActionButtons() {
-  const d = useDictionary();
+  const labels = useDictionary('common');
+
   return (
     <div>
-      <button>{d('save')}</button>
-      <button>{d('cancel')}</button>
+      <button>{labels.save ?? 'Save'}</button>
+      <button>{labels.cancel ?? 'Cancel'}</button>
     </div>
   );
 }
 ```
+
+파일명 키와 일치하는 항목이 없으면 `useDictionary(filenameKey)`는 빈 객체를 반환합니다.

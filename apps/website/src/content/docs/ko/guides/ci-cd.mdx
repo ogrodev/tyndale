@@ -5,13 +5,13 @@ description: CI 파이프라인에서 번역을 검증하세요.
 
 ## 번역 검증
 
-`tyndale validate`는 AI 호출 없이 모든 로캘에 완전하고 올바른 형식의 번역이 있는지 확인합니다:
+`tyndale validate`는 AI 호출을 전혀 하지 않고, 모든 로캘에 완전하고 형식이 올바른 번역이 있는지 확인합니다:
 
 ```bash
 npx tyndale validate
 ```
 
-문제가 하나라도 발견되면 종료 코드 1로 종료되므로 CI에 매우 적합합니다.
+문제가 하나라도 발견되면 종료 코드 1로 종료되므로, CI에 사용하기에 완벽합니다.
 
 ## GitHub Actions
 
@@ -44,8 +44,8 @@ jobs:
 
 ## 번역 워크플로
 
-1. 개발자가 콘텐츠를 `<T>` 또는 `msg()`로 감쌉니다
+1. 개발자가 `<T>` 또는 `msg()`로 콘텐츠를 감쌉니다
 2. 로컬에서 `npx tyndale translate`를 실행합니다 (AI 자격 증명 필요)
 3. 생성된 로캘 파일을 `public/_tyndale/`에 커밋합니다
-4. CI가 `tyndale validate`를 실행해 누락된 번역을 찾아냅니다
-5. 안심하고 배포합니다
+4. CI에서 `tyndale validate`를 실행해 누락된 번역을 잡아냅니다
+5. 자신 있게 배포합니다

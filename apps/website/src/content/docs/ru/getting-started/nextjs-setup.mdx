@@ -1,9 +1,9 @@
 ---
 title: Настройка Next.js
-description: Настройте Tyndale с Next.js для маршрутизации по локалям, серверного рендеринга и статической генерации.
+description: Настройте Tyndale с Next.js для маршрутизации локалей, серверного рендеринга и статической генерации.
 ---
 
-import { Steps, Tabs, TabItem } from '@astrojs/starlight/components';
+import { Steps } from '@astrojs/starlight/components';
 
 ## Установите адаптер
 
@@ -30,16 +30,22 @@ npm install tyndale-next
 
    ```ts
    // middleware.ts
-   export { tyndaleMiddleware as middleware } from 'tyndale-next/middleware';
+   import { createTyndaleMiddleware } from 'tyndale-next/middleware';
+
+   export default createTyndaleMiddleware();
+
+   export const config = {
+     matcher: ['/((?!api|_next|_tyndale|.*\\..*).*)'],
+   };
    ```
 
-   Это обрабатывает определение локали, маршрутизацию URL и установку cookie локали.
+   Это обрабатывает определение локали, редиректы на маршруты с префиксом локали и сохраняет активную локаль в cookie.
 
-3. **Добавьте server provider в ваш layout**
+3. **Добавьте серверный provider в ваш layout**
 
    ```tsx
    // app/[locale]/layout.tsx
-   import { TyndaleServerProvider } from 'tyndale-next/server';
+   import { getDirection, TyndaleServerProvider } from 'tyndale-next/server';
 
    export default async function RootLayout({
      children,
@@ -51,7 +57,7 @@ npm install tyndale-next
      const { locale } = await params;
 
      return (
-       <html lang={locale}>
+       <html lang={locale} dir={getDirection(locale)}>
          <body>
            <TyndaleServerProvider locale={locale}>
              {children}
@@ -62,10 +68,12 @@ npm install tyndale-next
    }
    ```
 
+   `TyndaleServerProvider` загружает данные локали на сервере. Установите `<html dir>` самостоятельно с помощью `getDirection(locale)` в серверных компонентах или `useDirection()` в клиентских компонентах.
+
 </Steps>
 
 ## Как это работает
 
-- `withTyndaleConfig` добавляет перезапись путей локалей в конфигурацию Next.js
-- Middleware определяет предпочитаемую пользователем локаль и выполняет соответствующий редирект
-- `TyndaleServerProvider` загружает переводы на стороне сервера и делает их доступными всем компонентам через React context
+- `withTyndaleConfig` читает `tyndale.config.json`, внедряет переменные окружения времени сборки, которые Tyndale использует во время выполнения, и задаёт алиас `tyndale-react`, чтобы ваше приложение использовало единый контекст provider
+- Middleware перенаправляет запросы на маршруты с префиксом локали, нормализует алиасы локалей и устанавливает cookie/header локали для последующего рендеринга
+- `TyndaleServerProvider` загружает переводы на стороне сервера и делает их доступными всем компонентам через контекст React

@@ -45,11 +45,11 @@ description: tyndale.config.json 的完整参考。
 | `output` | `string` | `"public/_tyndale"` | 生成的 locale 文件输出目录 |
 | `translate.tokenBudget` | `number` | `50000` | 每个 AI 翻译批次的 token 预算 |
 | `translate.concurrency` | `number` | auto | 最大并行翻译会话数 |
-| `localeAliases` | `object` | `{}` | 将变体 locale 代码映射为规范代码 |
-| `dictionaries.include` | `string[]` | `[]` | 字典文件的 Glob 模式 |
+| `localeAliases` | `object` | `{}` | 将变体 locale 代码映射到规范代码 |
+| `dictionaries.include` | `string[]` | `[]` | 字典文件的 Glob 匹配模式 |
 | `dictionaries.format` | `string` | `"key-value"` | 字典文件格式 |
 | `pi.model` | `string` | `"claude-sonnet-4-20250514"` | 要使用的 AI 模型 |
 | `pi.thinkingLevel` | `string` | `"low"` | AI 思考级别 |
 | `docs.framework` | `string` | — | 文档框架：`starlight`、`docusaurus`、`vitepress`、`mkdocs` 或 `nextra` |
 | `docs.contentDir` | `string` | auto | 内容目录（相对于项目根目录） |
-| `docs.extensions` | `string[]` | auto | 覆盖文档翻译的文件扩展名 |
+| `docs.extensions` | `string[]` | auto | 覆盖文档翻译使用的文件扩展名 |

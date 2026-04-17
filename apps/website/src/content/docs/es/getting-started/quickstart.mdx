@@ -27,7 +27,7 @@ import { Steps } from '@astrojs/starlight/components';
    npx tyndale auth
    ```
 
-   Sigue las indicaciones para configurar tu API key (Anthropic, OpenAI, etc.).
+   Sigue las indicaciones para configurar tu clave API (Anthropic, OpenAI, etc.).
 
 4. **Envuelve el contenido traducible**
 
@@ -51,18 +51,18 @@ import { Steps } from '@astrojs/starlight/components';
    npx tyndale translate
    ```
 
-   Tyndale escanea tus archivos fuente, extrae cadenas traducibles y genera traducciones para todos los locales configurados.
+   Tyndale analiza tus archivos fuente, extrae cadenas traducibles y genera traducciones para todos los locales configurados.
 
 </Steps>
 
 ## ¿Qué acaba de pasar?
 
-Tyndale escaneó tu JSX en busca de componentes `<T>` y llamadas a `useTranslation()`, extrajo el texto fuente en inglés, lo envió a tu proveedor de IA para traducirlo y escribió archivos de locale en tu directorio `output`.
+Tyndale analizó tu JSX en busca de componentes `<T>` y llamadas a `useTranslation()`, extrajo el texto fuente en inglés, lo envió a tu proveedor de IA para su traducción y escribió archivos de locale en tu directorio `output`.
 
 Sin archivos de claves. Sin edición manual de JSON. Tus traducciones están listas.
 
 ## Próximos pasos
 
 - [Configura tu proyecto](/reference/configuration) — locales, modelo de IA, directorio de salida
-- [Configura Next.js](/getting-started/nextjs-setup) — middleware, proveedores, generación estática
+- [Configura Next.js](/getting-started/nextjs-setup) — middleware, providers, generación estática
 - [Aprende la API de React](/reference/react-api) — todos los componentes y hooks

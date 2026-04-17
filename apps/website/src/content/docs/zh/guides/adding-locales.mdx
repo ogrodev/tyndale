@@ -1,11 +1,11 @@
 ---
-title: 添加新的区域设置
+title: 添加新 Locale
 description: 如何为你的 Tyndale 项目添加新的目标语言。
 ---
 
-## 添加区域设置
+## 添加语言区域
 
-打开 `tyndale.config.json`，并将区域代码添加到 `locales` 数组中：
+打开 `tyndale.config.json`，并将 locale 代码添加到 `locales` 数组中：
 
 ```json
 {
@@ -14,15 +14,17 @@ description: 如何为你的 Tyndale 项目添加新的目标语言。
 }
 ```
 
+`defaultLocale` 是你的源语言，因此它不能出现在 `locales` 中。
+
 然后运行：
 
 ```bash
 npx tyndale translate
 ```
 
-Tyndale 将为新的区域设置生成翻译，同时保持现有翻译不变。
+`translate` 会先自动运行提取，然后为新的 locale 生成翻译；现有的 locale 文件会保持不变，除非需要清理过期条目。
 
-## 区域设置别名
+## Locale 别名
 
 使用 `localeAliases` 将变体代码映射到规范代码：
 
@@ -37,4 +39,27 @@ Tyndale 将为新的区域设置生成翻译，同时保持现有翻译不变。
 
 ## RTL 支持
 
-Tyndale 会自动检测 RTL 区域设置（阿拉伯语、希伯来语等）。`TyndaleServerProvider` 会在 HTML 元素上设置 `dir` 属性。对 RTL 专用样式请使用 Tailwind 的 `rtl:` 变体。
+Tyndale 会检测 RTL locale，但不会替你修改 `<html dir>`。请结合当前的 locale 辅助函数显式设置方向：
+
+```tsx
+// app/[locale]/layout.tsx
+import { getDirection } from 'tyndale-next/server';
+
+export default async function RootLayout({
+  children,
+  params,
+}: {
+  children: React.ReactNode;
+  params: Promise<{ locale: string }>;
+}) {
+  const { locale } = await params;
+
+  return (
+    <html lang={locale} dir={getDirection(locale)}>
+      <body>{children}</body>
+    </html>
+  );
+}
+```
+
+在客户端组件中，当你需要在已渲染的 UI 内使用当前方向值时，请使用 `useDirection()`。

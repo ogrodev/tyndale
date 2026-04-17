@@ -32,22 +32,22 @@ npx tyndale translate [options]
 | `--locale <code>` | Traduce solo una locale specifica |
 | `--force` | Ritraduce tutte le stringhe, non solo le modifiche |
 | `--dry-run` | Mostra cosa verrebbe tradotto senza scrivere file |
-| `--token-budget <n>` | Budget di token per batch AI (predefinito: 50000) |
+| `--token-budget <n>` | Budget di token per ogni batch AI (predefinito: 50000) |
 | `--concurrency <n>` | Numero massimo di sessioni di traduzione parallele (rilevato automaticamente) |
 
 ## `tyndale validate`
 
-Verifica che tutte le locale abbiano traduzioni complete e ben formate. Non viene effettuata alcuna chiamata AI.
+Verifica che tutte le locale abbiano traduzioni complete e ben formate. Non vengono effettuate chiamate all'AI.
 
 ```bash
 npx tyndale validate
 ```
 
-Termina con codice 1 se vengono trovati problemi. Ideale per le pipeline CI.
+Termina con codice 1 se vengono rilevati problemi. Ideale per le pipeline CI.
 
 ## `tyndale extract`
 
-Estrae le stringhe traducibili senza tradurle. Utile per rivedere cosa verrà inviato al provider AI.
+Estrae le stringhe traducibili senza tradurle. Utile per rivedere ciò che verrà inviato al provider AI.
 
 ```bash
 npx tyndale extract
@@ -56,7 +56,7 @@ npx tyndale extract
 
 ## `tyndale translate-docs`
 
-Traduce i file di documentazione (MDX/MD) per qualsiasi framework supportato. Rileva automaticamente il framework docs in uso oppure utilizza la configurazione di `tyndale.config.json`.
+Traduce i file di documentazione (MDX/MD) per qualsiasi framework supportato. Rileva automaticamente il framework della tua documentazione oppure usa la configurazione di `tyndale.config.json`.
 
 ```bash
 npx tyndale translate-docs [options]
@@ -64,11 +64,13 @@ npx tyndale translate-docs [options]
 
 | Flag | Descrizione |
 |------|-------------|
-| `--content-dir <path>` | Sovrascrive la directory dei contenuti docs |
+| `--content-dir <path>` | Sovrascrive la directory dei contenuti della documentazione |
 | `--force` | Ritraduce tutta la documentazione, non solo i file mancanti |
 | `--concurrency <n>` | Numero massimo di sessioni di traduzione parallele (rilevato automaticamente) |
 
 Framework supportati: Starlight, Docusaurus, VitePress, MkDocs, Nextra.
+
+`translate-docs` scrive `.tyndale-docs-state.json` nella root del tuo progetto per tenere traccia degli hash dei documenti sorgente. Fai il commit di questo file così i nuovi clone possono saltare i documenti invariati senza ritraduzione.
 
 ### `tyndale translate-docs setup`
 
@@ -78,7 +80,7 @@ Rileva il framework di documentazione e salva la configurazione in `tyndale.conf
 npx tyndale translate-docs setup
 ```
 
-Analizza il tuo progetto alla ricerca di indicatori del framework (dipendenze dei package e file di configurazione), conferma il framework rilevato e scrive la sezione `docs` nella tua configurazione.
+Analizza il progetto alla ricerca di segnali del framework (dipendenze dei package e file di configurazione), conferma il framework rilevato e scrive la sezione `docs` nella tua configurazione.
 
 ## `tyndale model`
 

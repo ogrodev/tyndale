@@ -1,0 +1,195 @@
+---
+title: Traduzindo documentação
+description: "Use `tyndale translate-docs` para traduzir docs em Markdown e MDX para frameworks de documentação compatíveis."
+---
+
+## O que ele faz
+
+`tyndale translate-docs` traduz sua documentação de origem do idioma padrão para cada localidade em `tyndale.config.json`.
+
+Ele foi projetado para sites de documentação, não para strings de UI de aplicativos:
+- Lê docs em Markdown e MDX do diretório de docs de origem
+- Escreve arquivos traduzidos usando as convenções do seu framework de documentação
+- Ignora arquivos que já estão atualizados
+- Valida os docs gerados e tenta novamente saídas inválidas automaticamente antes de reportar uma falha
+
+Use a mesma configuração de provedor de IA que você usa para `tyndale translate`.
+
+## Frameworks compatíveis
+
+`translate-docs` atualmente oferece suporte a:
+- Starlight
+- Docusaurus
+- VitePress
+- MkDocs
+- Nextra
+
+## Início rápido
+
+```bash
+npx tyndale translate-docs setup
+npx tyndale translate-docs
+```
+
+`translate-docs setup` detecta um framework de documentação compatível no projeto atual e escreve um bloco `docs` em `tyndale.config.json`.
+
+Depois, `translate-docs` usa essa configuração para encontrar docs de origem em inglês e gravar docs traduzidos no lugar certo para o seu framework.
+
+## Configuração esperada
+
+Mantenha sua configuração normal do Tyndale e adicione um bloco `docs`:
+
+```json
+{
+  "defaultLocale": "en",
+  "locales": ["es", "fr", "ja"],
+  "docs": {
+    "framework": "starlight",
+    "contentDir": "src/content/docs"
+  }
+}
+```
+
+`docs.framework` deve ser um destes:
+- `starlight`
+- `docusaurus`
+- `vitepress`
+- `mkdocs`
+- `nextra`
+
+`docs.contentDir` aponta para o diretório de docs de origem no seu idioma padrão.
+
+Observações:
+- `defaultLocale` não deve aparecer em `locales`
+- `translate-docs` usa automaticamente extensões de arquivo específicas do framework
+- `--content-dir` sobrescreve o diretório de docs configurado para uma execução
+
+## Como funciona a detecção no setup
+
+`npx tyndale translate-docs setup` varre o projeto atual em busca de frameworks compatíveis.
+
+A detecção se baseia em sinais específicos de cada framework, como:
+- dependências de pacotes instaladas
+- arquivos de configuração conhecidos do framework
+
+Os padrões atuais são:
+- Starlight → `src/content/docs`
+- Docusaurus → `docs`
+- VitePress → `docs`
+- MkDocs → `docs`
+- Nextra → `pages`
+
+Para MkDocs, ter um arquivo `mkdocs.yml` ou `mkdocs.yaml` já é suficiente para detecção de alta confiança.
+
+Se o setup encontrar vários candidatos, ele prioriza a primeira correspondência de alta confiança. Em seguida, grava o framework e o diretório de conteúdo selecionados em `tyndale.config.json`.
+
+Se você pular o setup, `translate-docs` ainda pode detectar automaticamente em um caso específico: quando encontra exatamente um framework com alta confiança. Caso contrário, ele usa `src/content/docs` como fallback, a menos que você passe `--content-dir`.
+
+## Comportamento incremental
+
+`translate-docs` mantém um arquivo de estado incremental na raiz do projeto:
+
+```text
+.tyndale-docs-state.json
+```
+
+Para cada localidade e arquivo de origem, o Tyndale armazena um hash do doc de origem atual. Na próxima execução, ele só retraduz um documento quando:
+- o arquivo de destino traduzido está ausente
+- o arquivo de origem em inglês mudou
+- você passa `--force`
+
+Isso significa que uma execução normal processa apenas docs ausentes ou alterados.
+
+Para retraduzir tudo:
+
+```bash
+npx tyndale translate-docs --force
+```
+
+## Para onde vão os arquivos traduzidos
+
+O Tyndale grava docs traduzidos de acordo com o framework selecionado.
+
+### Starlight
+
+Os docs de origem permanecem em `src/content/docs`, e os docs traduzidos vão para pastas de localidade dentro desse diretório:
+
+```text
+src/content/docs/getting-started.mdx
+src/content/docs/es/getting-started.mdx
+src/content/docs/fr/getting-started.mdx
+```
+
+### VitePress and MkDocs
+
+Eles usam a mesma convenção de uma pasta por localidade dentro do diretório de docs:
+
+```text
+docs/guide.md
+docs/es/guide.md
+docs/fr/guide.md
+```
+
+### Docusaurus
+
+As traduções do Docusaurus são gravadas na estrutura de docs i18n dele:
+
+```text
+docs/intro.mdx
+i18n/es/docusaurus-plugin-content-docs/current/intro.mdx
+i18n/fr/docusaurus-plugin-content-docs/current/intro.mdx
+```
+
+### Nextra
+
+O Nextra grava arquivos traduzidos ao lado do arquivo de origem usando um sufixo de localidade:
+
+```text
+pages/docs/getting-started.mdx
+pages/docs/getting-started.es.mdx
+pages/docs/getting-started.fr.mdx
+```
+
+## Exemplo com Starlight
+
+Este repositório usa Starlight, então uma configuração típica é assim:
+
+```json
+{
+  "defaultLocale": "en",
+  "locales": ["de", "es", "fr", "it", "ja", "ko", "pt", "ru", "zh"],
+  "docs": {
+    "framework": "starlight",
+    "contentDir": "src/content/docs"
+  }
+}
+```
+
+Depois execute:
+
+```bash
+npx tyndale translate-docs
+```
+
+O Tyndale lê os docs em inglês de `src/content/docs` e grava os docs traduzidos em pastas de localidade como `src/content/docs/es/` e `src/content/docs/fr/`.
+
+## Opções de CLI
+
+```bash
+npx tyndale translate-docs --content-dir docs --concurrency 4
+```
+
+As opções atuais são:
+- `--content-dir <path>` para sobrescrever o diretório de origem dos docs
+- `--concurrency <n>` para controlar sessões paralelas de tradução
+- `--force` para retraduzir todos os docs
+
+## O que é validado
+
+Após cada tradução, o Tyndale verifica o documento gerado antes de mantê-lo. Em alto nível, ele garante que o resultado ainda se parece com um arquivo de documentação válido:
+- o frontmatter ainda está presente e utilizável
+- metadados obrigatórios como `title` ainda existem
+- linhas de importação da origem são preservadas
+- o modelo não envolveu o arquivo inteiro em blocos de código
+
+Se um arquivo gerado falhar na validação, o Tyndale pede ao modelo para corrigi-lo e tenta novamente automaticamente. Arquivos que ainda falharem são reportados no fim da execução.

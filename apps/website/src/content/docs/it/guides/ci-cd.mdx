@@ -3,15 +3,15 @@ title: Integrazione CI/CD
 description: Convalida le traduzioni nella tua pipeline CI.
 ---
 
-## Convalida le traduzioni
+## Convalida delle traduzioni
 
-`tyndale validate` controlla che tutte le lingue abbiano traduzioni complete e ben formate senza effettuare chiamate AI:
+`tyndale validate` verifica che tutte le locale abbiano traduzioni complete e ben formate senza effettuare chiamate AI:
 
 ```bash
 npx tyndale validate
 ```
 
-Restituisce il codice 1 se vengono trovati problemi, rendendolo perfetto per la CI.
+Termina con codice 1 se vengono rilevati problemi, rendendolo perfetto per la CI.
 
 ## GitHub Actions
 
@@ -42,10 +42,10 @@ Usalo con `husky` o `lint-staged`:
 }
 ```
 
-## Flusso di traduzione
+## Flusso di lavoro di traduzione
 
-1. Lo sviluppatore racchiude i contenuti con `<T>` o `msg()`
+1. Lo sviluppatore racchiude il contenuto con `<T>` o `msg()`
 2. Esegui `npx tyndale translate` in locale (richiede credenziali AI)
-3. Fai commit dei file di lingua generati in `public/_tyndale/`
+3. Esegui il commit dei file locale generati in `public/_tyndale/`
 4. La CI esegue `tyndale validate` per intercettare traduzioni mancanti
-5. Rilascia con fiducia
+5. Rilascia con sicurezza

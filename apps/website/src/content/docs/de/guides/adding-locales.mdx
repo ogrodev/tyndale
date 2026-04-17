@@ -3,7 +3,7 @@ title: Neue Locales hinzufügen
 description: So fügst du deinem Tyndale-Projekt eine neue Zielsprache hinzu.
 ---
 
-## Ein Locale hinzufügen
+## Eine Locale hinzufügen
 
 Öffne `tyndale.config.json` und füge den Locale-Code zum `locales`-Array hinzu:
 
@@ -14,13 +14,15 @@ description: So fügst du deinem Tyndale-Projekt eine neue Zielsprache hinzu.
 }
 ```
 
+`defaultLocale` ist deine Quellsprache und darf daher nicht in `locales` erscheinen.
+
 Führe dann aus:
 
 ```bash
 npx tyndale translate
 ```
 
-Tyndale erstellt Übersetzungen für das neue Locale und lässt bestehende Übersetzungen unverändert.
+`translate` führt zuerst automatisch die Extraktion aus und generiert dann Übersetzungen für die neue Locale, wobei bestehende Locale-Dateien unverändert bleiben, außer wenn veraltete Einträge bereinigt werden müssen.
 
 ## Locale-Aliasse
 
@@ -37,4 +39,27 @@ Ordne Variantencodes mit `localeAliases` kanonischen Codes zu:
 
 ## RTL-Unterstützung
 
-Tyndale erkennt RTL-Locales (Arabisch, Hebräisch usw.) automatisch. Der `TyndaleServerProvider` setzt das `dir`-Attribut auf dem HTML-Element. Verwende Tailwinds `rtl:`-Variante für RTL-spezifische Stile.
+Tyndale erkennt RTL-Locales, aber es setzt `<html dir>` nicht automatisch für dich. Verbinde die Schreibrichtung explizit mit den aktuellen Locale-Helpern:
+
+```tsx
+// app/[locale]/layout.tsx
+import { getDirection } from 'tyndale-next/server';
+
+export default async function RootLayout({
+  children,
+  params,
+}: {
+  children: React.ReactNode;
+  params: Promise<{ locale: string }>;
+}) {
+  const { locale } = await params;
+
+  return (
+    <html lang={locale} dir={getDirection(locale)}>
+      <body>{children}</body>
+    </html>
+  );
+}
+```
+
+In Client-Components verwende `useDirection()`, wenn du den aktiven Richtungswert innerhalb der gerenderten UI benötigst.

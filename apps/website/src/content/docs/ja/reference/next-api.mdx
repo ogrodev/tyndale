@@ -1,46 +1,229 @@
 ---
 title: Next.js API リファレンス
-description: tyndale-next の API リファレンス。
+description: tyndale-next の API リファレンスです。
 ---
 
-## `TyndaleServerProvider`
+`tyndale-next` は、`tyndale-react` の上に Next.js 固有の連携機能を追加します。
 
-翻訳を読み込み、すべての子コンポーネントで利用できるようにするサーバーサイドプロバイダーです。
+## インポートパス
+
+- `tyndale-next` — アプリ向けのヘルパーとコンポーネント
+- `tyndale-next/server` — RSC コード向けのサーバーセーフなエクスポート
+- `tyndale-next/config` — Next 設定ラッパー
+- `tyndale-next/middleware` — locale ルーティング用ミドルウェア
+
+## App Router の基本
+
+### `TyndaleServerProvider`
+
+`public/_tyndale/{locale}.json` と `manifest.json` をディスクから読み込み、クライアントプロバイダーをハイドレートするサーバーコンポーネントです。
 
 ```tsx
 import { TyndaleServerProvider } from 'tyndale-next/server';
 
-// In your layout
-<TyndaleServerProvider locale={locale}>
-  {children}
-</TyndaleServerProvider>
+export default async function LocaleLayout({
+  children,
+  params,
+}: {
+  children: React.ReactNode;
+  params: Promise<{ locale: string }>;
+}) {
+  const { locale } = await params;
+
+  return (
+    <html lang={locale}>
+      <body>
+        <TyndaleServerProvider locale={locale}>{children}</TyndaleServerProvider>
+      </body>
+    </html>
+  );
+}
 ```
 
-## `withTyndaleConfig(config)`
+**プロパティ**
 
-ロケールベースの rewrites と redirects を追加するために、Next.js の設定をラップします。
+- `locale: string`
+- `children: React.ReactNode`
 
-```js
-// next.config.mjs
+補足:
+
+- デフォルト locale は `TYNDALE_DEFAULT_LOCALE` から読み取ります。
+- 翻訳出力は `TYNDALE_OUTPUT` または `public/_tyndale` から読み取ります。
+- `<html dir>` は自動設定されません。クライアントでは `useDirection()`、サーバーでは `getDirection(locale)` を使ってください。
+
+### `TyndaleNextClientProvider`
+
+`TyndaleProvider` のクライアントラッパーです。locale プレフィックス付き URL を push することで、`useChangeLocale()` を Next のナビゲーションに接続します。
+
+ほとんどのアプリでは、これを直接マウントする代わりに `TyndaleServerProvider` を使うべきです。
+
+```tsx
+'use client';
+
+import { TyndaleNextClientProvider } from 'tyndale-next';
+
+export function Providers({
+  children,
+  locale,
+  defaultLocale,
+  translations,
+  manifest,
+}: {
+  children: React.ReactNode;
+  locale: string;
+  defaultLocale: string;
+  translations: Record<string, string>;
+  manifest: Record<string, unknown> | null;
+}) {
+  return (
+    <TyndaleNextClientProvider
+      locale={locale}
+      defaultLocale={defaultLocale}
+      translations={translations}
+      manifest={manifest}
+    >
+      {children}
+    </TyndaleNextClientProvider>
+  );
+}
+```
+
+### `generateStaticLocaleParams()`
+
+`tyndale.config.json` を読み取り、`generateStaticParams()` 用の locale params を返します。
+
+```ts
+import { generateStaticLocaleParams } from 'tyndale-next/server';
+
+export function generateStaticParams() {
+  return generateStaticLocaleParams();
+}
+```
+
+返却形状:
+
+```ts
+Array<{ locale: string }>
+```
+
+結果には先頭にデフォルト locale、その後に `locales` 内のすべての locale が含まれます。
+
+## 設定
+
+### `withTyndaleConfig(nextConfig)`
+
+Next 設定をラップし、Tyndale がビルド時とリクエスト時に読むランタイム環境変数を注入します。
+
+```ts
+// next.config.ts
 import { withTyndaleConfig } from 'tyndale-next/config';
 
 export default withTyndaleConfig({
-  // your existing config
+  reactStrictMode: true,
 });
 ```
 
-## `tyndaleMiddleware`
+追加される内容:
 
-ロケールの検出とルーティングを処理する Middleware です。
+- `TYNDALE_DEFAULT_LOCALE`
+- `TYNDALE_LOCALES`
+- `TYNDALE_COOKIE_NAME`
+- `TYNDALE_LOCALE_ALIASES`
+- `TYNDALE_OUTPUT`
+- サーバーとクライアントが同じ `tyndale-react` インスタンスを解決するための webpack alias
+
+## ミドルウェア
+
+### `createTyndaleMiddleware()`
+
+locale ルーティングを処理する Next ミドルウェアを作成します。
 
 ```ts
 // middleware.ts
-export { tyndaleMiddleware as middleware } from 'tyndale-next/middleware';
+import { createTyndaleMiddleware } from 'tyndale-next/middleware';
+
+export default createTyndaleMiddleware();
+
+export const config = {
+  matcher: ['/((?!api|_next|_tyndale|.*\\..*).*)'],
+};
 ```
 
-### 動作
+動作順序:
 
-1. URL にロケールのプレフィックスがあるかを確認します
-2. `Accept-Language` ヘッダーにフォールバックします
-3. config のデフォルトロケールにフォールバックします
-4. 後続のリクエストのためにロケール cookie を設定します
+1. URL に locale がある場合はそれを使用します。
+2. なければ locale cookie を使用します。
+3. さらに `Accept-Language` ヘッダーにフォールバックします。
+4. 最後に `defaultLocale` にフォールバックします。
+
+さらに、次も行います:
+
+- alias locale を正規 locale にリダイレクト
+- 未対応 locale プレフィックスをデフォルト locale にリダイレクト
+- 有効な locale プレフィックス付きルートに対して `x-tyndale-locale` リクエストヘッダーを設定
+- 選択された locale を `TYNDALE_LOCALE` cookie に保存
+
+## Direction と locale ヘルパー
+
+### `useDirection()`
+
+現在の locale に対して `'ltr'` または `'rtl'` を返すクライアントフックです。
+
+```tsx
+'use client';
+
+import { useDirection } from 'tyndale-next';
+
+export function HtmlShell({ children }: { children: React.ReactNode }) {
+  const dir = useDirection();
+  return <div dir={dir}>{children}</div>;
+}
+```
+
+### `getDirection(locale)`
+
+locale 文字列に対して `'ltr'` または `'rtl'` を返すサーバーセーフなヘルパーです。
+
+```tsx
+import { getDirection } from 'tyndale-next/server';
+
+const dir = getDirection(locale);
+```
+
+### `isRtlLocale(locale)`
+
+locale が右から左のスクリプトを使う場合に `true` を返します。
+
+```ts
+import { isRtlLocale } from 'tyndale-next/server';
+
+isRtlLocale('ar'); // true
+isRtlLocale('en-US'); // false
+```
+
+### `resolveAlias(locale, aliases)`
+
+locale の alias を正規 locale にマッピングします。
+
+```ts
+import { resolveAlias } from 'tyndale-next/server';
+
+resolveAlias('pt-BR', { 'pt-BR': 'pt' }); // 'pt'
+```
+
+## キャッシュ境界
+
+### `TyndaleCache`
+
+共有レイアウト内の翻訳コンテンツ向けクライアントキャッシュ境界です。キャッシュキーは `id` と現在の locale の両方でスコープされます。
+
+```tsx
+import { TyndaleCache } from 'tyndale-next';
+import { T } from 'tyndale-react';
+
+<TyndaleCache id="footer-copy">
+  <T>Documentation, guides, and examples.</T>
+</TyndaleCache>
+```
+
+ナビゲーション中に再レンダーされるレイアウトで、繰り返し使う翻訳 UI に使用してください。汎用的なデータキャッシュとしては使用しないでください。

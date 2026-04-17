@@ -1,11 +1,11 @@
 ---
 title: Commandes CLI
-description: Référence complète du CLI Tyndale.
+description: Référence complète pour la CLI de Tyndale.
 ---
 
 ## `tyndale init`
 
-Initialise un nouveau projet Tyndale. Crée `tyndale.config.json` avec des valeurs par défaut pertinentes.
+Initialisez un nouveau projet Tyndale. Crée `tyndale.config.json` avec des valeurs par défaut pertinentes.
 
 ```bash
 npx tyndale init
@@ -13,7 +13,7 @@ npx tyndale init
 
 ## `tyndale auth`
 
-Configure les identifiants de votre fournisseur d’IA.
+Configurez les identifiants de votre fournisseur d’IA.
 
 ```bash
 npx tyndale auth
@@ -21,23 +21,23 @@ npx tyndale auth
 
 ## `tyndale translate`
 
-Extrait les chaînes traduisibles et génère des traductions pour toutes les locales configurées.
+Extrayez les chaînes traduisibles et générez des traductions pour toutes les locales configurées.
 
 ```bash
 npx tyndale translate [options]
 ```
 
-| Option | Description |
+| Flag | Description |
 |------|-------------|
 | `--locale <code>` | Traduit uniquement une locale spécifique |
-| `--force` | Retraduit toutes les chaînes, pas seulement les changements |
+| `--force` | Retraduit toutes les chaînes, pas seulement les modifications |
 | `--dry-run` | Affiche ce qui serait traduit sans écrire de fichiers |
-| `--token-budget <n>` | Budget de tokens par lot d’IA (par défaut: 50000) |
-| `--concurrency <n>` | Nombre maximal de sessions de traduction parallèles (détecté automatiquement) |
+| `--token-budget <n>` | Budget de tokens par lot d’IA (par défaut : 50000) |
+| `--concurrency <n>` | Nombre maximal de sessions de traduction parallèles (détection automatique) |
 
 ## `tyndale validate`
 
-Vérifie que toutes les locales ont des traductions complètes et bien formées. Aucun appel à l’IA n’est effectué.
+Vérifie que toutes les locales disposent de traductions complètes et bien formées. Aucun appel à l’IA n’est effectué.
 
 ```bash
 npx tyndale validate
@@ -47,7 +47,7 @@ Se termine avec le code 1 si des problèmes sont détectés. Idéal pour les pip
 
 ## `tyndale extract`
 
-Extrait les chaînes traduisibles sans les traduire. Utile pour vérifier ce qui sera envoyé au fournisseur d’IA.
+Extrayez les chaînes traduisibles sans les traduire. Utile pour examiner ce qui sera envoyé au fournisseur d’IA.
 
 ```bash
 npx tyndale extract
@@ -56,33 +56,35 @@ npx tyndale extract
 
 ## `tyndale translate-docs`
 
-Traduit les fichiers de documentation (MDX/MD) pour n’importe quel framework pris en charge. Détecte automatiquement votre framework de documentation ou utilise la configuration de `tyndale.config.json`.
+Traduisez des fichiers de documentation (MDX/MD) pour n’importe quel framework pris en charge. Détecte automatiquement votre framework de documentation ou utilise la configuration de `tyndale.config.json`.
 
 ```bash
 npx tyndale translate-docs [options]
 ```
 
-| Option | Description |
+| Flag | Description |
 |------|-------------|
 | `--content-dir <path>` | Remplace le répertoire de contenu de la documentation |
 | `--force` | Retraduit toute la documentation, pas seulement les fichiers manquants |
-| `--concurrency <n>` | Nombre maximal de sessions de traduction parallèles (détecté automatiquement) |
+| `--concurrency <n>` | Nombre maximal de sessions de traduction parallèles (détection automatique) |
 
 Frameworks pris en charge : Starlight, Docusaurus, VitePress, MkDocs, Nextra.
 
+`translate-docs` écrit `.tyndale-docs-state.json` à la racine de votre projet pour suivre les hachages des documents source. Commitez ce fichier afin que de nouveaux clones puissent ignorer la documentation inchangée sans retraduction.
+
 ### `tyndale translate-docs setup`
 
-Détecte votre framework de documentation et enregistre la configuration dans `tyndale.config.json`.
+Détectez votre framework de documentation et enregistrez la configuration dans `tyndale.config.json`.
 
 ```bash
 npx tyndale translate-docs setup
 ```
 
-Analyse votre projet à la recherche d’indices de framework (dépendances de paquets et fichiers de configuration), confirme le framework détecté et écrit la section `docs` dans votre configuration.
+Analyse votre projet à la recherche d’indices du framework (dépendances de paquets et fichiers de configuration), confirme le framework détecté et écrit la section `docs` dans votre configuration.
 
 ## `tyndale model`
 
-Change le modèle d’IA utilisé pour les traductions.
+Changez le modèle d’IA utilisé pour les traductions.
 
 ```bash
 npx tyndale model
