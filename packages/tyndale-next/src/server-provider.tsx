@@ -2,7 +2,7 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import React from 'react';
-import { TyndaleNextClientProvider } from './client-provider';
+import { TyndaleNextClientProvider } from './client-provider.js';
 
 /**
  * Reads a locale JSON file from the output directory.

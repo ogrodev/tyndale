@@ -1,6 +1,6 @@
 // packages/tyndale-next/src/middleware.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { parseAcceptLanguage, resolveAlias } from './locale-utils';
+import { parseAcceptLanguage, resolveAlias } from './locale-utils.js';
 
 /**
  * Reads Tyndale configuration from build-time environment variables

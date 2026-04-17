@@ -1,6 +1,6 @@
 // packages/tyndale-next/src/direction.ts
 import { useLocale } from 'tyndale-react';
-import { getDirection } from './locale-utils';
+import { getDirection } from './locale-utils.js';
 
 /**
  * Returns the text direction ('ltr' or 'rtl') for the current locale.
