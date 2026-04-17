@@ -45,6 +45,9 @@ describe('E2E: content invalidation cleans stale translations', () => {
   beforeAll(async () => {
     workDir = await mkdtemp(join(tmpdir(), 'tyndale-e2e-invalidation-'));
     await cp(FIXTURE_DIR, workDir, { recursive: true });
+    // Remove any Playwright-seeded artefacts so the test starts from a clean fixture.
+    await rm(join(workDir, 'public'), { recursive: true, force: true });
+    await rm(join(workDir, '.next'), { recursive: true, force: true });
   });
 
   afterAll(async () => {
@@ -150,6 +153,9 @@ describe('E2E: content invalidation cleans stale translations', () => {
     beforeAll(async () => {
       deletionWorkDir = await mkdtemp(join(tmpdir(), 'tyndale-e2e-invalidation-delete-'));
       await cp(FIXTURE_DIR, deletionWorkDir, { recursive: true });
+    // Remove any Playwright-seeded artefacts so the test starts from a clean fixture.
+    await rm(join(deletionWorkDir, 'public'), { recursive: true, force: true });
+    await rm(join(deletionWorkDir, '.next'), { recursive: true, force: true });
     });
 
     afterAll(async () => {

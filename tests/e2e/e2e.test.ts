@@ -22,6 +22,9 @@ describe('E2E: extract → translate → verify', () => {
     workDir = await mkdtemp(join(tmpdir(), 'tyndale-e2e-'));
     // Copy fixture to temp dir
     await cp(FIXTURE_DIR, workDir, { recursive: true });
+    // Remove any Playwright-seeded artefacts so the test starts from a clean fixture.
+    await rm(join(workDir, 'public'), { recursive: true, force: true });
+    await rm(join(workDir, '.next'), { recursive: true, force: true });
   });
 
   afterAll(async () => {

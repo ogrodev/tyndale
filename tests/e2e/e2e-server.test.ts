@@ -85,6 +85,9 @@ describe('E2E: Next.js dev server serves translations', () => {
       recursive: true,
       filter: (src) => !src.includes('node_modules'),
     });
+    // Remove any Playwright-seeded artefacts so the test starts from a clean fixture.
+    await rm(join(workDir, 'public'), { recursive: true, force: true });
+    await rm(join(workDir, '.next'), { recursive: true, force: true });
     // Symlink node_modules from the fixture so Next.js can find its deps.
     await symlink(
       join(FIXTURE_DIR, 'node_modules'),

@@ -28,6 +28,9 @@ describe('E2E: dictionary extraction and translation', () => {
 
     // Copy fixture to temp dir
     await cp(FIXTURE_DIR, workDir, { recursive: true });
+    // Remove any Playwright-seeded artefacts so the test starts from a clean fixture.
+    await rm(join(workDir, 'public'), { recursive: true, force: true });
+    await rm(join(workDir, '.next'), { recursive: true, force: true });
 
     // Update config to enable dictionary extraction
     const configPath = join(workDir, 'tyndale.config.json');
