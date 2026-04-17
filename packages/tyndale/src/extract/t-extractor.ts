@@ -44,3 +44,40 @@ export function extractTComponents(ast: File, filePath: string): ExtractedEntry[
 
   return entries;
 }
+
+/**
+ * Extract `<T>` entries from an Astro template tree. Mirrors the JSX path's
+ * wire format via `serializeAstroT`. Does not recurse into nested `<T>`.
+ */
+import type { ParentNode, Node, TagLikeNode } from '@astrojs/compiler/types';
+import { serializeAstroT } from '../astro/serializer';
+
+export function extractTFromAstro(templateRoot: ParentNode, filePath: string): ExtractedEntry[] {
+  const entries: ExtractedEntry[] = [];
+  walk(templateRoot);
+  return entries;
+
+  function walk(node: Node): void {
+    if (isTag(node, 'T')) {
+      const { wire } = serializeAstroT(node as TagLikeNode);
+      const line = node.position?.start.line ?? 0;
+      entries.push({
+        hash: computeHash(wire),
+        wireFormat: wire,
+        type: 'jsx',
+        context: `${filePath}:T@${line}`,
+      });
+      return; // do not recurse into nested <T>
+    }
+    if ('children' in node && Array.isArray(node.children)) {
+      for (const child of node.children) walk(child);
+    }
+  }
+}
+
+function isTag(node: Node, name: string): boolean {
+  return (
+    (node.type === 'element' || node.type === 'component' || node.type === 'custom-element') &&
+    (node as { name?: string }).name === name
+  );
+}

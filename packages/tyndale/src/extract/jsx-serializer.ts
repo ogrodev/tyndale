@@ -9,13 +9,9 @@ import type {
   JSXIdentifier,
 } from '@babel/types';
 
+import { normalizeJSXText, escapeText, VARIABLE_COMPONENTS, PLURAL_CATEGORIES } from '../shared/wire-helpers';
+
 type JSXChild = JSXElement | JSXFragment | JSXText | JSXExpressionContainer | JSXSpreadChild;
-
-/** Variable components that become `{name}` placeholders in wire format. */
-const VARIABLE_COMPONENTS = new Set(['Var', 'Num', 'Currency', 'DateTime']);
-
-/** Plural categories used in ICU MessageFormat. */
-const PLURAL_CATEGORIES = ['zero', 'one', 'two', 'few', 'many', 'other'] as const;
 
 /**
  * Serializes the children of a `<T>` JSX element (Babel AST) into the
@@ -157,36 +153,4 @@ function getAttributeExpression(element: JSXElement, name: string): string | nul
   return null;
 }
 
-/**
- * Normalizes JSX text: collapses whitespace, trims lines as JSX does.
- * Follows React's JSX whitespace rules.
- */
-function normalizeJSXText(raw: string): string {
-  const lines = raw.split('\n');
-  const processed: string[] = [];
 
-  for (let i = 0; i < lines.length; i++) {
-    let line = lines[i];
-
-    // Trim leading whitespace from all lines except the first meaningful one
-    if (i > 0) line = line.trimStart();
-    // Trim trailing whitespace from all lines except the last meaningful one
-    if (i < lines.length - 1) line = line.trimEnd();
-
-    if (line) processed.push(line);
-  }
-
-  // Join with single space (JSX newline between text → space) and collapse multiple spaces
-  return processed.join(' ').replace(/\s{2,}/g, ' ');
-}
-
-/**
- * Escapes text content for wire format.
- * Literal `{` → `\{`, `}` → `\}`, `\` → `\\`
- */
-function escapeText(text: string): string {
-  return text
-    .replace(/\\/g, '\\\\')
-    .replace(/\{/g, '\\{')
-    .replace(/\}/g, '\\}');
-}

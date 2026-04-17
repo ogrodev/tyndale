@@ -17,24 +17,36 @@ export interface StringExtractionResult {
   errors: ExtractionError[];
 }
 
-/**
- * Names of tyndale-react hooks/functions whose return value is a `t()` function.
- */
+/** Names of tyndale-react hooks/functions whose return value is a `t()` function. */
 const T_FUNCTION_SOURCES = new Set(['useTranslation', 'getTranslation']);
 
-/**
- * Names of marker functions whose first argument is an extractable string.
- */
+/** Names of marker functions whose first argument is an extractable string. */
 const MARKER_FUNCTIONS = new Set(['msg', 'msgString']);
 
-export function extractStrings(ast: File, filePath: string): StringExtractionResult {
-  const entries: ExtractedEntry[] = [];
-  const errors: ExtractionError[] = [];
+export interface TBindings {
+  /** Local identifiers imported from `tyndale-react`. */
+  tyndaleImports: Set<string>;
+  /**
+   * Local identifiers that refer to an extractable callable — either a marker
+   * function (`msg`, `msgString`) imported directly, or a variable bound to
+   * the result of `useTranslation()` / `await getTranslation()`.
+   */
+  tBindings: Set<string>;
+}
 
-  // Step 1: Find tyndale imports to determine which identifiers are extractable.
+/**
+ * Scan a module AST for tyndale-react imports and `t` bindings. Returns the
+ * identifiers that the call-site extractor should treat as extractable.
+ *
+ * Separated from `extractStringCalls` so alternate front-ends (e.g. Astro,
+ * where frontmatter bindings are used by template expressions) can reuse the
+ * binding set across multiple parses.
+ */
+export function collectTBindings(ast: File): TBindings {
   const tyndaleImports = new Set<string>();
   const tBindings = new Set<string>();
 
+  // Pass 1: tyndale-react imports.
   traverse(ast, {
     ImportDeclaration(path: any) {
       const source = path.node.source.value;
@@ -58,23 +70,22 @@ export function extractStrings(ast: File, filePath: string): StringExtractionRes
     },
   });
 
-  // If no tyndale imports, nothing to extract
-  if (tyndaleImports.size === 0) return { entries, errors };
+  // If no tyndale imports, nothing binds t; skip the second pass.
+  if (tyndaleImports.size === 0) {
+    return { tyndaleImports, tBindings };
+  }
 
-  // Step 2: Find `const t = useTranslation()` or `const t = await getTranslation()`
-  // bindings to track which local variables are `t` functions.
+  // Pass 2: `const t = useTranslation()` / `const t = await getTranslation()`.
   traverse(ast, {
     VariableDeclarator(path: any) {
       const init = path.node.init;
       if (!init) return;
 
-      // `const t = useTranslation()`
       let calleeName: string | null = null;
 
       if (init.type === 'CallExpression' && init.callee.type === 'Identifier') {
         calleeName = init.callee.name;
       }
-      // `const t = await getTranslation()`
       if (
         init.type === 'AwaitExpression' &&
         init.argument?.type === 'CallExpression' &&
@@ -92,12 +103,30 @@ export function extractStrings(ast: File, filePath: string): StringExtractionRes
     },
   });
 
-  // Step 3: Find all call expressions where the callee is a known t/msg binding.
+  return { tyndaleImports, tBindings };
+}
+
+/**
+ * Walk the AST collecting every extractable string-literal call, and report
+ * errors for non-literal arguments. Expects bindings from `collectTBindings`.
+ */
+export function extractStringCalls(
+  ast: File,
+  filePath: string,
+  bindings: TBindings,
+): StringExtractionResult {
+  const entries: ExtractedEntry[] = [];
+  const errors: ExtractionError[] = [];
+
+  if (bindings.tyndaleImports.size === 0 && bindings.tBindings.size === 0) {
+    return { entries, errors };
+  }
+
   traverse(ast, {
     CallExpression(path: any) {
       const callee = path.node.callee;
       if (callee.type !== 'Identifier') return;
-      if (!tBindings.has(callee.name)) return;
+      if (!bindings.tBindings.has(callee.name)) return;
 
       const args = path.node.arguments;
       if (args.length === 0) return;
@@ -117,7 +146,6 @@ export function extractStrings(ast: File, filePath: string): StringExtractionRes
           context: `${filePath}:${fnLabel}@${line}`,
         });
       } else {
-        // Non-literal argument — this is an error
         const fnLabel = callee.name;
         errors.push({
           file: filePath,
@@ -128,6 +156,57 @@ export function extractStrings(ast: File, filePath: string): StringExtractionRes
       }
     },
   });
+
+  return { entries, errors };
+}
+
+/** Thin wrapper preserving the original single-pass public API. */
+export function extractStrings(ast: File, filePath: string): StringExtractionResult {
+  const bindings = collectTBindings(ast);
+  return extractStringCalls(ast, filePath, bindings);
+}
+
+/**
+ * Parse each Astro template expression as a TS expression and extract any
+ * string-literal `t(...)` / `msg(...)` call sites using the provided bindings
+ * (typically collected from the surrounding `.astro` frontmatter).
+ *
+ * Line numbers in emitted entries/errors match the original `.astro` source
+ * lines (the line-offset padding is applied internally).
+ */
+import { parseSource } from './ast-parser';
+import type { TemplateExpression } from '../astro/expression-source';
+
+export function extractStringCallsFromExpressions(
+  expressions: TemplateExpression[],
+  filePath: string,
+  bindings: TBindings,
+): StringExtractionResult {
+  const entries: ExtractedEntry[] = [];
+  const errors: ExtractionError[] = [];
+
+  for (const expr of expressions) {
+    // Wrap the expression as a parenthesized statement so any expression shape
+    // parses cleanly as a module.
+    const padding = '\n'.repeat(Math.max(0, expr.startLine - 1));
+    const wrapped = `${padding};(${expr.source});`;
+    let ast: File;
+    try {
+      ast = parseSource(wrapped, filePath);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      errors.push({
+        file: filePath,
+        line: expr.startLine,
+        message: `Failed to parse template expression at line ${expr.startLine}: ${message}`,
+        severity: 'error',
+      });
+      continue;
+    }
+    const result = extractStringCalls(ast, filePath, bindings);
+    entries.push(...result.entries);
+    errors.push(...result.errors);
+  }
 
   return { entries, errors };
 }
