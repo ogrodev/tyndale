@@ -31,6 +31,7 @@
   },
   "keywords": ["i18n", "internationalization", "react", "nextjs", "ai", "translation", "cli"],
   "dependencies": {
+    "@astrojs/compiler": "^2.13.0",
     "@babel/parser": "^7.29.2",
     "@babel/traverse": "^7.29.0",
     "@babel/types": "^7.29.0",

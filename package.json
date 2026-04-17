@@ -1,6 +1,5 @@
 {
   "name": "tyndale",
-  "private": true,
   "description": "AI-powered i18n for React and Next.js",
   "license": "MIT",
   "repository": {

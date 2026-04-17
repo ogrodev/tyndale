@@ -35,10 +35,12 @@
     },
     "packages/tyndale": {
       "name": "tyndale",
+      "version": "1.0.0",
       "bin": {
         "tyndale": "dist/cli.js",
       },
       "dependencies": {
+        "@astrojs/compiler": "^2.13.0",
         "@babel/parser": "^7.29.2",
         "@babel/traverse": "^7.29.0",
         "@babel/types": "^7.29.0",
@@ -54,6 +56,7 @@
     },
     "packages/tyndale-next": {
       "name": "tyndale-next",
+      "version": "1.0.0",
       "dependencies": {
         "tyndale-react": "workspace:*",
       },
@@ -69,7 +72,7 @@
     },
     "packages/tyndale-react": {
       "name": "tyndale-react",
-      "version": "0.1.0",
+      "version": "1.0.0",
       "devDependencies": {
         "@happy-dom/global-registrator": "^20.8.9",
         "@testing-library/react": "^16.3.2",
