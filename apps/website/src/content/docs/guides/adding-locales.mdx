@@ -14,13 +14,15 @@ Open `tyndale.config.json` and add the locale code to the `locales` array:
 }
 ```
 
+`defaultLocale` is your source language, so it must not appear in `locales`.
+
 Then run:
 
 ```bash
 npx tyndale translate
 ```
 
-Tyndale will generate translations for the new locale while leaving existing translations untouched.
+`translate` auto-runs extraction first, then generates translations for the new locale while leaving existing locale files alone unless stale entries need cleanup.
 
 ## Locale aliases
 
@@ -37,4 +39,27 @@ Map variant codes to canonical ones with `localeAliases`:
 
 ## RTL support
 
-Tyndale automatically detects RTL locales (Arabic, Hebrew, etc.). The `TyndaleServerProvider` sets the `dir` attribute on the HTML element. Use Tailwind's `rtl:` variant for RTL-specific styles.
+Tyndale detects RTL locales, but it does not mutate `<html dir>` for you. Wire direction explicitly with the current locale helpers:
+
+```tsx
+// app/[locale]/layout.tsx
+import { getDirection } from 'tyndale-next/server';
+
+export default async function RootLayout({
+  children,
+  params,
+}: {
+  children: React.ReactNode;
+  params: Promise<{ locale: string }>;
+}) {
+  const { locale } = await params;
+
+  return (
+    <html lang={locale} dir={getDirection(locale)}>
+      <body>{children}</body>
+    </html>
+  );
+}
+```
+
+In client components, use `useDirection()` when you need the active direction value inside rendered UI.

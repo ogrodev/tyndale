@@ -3,42 +3,224 @@ title: React API
 description: Components and hooks from tyndale-react.
 ---
 
-## Components
+`tyndale-react` provides the runtime provider, translation hooks, formatting components, and server helpers used by Tyndale apps.
+
+## Provider and context
+
+### `TyndaleProvider`
+
+Root provider for plain React apps. It loads locale files, exposes translation state, and powers all hooks and components.
+
+```tsx
+import { TyndaleProvider } from 'tyndale-react';
+
+export function App() {
+  return (
+    <TyndaleProvider defaultLocale="en" locale="fr">
+      <Routes />
+    </TyndaleProvider>
+  );
+}
+```
+
+**Props**
+
+- `defaultLocale: string`
+- `locale?: string`
+- `basePath?: string` — defaults to `/_tyndale`
+- `initialTranslations?: Record<string, string>`
+- `initialManifest?: Manifest | null`
+- `onLocaleChange?: (locale: string) => void`
+- `children: React.ReactNode`
+
+If `initialTranslations` is omitted, the provider fetches `{basePath}/{locale}.json` and `manifest.json` in the browser.
+
+### `TyndaleContext`
+
+React context carrying the current locale, manifest, loaded translations, loading state, and `changeLocale()` function.
+
+Use it directly only when you need custom context access. Most apps should prefer the hooks below.
+
+### `useTyndaleContext()`
+
+Reads `TyndaleContext` and throws if no provider is mounted.
+
+```tsx
+import { useTyndaleContext } from 'tyndale-react';
+
+function LocaleBadge() {
+  const { locale, defaultLocale, isLoading } = useTyndaleContext();
+  return <span>{isLoading ? 'Loading…' : `${locale} / ${defaultLocale}`}</span>;
+}
+```
+
+## Core hooks
+
+### `useTranslation()`
+
+Returns a translation function with interpolation support.
+
+```tsx
+import { useTranslation } from 'tyndale-react';
+
+function Greeting({ name }: { name: string }) {
+  const t = useTranslation();
+  return <p>{t('Hello, {name}!', { name })}</p>;
+}
+```
+
+Signature:
+
+```ts
+(source: string, vars?: Record<string, string | number>) => string
+```
+
+### `useLocale()`
+
+Returns the current locale string.
+
+```tsx
+import { useLocale } from 'tyndale-react';
+
+const locale = useLocale();
+```
+
+Outside a provider it returns an empty string and logs a warning in development.
+
+### `useChangeLocale()`
+
+Returns a function that changes the active locale.
+
+```tsx
+import { useChangeLocale } from 'tyndale-react';
+
+function LocaleSwitcher() {
+  const changeLocale = useChangeLocale();
+
+  return <button onClick={() => changeLocale('es')}>Español</button>;
+}
+```
+
+In plain React, this fetches the new locale JSON and updates provider state. In `tyndale-next`, the same hook triggers a route change instead.
+
+### `useDictionary(filenameKey)`
+
+Returns dictionary entries for a dictionary file as a plain object.
+
+```tsx
+import { useDictionary } from 'tyndale-react';
+
+function Nav() {
+  const labels = useDictionary('common');
+  return <a href="/docs">{labels.docs}</a>;
+}
+```
+
+Signature:
+
+```ts
+(filenameKey: string) => Record<string, string>
+```
+
+The hook looks up manifest entries with `type: 'dictionary'` and falls back to the dictionary key when a translation is missing.
+
+## Server helper
+
+### `getTranslation(options)`
+
+Async server helper that loads a locale file from disk and returns a translation function.
+
+Available from both `tyndale-react` and the server-only subpath:
+
+```ts
+import { getTranslation } from 'tyndale-react/server';
+
+const t = await getTranslation({
+  locale: 'fr',
+  defaultLocale: 'en',
+  outputPath: 'public/_tyndale',
+});
+
+const title = t('Welcome, {name}!', { name: 'Ada' });
+```
+
+Options:
+
+- `locale: string`
+- `defaultLocale?: string`
+- `outputPath: string`
+
+If `locale === defaultLocale`, it skips file loading and returns the source string with interpolation applied.
+
+## Message markers
+
+### `msg(source)`
+
+Marks a literal string for extraction outside component render and returns a React element that resolves at render time.
+
+```tsx
+import { msg } from 'tyndale-react';
+
+const nav = [{ href: '/', label: msg('Home') }];
+```
+
+### `msgString(source)`
+
+Marks a literal string for extraction and returns a plain string instead of a React element.
+
+```ts
+import { msgString } from 'tyndale-react';
+
+export const copy = {
+  docs: msgString('Documentation'),
+};
+```
+
+Use `msgString()` in non-React contexts such as plain TypeScript modules, Astro frontmatter, or server utilities.
+
+## Translation and formatting components
 
 ### `<T>`
 
-Wraps translatable text content. Supports variables and nested components.
+Translates JSX content by serializing its children, looking up the translated wire format, and rendering the translated result.
 
 ```tsx
-import { T } from 'tyndale-react';
+import { T, Var } from 'tyndale-react';
 
-<T>Welcome to our app!</T>
-<T>Hello, {name}!</T>
+<T>
+  Hello, <Var name="name">{name}</Var>!
+</T>
 ```
 
-### `<Plural>`
+If no translation is available, it renders the source children.
 
-Handles pluralization based on a count value.
+### `<Var>`
+
+Marks a dynamic value inside `<T>`.
 
 ```tsx
-import { Plural } from 'tyndale-react';
+import { T, Var } from 'tyndale-react';
 
-<Plural value={count} one="1 item" other="{count} items" />
+<T>
+  Hello, <Var name="name">{name}</Var>!
+</T>
 ```
 
-### `<DateTime>`
+### `<Num>`
 
-Formats dates according to the current locale.
+Formats a number with `Intl.NumberFormat`. Inside `<T>`, it also acts as a named placeholder.
 
 ```tsx
-import { DateTime } from 'tyndale-react';
+import { T, Num } from 'tyndale-react';
 
-<DateTime value={new Date()} />
+<T>
+  You have <Num name="count" value={count} /> unread messages.
+</T>
 ```
 
 ### `<Currency>`
 
-Formats currency values according to the current locale.
+Formats currency with the active locale.
 
 ```tsx
 import { Currency } from 'tyndale-react';
@@ -46,39 +228,50 @@ import { Currency } from 'tyndale-react';
 <Currency value={49.99} currency="USD" />
 ```
 
-## Hooks
+### `<DateTime>`
 
-| Hook | Returns | Purpose |
-|------|---------|--------|
-| `useTranslation()` | `t(source, vars?)` | Translate strings programmatically |
-| `useLocale()` | `string` | Current locale code |
-| `useChangeLocale()` | `(locale: string) => void` | Switch locale at runtime |
-| `useDictionary()` | `d(key) => string` | Access dictionary translations |
-
-## Functions
-
-### `msg(text)`
-
-Mark a string as translatable outside of a component context.
+Formats a date or timestamp with `Intl.DateTimeFormat`.
 
 ```tsx
-import { msg } from 'tyndale-react';
+import { DateTime } from 'tyndale-react';
 
-const errorMessages = {
-  notFound: msg('Page not found'),
-  unauthorized: msg('Please sign in to continue'),
-};
+<DateTime value={new Date()} options={{ dateStyle: 'long' }} />
 ```
 
-### `msgString(text)`
+### `<Plural>`
 
-String-returning marker for non-React contexts (Astro, Node, plain TS). Works identically to `msg()` for extraction but returns a plain `string` instead of a React element.
+Selects the correct plural branch for the active locale. Inside `<T>`, it is serialized to ICU plural syntax.
+
+```tsx
+import { Plural } from 'tyndale-react';
+
+<Plural count={count} one="1 item" other="{count} items" />
+```
+
+## Advanced helpers
+
+These are public exports, but most apps do not need them unless you are integrating with extraction output or wire-format internals.
+
+### `computeHash(content)` / `hash(content)`
+
+Compute the normalized SHA-256 hash Tyndale uses for translation lookup.
 
 ```ts
-import { msgString } from 'tyndale-react';
+import { computeHash } from 'tyndale-react';
 
-const labels = {
-  greeting: msgString('Hello'),
-  farewell: msgString('Goodbye'),
-};
+const id = computeHash('Welcome to our app.');
 ```
+
+### `escapeWireFormat(text)` / `unescapeWireFormat(text)`
+
+Escape or restore literal text for Tyndale wire format.
+
+### `serializeChildren(children)` / `deserializeWireFormat(...)`
+
+Convert React children to Tyndale wire format and back.
+
+### `parseIcuPlural(input)`
+
+Parse an ICU plural block into its variable name and branches.
+
+Reach for these only when you are building tooling or advanced runtime integrations around Tyndale's serialized translation format.

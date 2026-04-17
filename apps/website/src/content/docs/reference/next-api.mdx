@@ -3,44 +3,227 @@ title: Next.js API
 description: API reference for tyndale-next.
 ---
 
-## `TyndaleServerProvider`
+`tyndale-next` adds Next.js-specific wiring on top of `tyndale-react`.
 
-Server-side provider that loads translations and makes them available to all child components.
+## Import paths
+
+- `tyndale-next` — app-facing helpers and components
+- `tyndale-next/server` — server-safe exports for RSC code
+- `tyndale-next/config` — Next config wrapper
+- `tyndale-next/middleware` — locale routing middleware
+
+## App Router essentials
+
+### `TyndaleServerProvider`
+
+Server component that reads `public/_tyndale/{locale}.json` and `manifest.json` from disk and hydrates the client provider.
 
 ```tsx
 import { TyndaleServerProvider } from 'tyndale-next/server';
 
-// In your layout
-<TyndaleServerProvider locale={locale}>
-  {children}
-</TyndaleServerProvider>
+export default async function LocaleLayout({
+  children,
+  params,
+}: {
+  children: React.ReactNode;
+  params: Promise<{ locale: string }>;
+}) {
+  const { locale } = await params;
+
+  return (
+    <html lang={locale}>
+      <body>
+        <TyndaleServerProvider locale={locale}>{children}</TyndaleServerProvider>
+      </body>
+    </html>
+  );
+}
 ```
 
-## `withTyndaleConfig(config)`
+**Props**
 
-Wraps your Next.js config to add locale-based rewrites and redirects.
+- `locale: string`
+- `children: React.ReactNode`
 
-```js
-// next.config.mjs
+Notes:
+
+- Reads the default locale from `TYNDALE_DEFAULT_LOCALE`.
+- Reads translation output from `TYNDALE_OUTPUT` or `public/_tyndale`.
+- Does not set `<html dir>` for you. Use `useDirection()` on the client or `getDirection(locale)` on the server.
+
+### `TyndaleNextClientProvider`
+
+Client wrapper around `TyndaleProvider`. It connects `useChangeLocale()` to Next navigation by pushing a locale-prefixed URL.
+
+Most apps should use `TyndaleServerProvider` instead of mounting this directly.
+
+```tsx
+'use client';
+
+import { TyndaleNextClientProvider } from 'tyndale-next';
+
+export function Providers({
+  children,
+  locale,
+  defaultLocale,
+  translations,
+  manifest,
+}: {
+  children: React.ReactNode;
+  locale: string;
+  defaultLocale: string;
+  translations: Record<string, string>;
+  manifest: Record<string, unknown> | null;
+}) {
+  return (
+    <TyndaleNextClientProvider
+      locale={locale}
+      defaultLocale={defaultLocale}
+      translations={translations}
+      manifest={manifest}
+    >
+      {children}
+    </TyndaleNextClientProvider>
+  );
+}
+```
+
+### `generateStaticLocaleParams()`
+
+Returns locale params for `generateStaticParams()` by reading `tyndale.config.json`.
+
+```ts
+import { generateStaticLocaleParams } from 'tyndale-next/server';
+
+export function generateStaticParams() {
+  return generateStaticLocaleParams();
+}
+```
+
+Return shape:
+
+```ts
+Array<{ locale: string }>
+```
+
+The result includes the default locale first, then every locale in `locales`.
+
+## Configuration
+
+### `withTyndaleConfig(nextConfig)`
+
+Wraps your Next config and injects the runtime environment variables that Tyndale reads at build and request time.
+
+```ts
+// next.config.ts
 import { withTyndaleConfig } from 'tyndale-next/config';
 
 export default withTyndaleConfig({
-  // your existing config
+  reactStrictMode: true,
 });
 ```
 
-## `tyndaleMiddleware`
+What it adds:
 
-Middleware that handles locale detection and routing.
+- `TYNDALE_DEFAULT_LOCALE`
+- `TYNDALE_LOCALES`
+- `TYNDALE_COOKIE_NAME`
+- `TYNDALE_LOCALE_ALIASES`
+- `TYNDALE_OUTPUT`
+- a webpack alias so server and client resolve the same `tyndale-react` instance
+
+## Middleware
+
+### `createTyndaleMiddleware()`
+
+Creates the Next middleware that handles locale routing.
 
 ```ts
 // middleware.ts
-export { tyndaleMiddleware as middleware } from 'tyndale-next/middleware';
+import { createTyndaleMiddleware } from 'tyndale-next/middleware';
+
+export default createTyndaleMiddleware();
+
+export const config = {
+  matcher: ['/((?!api|_next|_tyndale|.*\\..*).*)'],
+};
 ```
 
-### Behavior
+Behavior, in order:
 
-1. Checks for a locale prefix in the URL
-2. Falls back to the `Accept-Language` header
-3. Falls back to the default locale from config
-4. Sets a locale cookie for subsequent requests
+1. Uses the locale in the URL when present.
+2. Falls back to the locale cookie.
+3. Falls back to the `Accept-Language` header.
+4. Falls back to `defaultLocale`.
+
+It also:
+
+- redirects alias locales to their canonical locale
+- redirects unsupported locale prefixes to the default locale
+- sets an `x-tyndale-locale` request header for valid locale-prefixed routes
+- persists the chosen locale in the `TYNDALE_LOCALE` cookie
+
+## Direction and locale helpers
+
+### `useDirection()`
+
+Client hook that returns `'ltr'` or `'rtl'` for the current locale.
+
+```tsx
+'use client';
+
+import { useDirection } from 'tyndale-next';
+
+export function HtmlShell({ children }: { children: React.ReactNode }) {
+  const dir = useDirection();
+  return <div dir={dir}>{children}</div>;
+}
+```
+
+### `getDirection(locale)`
+
+Server-safe helper that returns `'ltr'` or `'rtl'` for a locale string.
+
+```tsx
+import { getDirection } from 'tyndale-next/server';
+
+const dir = getDirection(locale);
+```
+
+### `isRtlLocale(locale)`
+
+Returns `true` when the locale uses a right-to-left script.
+
+```ts
+import { isRtlLocale } from 'tyndale-next/server';
+
+isRtlLocale('ar'); // true
+isRtlLocale('en-US'); // false
+```
+
+### `resolveAlias(locale, aliases)`
+
+Maps a locale alias to its canonical locale.
+
+```ts
+import { resolveAlias } from 'tyndale-next/server';
+
+resolveAlias('pt-BR', { 'pt-BR': 'pt' }); // 'pt'
+```
+
+## Cache boundary
+
+### `TyndaleCache`
+
+Client cache boundary for translated content in shared layouts. The cache key is scoped by both `id` and the current locale.
+
+```tsx
+import { TyndaleCache } from 'tyndale-next';
+import { T } from 'tyndale-react';
+
+<TyndaleCache id="footer-copy">
+  <T>Documentation, guides, and examples.</T>
+</TyndaleCache>
+```
+
+Use it for repeated translated UI in layouts that re-render during navigation. Do not use it as a general data cache.

@@ -33,18 +33,25 @@ Dictionaries are traditional key-value translation files. They're useful for:
 }
 ```
 
+`useDictionary(filenameKey)` looks up one dictionary file and returns a `Record<string, string>`. The filename key is the dictionary path without the `.json` extension:
+- `src/dictionaries/common.json` → `common`
+- `src/dictionaries/pages/home.json` → `pages/home`
+
 ## Use in components
 
 ```tsx
 import { useDictionary } from 'tyndale-react';
 
 export function ActionButtons() {
-  const d = useDictionary();
+  const labels = useDictionary('common');
+
   return (
     <div>
-      <button>{d('save')}</button>
-      <button>{d('cancel')}</button>
+      <button>{labels.save ?? 'Save'}</button>
+      <button>{labels.cancel ?? 'Cancel'}</button>
     </div>
   );
 }
 ```
+
+If no entries match the filename key, `useDictionary(filenameKey)` returns an empty object.
