@@ -30,7 +30,7 @@ describe('StarlightProvider', () => {
   const provider = new StarlightProvider();
 
   it('has correct extensions', () => {
-    expect(provider.extensions).toEqual(['.mdx', '.md']);
+    expect(provider.extensions).toEqual(['.mdx', '.md', '.astro']);
   });
 
   it('resolveTargetPath inserts locale as top-level directory', () => {
@@ -42,6 +42,15 @@ describe('StarlightProvider', () => {
     expect(result).toBe('/proj/docs/es/guide/intro.mdx');
   });
 
+  it('resolveTargetPath preserves .astro extension', () => {
+    const result = provider.resolveTargetPath(
+      '/proj/docs/intro.astro',
+      '/proj/docs',
+      'es',
+    );
+    expect(result).toBe('/proj/docs/es/intro.astro');
+  });
+
   describe('findSourceFiles', () => {
     const tmpDir = join(import.meta.dir, '__fixtures__/starlight-find');
 
@@ -49,6 +58,8 @@ describe('StarlightProvider', () => {
       mkdirSync(join(tmpDir, 'guide'), { recursive: true });
       mkdirSync(join(tmpDir, 'es/guide'), { recursive: true });
       writeFileSync(join(tmpDir, 'guide/intro.mdx'), '# Intro');
+      writeFileSync(join(tmpDir, 'guide/notes.md'), '# Notes');
+      writeFileSync(join(tmpDir, 'guide/page.astro'), '---\n---\n<h1>Hi</h1>');
       writeFileSync(join(tmpDir, 'es/guide/intro.mdx'), '# Intro ES');
     });
 
@@ -58,8 +69,10 @@ describe('StarlightProvider', () => {
 
     it('excludes files in locale directories', () => {
       const files = provider.findSourceFiles(tmpDir, ['es']);
-      expect(files).toHaveLength(1);
-      expect(files[0]).toBe(join(tmpDir, 'guide/intro.mdx'));
+      expect(files).toHaveLength(3);
+      expect(files.includes(join(tmpDir, 'guide/intro.mdx'))).toBe(true);
+      expect(files.includes(join(tmpDir, 'guide/notes.md'))).toBe(true);
+      expect(files.includes(join(tmpDir, 'guide/page.astro'))).toBe(true);
     });
   });
 });

@@ -1,0 +1,13 @@
+---
+// Purpose: <T> with <Var>, <Num>, <Currency>, <DateTime> children.
+const user = 'A';
+const count = 1;
+const price = 2;
+const date = new Date();
+---
+<T>
+  Hi <Var name="user">{user}</Var>, you have
+  <Num value={count}>{count}</Num> items worth
+  <Currency value={price}>{price}</Currency> on
+  <DateTime value={date}>{date}</DateTime>.
+</T>

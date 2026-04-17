@@ -1,0 +1,13 @@
+---
+import Layout from '../../layouts/Main.astro';
+import Card from '../../components/Card.astro';
+
+const title = 'Welcome';
+---
+<Layout title={title}>
+  <h1>Welcome to Tyndale</h1>
+  <Card client:load title="Overview">
+    <p>Translate documentation <strong>confidently</strong>.</p>
+  </Card>
+  <img src="/logo.png" alt="Tyndale logo" />
+</Layout>

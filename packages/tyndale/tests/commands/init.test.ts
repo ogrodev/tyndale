@@ -92,7 +92,7 @@ describe('scaffoldConfig', () => {
       defaultLocale: 'en',
       locales: ['es', 'fr'],
       source: ['app', 'src'],
-      extensions: ['.ts', '.tsx', '.js', '.jsx'],
+      extensions: ['.ts', '.tsx', '.js', '.jsx', '.astro'],
       output: 'public/_tyndale',
       translate: {},
       localeAliases: {},

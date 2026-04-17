@@ -1,0 +1,7 @@
+---
+// Purpose: non-literal msg() argument at line 5 should produce one error at line 5.
+import { msg } from 'tyndale-react';
+const dynamic = someVar;
+const greeting = msg(dynamic);
+---
+<h1>Hi</h1>

@@ -1,0 +1,6 @@
+---
+// Purpose: non-literal t() argument in template expression at line 6 should error at line 6.
+import { useTranslation } from 'tyndale-react';
+const t = useTranslation();
+---
+<p>{t(unknownBinding)}</p>

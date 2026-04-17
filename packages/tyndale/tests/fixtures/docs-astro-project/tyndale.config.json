@@ -1,0 +1,9 @@
+{
+  "defaultLocale": "en",
+  "locales": ["es"],
+  "source": ["src"],
+  "docs": {
+    "framework": "starlight",
+    "contentDir": "src/content/docs"
+  }
+}

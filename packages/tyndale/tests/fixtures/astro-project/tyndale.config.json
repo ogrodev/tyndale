@@ -1,0 +1,8 @@
+{
+  "defaultLocale": "en",
+  "locales": ["es"],
+  "source": ["src"],
+  "extensions": [".tsx", ".astro"],
+  "output": "public/_tyndale",
+  "dictionaries": { "include": [] }
+}
