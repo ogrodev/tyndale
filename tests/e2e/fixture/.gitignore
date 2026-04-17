@@ -1,0 +1,5 @@
+# Build output and seeded translations produced by Playwright's global-setup
+# (tests/playwright/global-setup.ts). Regenerated on every Playwright run;
+# bun e2e tests also clean these after copying the fixture.
+.next/
+public/
