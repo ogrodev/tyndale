@@ -1,7 +1,7 @@
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import { hash } from './hash';
-import { interpolate } from './use-translation';
+import { hash } from './hash.js';
+import { interpolate } from './use-translation.js';
 
 export interface GetTranslationOptions {
   /** Target locale code. */

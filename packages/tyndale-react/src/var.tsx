@@ -1,4 +1,4 @@
-import type { VarProps } from './types';
+import type { VarProps } from './types.js';
 
 /**
  * Dynamic text slot for use inside <T>.

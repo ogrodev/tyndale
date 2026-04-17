@@ -1,6 +1,8 @@
+'use client';
+
 import { useContext } from 'react';
-import { TyndaleContext } from './context';
-import type { NumProps } from './types';
+import { TyndaleContext } from './context.js';
+import type { NumProps } from './types.js';
 
 /**
  * Locale-aware number formatter.

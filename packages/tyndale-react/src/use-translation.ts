@@ -1,6 +1,8 @@
+'use client';
+
 import { useContext, useCallback } from 'react';
-import { TyndaleContext } from './context';
-import { hash } from './hash';
+import { TyndaleContext } from './context.js';
+import { hash } from './hash.js';
 
 /**
  * Interpolates {name} placeholders in a string with provided values.

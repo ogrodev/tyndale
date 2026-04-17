@@ -1,7 +1,9 @@
+'use client';
+
 import React, { useState, useEffect, useCallback, useMemo, type ReactNode } from 'react';
-import { TyndaleContext } from './context';
-import type { LocaleData, Manifest, TyndaleContextValue } from './types';
-import { TyndaleInternalContext, type TyndaleInternalContextValue } from './internal-context';
+import { TyndaleContext } from './context.js';
+import type { LocaleData, Manifest, TyndaleContextValue } from './types.js';
+import { TyndaleInternalContext, type TyndaleInternalContextValue } from './internal-context.js';
 
 export interface TyndaleProviderProps {
   /** The source locale the app is written in. */

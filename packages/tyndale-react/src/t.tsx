@@ -1,8 +1,10 @@
+'use client';
+
 import React, { useContext, useMemo, isValidElement, Children } from 'react';
-import { TyndaleContext } from './context';
-import { hash } from './hash';
-import { serializeChildren, deserializeWireFormat } from './wire-format';
-import { Plural } from './plural';
+import { TyndaleContext } from './context.js';
+import { hash } from './hash.js';
+import { serializeChildren, deserializeWireFormat } from './wire-format.js';
+import { Plural } from './plural.js';
 
 export interface TProps {
   children: React.ReactNode;

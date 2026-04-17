@@ -1,5 +1,7 @@
+'use client';
+
 import { useMemo } from 'react';
-import { useTyndaleContext } from './context';
+import { useTyndaleContext } from './context.js';
 
 /**
  * Resolves dictionary entries for a given filename key.

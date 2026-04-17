@@ -6,13 +6,13 @@ import {
   createElement,
 } from 'react';
 import type React from 'react';
-import { Var } from './var';
-import { Num } from './num';
-import { Currency } from './currency';
-import { DateTime } from './date-time';
-import { Plural } from './plural';
-import { escapeWireFormat, unescapeWireFormat } from './escape';
-import { interpolatePluralBranch } from './plural';
+import { Var } from './var.js';
+import { Num } from './num.js';
+import { Currency } from './currency.js';
+import { DateTime } from './date-time.js';
+import { Plural } from './plural.js';
+import { escapeWireFormat, unescapeWireFormat } from './escape.js';
+import { interpolatePluralBranch } from './plural.js';
 
 // --- Types ---
 

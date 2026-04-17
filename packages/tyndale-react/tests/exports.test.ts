@@ -21,12 +21,19 @@ describe('tyndale-react exports', () => {
     expect(mod.Plural).toBeDefined();
 
     // Phase 2A: Hooks and functions
-    expect(mod.getTranslation).toBeDefined();
+    // (getTranslation is server-only — lives under tyndale-react/server)
     expect(mod.msg).toBeDefined();
     expect(mod.useChangeLocale).toBeDefined();
     expect(mod.useDictionary).toBeDefined();
 
     // Phase 2A: Types (re-exported for consumers)
     // Types don't exist at runtime, but the module should not throw
+  });
+
+  test('getTranslation is exported from /server (not from main barrel)', async () => {
+    const main = await import('../src/index');
+    expect((main as Record<string, unknown>).getTranslation).toBeUndefined();
+    const server = await import('../src/server');
+    expect(server.getTranslation).toBeDefined();
   });
 });

@@ -1,6 +1,8 @@
+'use client';
+
 import React, { useContext } from 'react';
-import { TyndaleContext } from './context';
-import { hash } from './hash';
+import { TyndaleContext } from './context.js';
+import { hash } from './hash.js';
 
 interface MsgResolverProps {
   source: string;

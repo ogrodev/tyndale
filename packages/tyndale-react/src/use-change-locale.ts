@@ -1,5 +1,7 @@
+'use client';
+
 import { useCallback, useRef } from 'react';
-import { useTyndaleInternalContext } from './internal-context';
+import { useTyndaleInternalContext } from './internal-context.js';
 
 /**
  * Returns a function that triggers a locale change.

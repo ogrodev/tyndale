@@ -1,1 +1,1 @@
-export { getTranslation, type GetTranslationOptions } from './get-translation';
+export { getTranslation, type GetTranslationOptions } from './get-translation.js';

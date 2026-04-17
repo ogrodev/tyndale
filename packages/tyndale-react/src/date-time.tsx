@@ -1,6 +1,8 @@
+'use client';
+
 import { useContext } from 'react';
-import { TyndaleContext } from './context';
-import type { DateTimeProps } from './types';
+import { TyndaleContext } from './context.js';
+import type { DateTimeProps } from './types.js';
 
 /**
  * Locale-aware date/time formatter.

@@ -1,6 +1,8 @@
+'use client';
+
 import { useContext } from 'react';
-import { TyndaleContext } from './context';
-import type { PluralProps, PluralCategory } from './types';
+import { TyndaleContext } from './context.js';
+import type { PluralProps, PluralCategory } from './types.js';
 
 /**
  * Interpolates {count} in a plural branch string.
