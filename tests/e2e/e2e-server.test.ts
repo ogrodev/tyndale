@@ -101,7 +101,7 @@ describe('E2E: Next.js dev server serves translations', () => {
 
     // 3. Start Next.js dev server using the fixture's installed next binary
     const nextBin = join(FIXTURE_DIR, 'node_modules', '.bin', 'next');
-    devServer = Bun.spawn([nextBin, 'dev', '--port', String(port)], {
+    devServer = Bun.spawn([nextBin, 'dev', '--webpack', '--port', String(port)], {
       cwd: workDir,
       stdout: 'pipe',
       stderr: 'pipe',

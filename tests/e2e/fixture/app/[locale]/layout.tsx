@@ -1,14 +1,15 @@
 import { TyndaleServerProvider } from 'tyndale-next';
 
-export default function LocaleLayout({
+export default async function LocaleLayout({
   children,
   params,
 }: {
   children: React.ReactNode;
-  params: { locale: string };
+  params: Promise<{ locale: string }>;
 }) {
+  const { locale } = await params;
   return (
-    <TyndaleServerProvider locale={params.locale}>
+    <TyndaleServerProvider locale={locale}>
       {children}
     </TyndaleServerProvider>
   );
