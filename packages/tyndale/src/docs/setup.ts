@@ -1,8 +1,8 @@
 import { existsSync, readFileSync, writeFileSync } from 'fs';
 import { join } from 'path';
-import { detectDocFrameworks } from './detect';
-import type { DetectedFramework } from './types';
-import { createTerminalUi } from '../terminal/ui';
+import { detectDocFrameworks } from './detect.js';
+import type { DetectedFramework } from './types.js';
+import { createTerminalUi } from '../terminal/ui.js';
 
 export async function runDocsSetup(
   flags: Record<string, string | boolean>,

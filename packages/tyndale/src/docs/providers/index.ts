@@ -1,11 +1,11 @@
-import type { DocsFrameworkId, DocsProvider } from '../types';
-import { StarlightProvider } from './starlight';
-import { DocusaurusProvider } from './docusaurus';
-import { VitePressProvider } from './vitepress';
-import { MkDocsProvider } from './mkdocs';
-import { NextraProvider } from './nextra';
+import type { DocsFrameworkId, DocsProvider } from '../types.js';
+import { StarlightProvider } from './starlight.js';
+import { DocusaurusProvider } from './docusaurus.js';
+import { VitePressProvider } from './vitepress.js';
+import { MkDocsProvider } from './mkdocs.js';
+import { NextraProvider } from './nextra.js';
 
-export { walkDir } from './walk';
+export { walkDir } from './walk.js';
 
 const providers: Record<DocsFrameworkId, DocsProvider> = {
   starlight: new StarlightProvider(),

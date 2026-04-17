@@ -1,7 +1,7 @@
 // packages/tyndale/src/commands/auth.ts
 
-import type { CommandResult } from '../cli';
-import { readLine } from '../utils/readline';
+import type { CommandResult } from '../cli.js';
+import { readLine } from '../utils/readline.js';
 import { exec } from 'child_process';
 
 interface Logger {
@@ -80,7 +80,7 @@ async function handleAuth(
     }
     selected = providerFlag;
   } else {
-    const { selectProvider } = await import('../tui/provider-selector');
+    const { selectProvider } = await import('../tui/provider-selector.js');
     selected = await selectProvider(providerInfos);
   }
 
@@ -162,7 +162,7 @@ async function handleAuthLogout(
     isOAuth: oauthSet.has(id),
   }));
 
-  const { selectProvider } = await import('../tui/provider-selector');
+  const { selectProvider } = await import('../tui/provider-selector.js');
   const selected = await selectProvider(providerInfos);
 
   if (!selected) {

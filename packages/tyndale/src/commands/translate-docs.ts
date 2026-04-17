@@ -1,16 +1,16 @@
 // packages/tyndale/src/commands/translate-docs.ts
 import { createHash } from 'crypto';
-import type { CommandResult } from '../cli';
+import type { CommandResult } from '../cli.js';
 import { join, relative, dirname, extname } from 'path';
 import { mkdirSync, writeFileSync, readFileSync, existsSync, readdirSync, statSync } from 'fs';
-import type { TranslationSession } from '../translate/batch-translator';
-import { resolveConcurrency } from '../translate/concurrency';
-import type { CreateTranslationSessionOptions } from '../translate/pi-session';
-import { runPool } from '../translate/pool';
-import { createProgress, createTerminalUi, type ProgressReporter, type TerminalRow } from '../terminal/ui';
-import { createTranslateActivityTui, type TranslateActivityController } from '../tui/translate-activity';
-import { runTui } from '../tui/run-tui';
-import { splitAstroFast } from '../astro/split-fast';
+import type { TranslationSession } from '../translate/batch-translator.js';
+import { resolveConcurrency } from '../translate/concurrency.js';
+import type { CreateTranslationSessionOptions } from '../translate/pi-session.js';
+import { runPool } from '../translate/pool.js';
+import { createProgress, createTerminalUi, type ProgressReporter, type TerminalRow } from '../terminal/ui.js';
+import { createTranslateActivityTui, type TranslateActivityController } from '../tui/translate-activity.js';
+import { runTui } from '../tui/run-tui.js';
+import { splitAstroFast } from '../astro/split-fast.js';
 
 /** Locale code → full language name. */
 const LOCALE_NAMES: Record<string, string> = {
@@ -43,7 +43,7 @@ export interface TranslateDocsOptions {
   extensions: string[];
   concurrency?: number;
   force?: boolean;
-  provider?: import('../docs/types').DocsProvider;
+  provider?: import('../docs/types.js').DocsProvider;
   cwd?: string;
 }
 
@@ -1020,25 +1020,25 @@ export async function handleTranslateDocs(
 
 /** CLI entry point for `tyndale translate-docs`. */
 export async function runTranslateDocs(flags: Record<string, string | boolean>): Promise<CommandResult> {
-  const { loadConfig } = await import('../config');
+  const { loadConfig } = await import('../config.js');
   const config = loadConfig();
   const isMock = process.env.TYNDALE_MOCK_TRANSLATE === '1';
 
   let contentDir: string;
-  let provider: import('../docs/types').DocsProvider | undefined;
+  let provider: import('../docs/types.js').DocsProvider | undefined;
 
   if (config.docs) {
-    const { getDocsProvider } = await import('../docs/providers');
+    const { getDocsProvider } = await import('../docs/providers/index.js');
     provider = getDocsProvider(config.docs.framework);
     contentDir = config.docs.contentDir ?? (provider.framework.id === 'starlight' ? 'src/content/docs' : 'docs');
   } else if (typeof flags['content-dir'] === 'string') {
     contentDir = flags['content-dir'];
   } else {
     // Auto-detect framework from project files
-    const { detectDocFrameworks } = await import('../docs/detect');
+    const { detectDocFrameworks } = await import('../docs/detect.js');
     const detected = detectDocFrameworks(process.cwd());
     if (detected.length === 1 && detected[0].confidence === 'high') {
-      const { getDocsProvider } = await import('../docs/providers');
+      const { getDocsProvider } = await import('../docs/providers/index.js');
       provider = getDocsProvider(detected[0].framework.id);
       contentDir = detected[0].contentDir;
     } else {
@@ -1054,10 +1054,10 @@ export async function runTranslateDocs(flags: Record<string, string | boolean>):
   const deps: TranslateDocsDeps = {
     createSession: async (sessionOptions) => {
       if (isMock) {
-        const { createMockDocSession } = await import('../translate/mock-docs');
+        const { createMockDocSession } = await import('../translate/mock-docs.js');
         return createMockDocSession();
       }
-      const { createTextSession } = await import('../translate/pi-session');
+      const { createTextSession } = await import('../translate/pi-session.js');
       return createTextSession(sessionOptions);
     },
   };

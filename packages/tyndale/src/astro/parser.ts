@@ -14,7 +14,7 @@ import type {
   RootNode,
   DiagnosticMessage,
 } from '@astrojs/compiler/types';
-import { parseSource } from '../extract/ast-parser';
+import { parseSource } from '../extract/ast-parser.js';
 
 export interface AstroFile {
   /** Source string of the frontmatter with its fence lines excluded. Empty string if none. */

@@ -1,7 +1,8 @@
-import { Glob } from 'bun';
-import { join, relative } from 'path';
+import { join, relative } from 'node:path';
+import { readFile } from 'node:fs/promises';
+import { glob } from 'tinyglobby';
 import { computeHash } from 'tyndale-react'
-import type { ExtractedEntry } from './t-extractor';
+import type { ExtractedEntry } from './t-extractor.js';
 
 export interface DictExtractOptions {
   include: string[];
@@ -24,12 +25,12 @@ export async function extractDictionaries(options: DictExtractOptions): Promise<
   for (const pattern of include) {
     // Determine the glob root — the static prefix of the pattern
     const globRoot = getGlobRoot(pattern);
-    const glob = new Glob(pattern);
 
     try {
-      for await (const match of glob.scan({ cwd: rootDir, absolute: false })) {
+      const matches = await glob(pattern, { cwd: rootDir, absolute: false });
+      for (const match of matches) {
         const absPath = join(rootDir, match);
-        const content = await Bun.file(absPath).text();
+        const content = await readFile(absPath, 'utf-8');
 
         let data: Record<string, string>;
         try {

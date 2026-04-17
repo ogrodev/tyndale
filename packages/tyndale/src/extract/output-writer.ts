@@ -1,6 +1,6 @@
 import { join } from 'path';
 import { mkdirSync, writeFileSync } from 'fs';
-import type { ExtractedEntry } from './t-extractor';
+import type { ExtractedEntry } from './t-extractor.js';
 import type { Manifest, ManifestEntry } from 'tyndale-react'
 
 export interface WriteOptions {

@@ -2,7 +2,7 @@
 
 import { readFileSync, writeFileSync, existsSync } from 'fs';
 import { join } from 'path';
-import type { CommandResult } from '../cli';
+import type { CommandResult } from '../cli.js';
 
 /**
  * Persists the selected model to tyndale.config.json's `pi.model` field.
@@ -47,7 +47,7 @@ export async function runModel(_flags: Record<string, string | boolean>): Promis
     provider: m.provider,
   }));
 
-  const { selectModel } = await import('../tui/model-selector');
+  const { selectModel } = await import('../tui/model-selector.js');
   const selected = await selectModel(models);
 
   if (!selected) {

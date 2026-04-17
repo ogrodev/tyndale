@@ -10,7 +10,7 @@ import {
   getKeybindings,
 } from '@mariozechner/pi-tui';
 import chalk from 'chalk';
-import { InteractiveContainer, runTui } from './run-tui';
+import { InteractiveContainer, runTui } from './run-tui.js';
 
 interface ModelInfo {
   id: string;

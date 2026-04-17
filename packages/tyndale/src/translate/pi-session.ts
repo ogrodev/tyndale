@@ -1,4 +1,4 @@
-import type { TranslationSession } from './batch-translator';
+import type { TranslationSession } from './batch-translator.js';
 
 export interface TranslationInput {
   hash: string;

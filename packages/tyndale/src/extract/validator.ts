@@ -1,5 +1,5 @@
 import type { JSXElement, JSXFragment } from '@babel/types';
-import type { ExtractionError } from './string-extractor';
+import type { ExtractionError } from './string-extractor.js';
 
 type JSXChild = JSXElement['children'][number];
 

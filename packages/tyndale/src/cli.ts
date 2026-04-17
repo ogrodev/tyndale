@@ -1,4 +1,7 @@
-import { createTerminalUi } from './terminal/ui';
+#!/usr/bin/env node
+import { fileURLToPath } from 'node:url';
+import { realpathSync } from 'node:fs';
+import { createTerminalUi } from './terminal/ui.js';
 
 export interface ParsedArgs {
   command: string;
@@ -57,35 +60,35 @@ export async function routeCommand(
 ): Promise<CommandResult> {
   switch (command) {
     case 'extract': {
-      const { runExtract } = await import('./commands/extract');
+      const { runExtract } = await import('./commands/extract.js');
       return runExtract(flags);
     }
     case 'translate': {
-      const { runTranslate } = await import('./commands/translate');
+      const { runTranslate } = await import('./commands/translate.js');
       return runTranslate(flags);
     }
     case 'auth': {
-      const { runAuth } = await import('./commands/auth');
+      const { runAuth } = await import('./commands/auth.js');
       return runAuth(flags);
     }
     case 'init': {
-      const { runInit } = await import('./commands/init');
+      const { runInit } = await import('./commands/init.js');
       return runInit(flags);
     }
     case 'validate': {
-      const { runValidate } = await import('./commands/validate');
+      const { runValidate } = await import('./commands/validate.js');
       return runValidate(flags);
     }
     case 'model': {
-      const { runModel } = await import('./commands/model');
+      const { runModel } = await import('./commands/model.js');
       return runModel(flags);
     }
     case 'translate-docs': {
       if (flags._sub === 'setup') {
-        const { runDocsSetup } = await import('./docs/setup');
+        const { runDocsSetup } = await import('./docs/setup.js');
         return runDocsSetup(flags);
       }
-      const { runTranslateDocs } = await import('./commands/translate-docs');
+      const { runTranslateDocs } = await import('./commands/translate-docs.js');
       return runTranslateDocs(flags);
     }
     case 'help':
@@ -159,10 +162,32 @@ function printUnknownCommand(command: string): void {
   console.error(lines.join('\n'));
 }
 
-// Entry point — only runs when executed directly
-if (import.meta.main) {
+// Entry point — only runs when executed directly.
+//
+// Universal ESM main-module check (works under Node and Bun, handles symlinks).
+// Comparing `import.meta.url` to `process.argv[1]` by string equality breaks on
+// systems where argv[1] keeps a symlink path (e.g. `/tmp`) while Node resolves
+// `import.meta.url` through `realpath` (e.g. `/private/tmp`). Resolving both
+// sides through `realpath` makes the comparison robust.
+function isMainModule(): boolean {
+  if (!process.argv[1]) return false;
+  try {
+    return (
+      realpathSync(fileURLToPath(import.meta.url)) === realpathSync(process.argv[1])
+    );
+  } catch {
+    return false;
+  }
+}
+
+if (isMainModule()) {
   const { command, flags } = parseArgs(process.argv);
   routeCommand(command, flags).then(({ exitCode }) => {
-    process.exit(exitCode);
+    // Set exit code and let the event loop drain naturally instead of calling
+    // `process.exit()`. Under Node, `process.exit` terminates before piped
+    // stdout flushes, producing empty output when spawned with pipes.
+    // If any subsystem leaves handles open, fix the cleanup there — don't
+    // paper over it by hard-killing the process here.
+    process.exitCode = exitCode;
   });
 }

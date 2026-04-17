@@ -12,7 +12,7 @@ import type {
   Node,
   TagLikeNode,
 } from '@astrojs/compiler/types';
-import { normalizeJSXText, escapeText, VARIABLE_COMPONENTS, PLURAL_CATEGORIES } from '../shared/wire-helpers';
+import { normalizeJSXText, escapeText, VARIABLE_COMPONENTS, PLURAL_CATEGORIES } from '../shared/wire-helpers.js';
 
 export interface SerializerError {
   line: number;

@@ -9,7 +9,7 @@ import type {
   JSXIdentifier,
 } from '@babel/types';
 
-import { normalizeJSXText, escapeText, VARIABLE_COMPONENTS, PLURAL_CATEGORIES } from '../shared/wire-helpers';
+import { normalizeJSXText, escapeText, VARIABLE_COMPONENTS, PLURAL_CATEGORIES } from '../shared/wire-helpers.js';
 
 type JSXChild = JSXElement | JSXFragment | JSXText | JSXExpressionContainer | JSXSpreadChild;
 

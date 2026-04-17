@@ -1,6 +1,6 @@
-import type { DocsFramework, DocsProvider } from '../types';
+import type { DocsFramework, DocsProvider } from '../types.js';
 import { join, relative, dirname } from 'path';
-import { walkDir } from './walk';
+import { walkDir } from './walk.js';
 
 export class DocusaurusProvider implements DocsProvider {
   readonly framework: DocsFramework = { id: 'docusaurus', name: 'Docusaurus' };

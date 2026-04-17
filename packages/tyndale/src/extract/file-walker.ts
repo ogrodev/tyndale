@@ -1,5 +1,5 @@
-import { join } from 'path';
-import { Glob } from 'bun';
+import { join } from 'node:path';
+import { glob } from 'tinyglobby';
 
 export interface WalkOptions {
   source: string[];
@@ -20,10 +20,9 @@ export async function walkSourceFiles(options: WalkOptions): Promise<string[]> {
       ? `**/*.${extPatterns[0]}`
       : `**/*.{${extPatterns.join(',')}}`;
 
-    const glob = new Glob(pattern);
-
     try {
-      for await (const match of glob.scan({ cwd: absDir, absolute: true })) {
+      const matches = await glob(pattern, { cwd: absDir, absolute: true });
+      for (const match of matches) {
         files.push(match);
       }
     } catch {

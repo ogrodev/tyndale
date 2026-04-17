@@ -1,18 +1,20 @@
 // packages/tyndale/src/commands/translate.ts
-import type { CommandResult } from '../cli';
-import { join } from 'path';
-import { computeDelta, type Manifest, type LocaleData } from '../translate/delta';
-import { translateBatch, type TranslateBatchPhase, type TranslationSession } from '../translate/batch-translator';
-import { readLocaleFile, writeLocaleFile } from '../translate/locale-writer';
-import { withRetry } from '../translate/retry';
-import { splitByTokenBudget, type TokenBatch } from '../translate/token-batcher';
-import { loadBrief, saveBrief, sampleEntriesForBrief, buildBriefGenerationPrompt } from '../translate/brief';
-import { resolveConcurrency } from '../translate/concurrency';
-import { runPool } from '../translate/pool';
-import type { CreateTranslationSessionOptions, TranslationInput } from '../translate/pi-session';
-import { createProgress, createTerminalUi, type ProgressReporter, type TerminalRow } from '../terminal/ui';
-import { createTranslateActivityTui, type TranslateActivityController } from '../tui/translate-activity';
-import { runTui } from '../tui/run-tui';
+import type { CommandResult } from '../cli.js';
+import { join } from 'node:path';
+import { readFile } from 'node:fs/promises';
+import { existsSync } from 'node:fs';
+import { computeDelta, type Manifest, type LocaleData } from '../translate/delta.js';
+import { translateBatch, type TranslateBatchPhase, type TranslationSession } from '../translate/batch-translator.js';
+import { readLocaleFile, writeLocaleFile } from '../translate/locale-writer.js';
+import { withRetry } from '../translate/retry.js';
+import { splitByTokenBudget, type TokenBatch } from '../translate/token-batcher.js';
+import { loadBrief, saveBrief, sampleEntriesForBrief, buildBriefGenerationPrompt } from '../translate/brief.js';
+import { resolveConcurrency } from '../translate/concurrency.js';
+import { runPool } from '../translate/pool.js';
+import type { CreateTranslationSessionOptions, TranslationInput } from '../translate/pi-session.js';
+import { createProgress, createTerminalUi, type ProgressReporter, type TerminalRow } from '../terminal/ui.js';
+import { createTranslateActivityTui, type TranslateActivityController } from '../tui/translate-activity.js';
+import { runTui } from '../tui/run-tui.js';
 
 /** Locale code → full language name for prompt context. */
 const LOCALE_NAMES: Record<string, string> = {
@@ -207,10 +209,10 @@ export async function handleTranslate(
       : 'delta only';
 
   const manifestPath = join(outputDir, 'manifest.json');
-  const manifest: Manifest = JSON.parse(await Bun.file(manifestPath).text());
+  const manifest: Manifest = JSON.parse(await readFile(manifestPath, 'utf-8'));
 
   const defaultLocalePath = join(outputDir, `${manifest.defaultLocale}.json`);
-  const defaultLocaleData: LocaleData = JSON.parse(await Bun.file(defaultLocalePath).text());
+  const defaultLocaleData: LocaleData = JSON.parse(await readFile(defaultLocalePath, 'utf-8'));
 
   const targetLocales = options.locale ? [options.locale] : manifest.locales;
 
@@ -522,7 +524,7 @@ export async function handleTranslate(
 
 /** CLI entry point for `tyndale translate` */
 export async function runTranslate(flags: Record<string, string | boolean>): Promise<CommandResult> {
-  const { runExtract } = await import('./extract');
+  const { runExtract } = await import('./extract.js');
   const extractResult = await runExtract({});
   if (extractResult.exitCode !== 0) {
     console.error('Extract failed — aborting translate.');
@@ -530,23 +532,22 @@ export async function runTranslate(flags: Record<string, string | boolean>): Pro
   }
 
   // After auto-extract, verify there are source strings to translate
-  const { loadConfig } = await import('../config');
+  const { loadConfig } = await import('../config.js');
   const config = loadConfig();
   const outputDir = config.output ?? 'public/_tyndale';
   const manifestPath = join(outputDir, 'manifest.json');
-  const manifestFile = Bun.file(manifestPath);
-  if (!(await manifestFile.exists())) {
+  if (!existsSync(manifestPath)) {
     console.error('No manifest found. Run `tyndale extract` to extract translatable strings.');
     return { exitCode: 1 };
   }
-  const manifest: Manifest = JSON.parse(await manifestFile.text());
+  const manifest: Manifest = JSON.parse(await readFile(manifestPath, 'utf-8'));
   if (Object.keys(manifest.entries).length === 0) {
     // Check if any target locale files exist with stale content that needs cleanup
     const hasStaleLocaleFiles = await Promise.all(
       manifest.locales.map(async (locale: string) => {
-        const file = Bun.file(join(outputDir, `${locale}.json`));
-        if (!(await file.exists())) return false;
-        const data = JSON.parse(await file.text());
+        const localePath = join(outputDir, `${locale}.json`);
+        if (!existsSync(localePath)) return false;
+        const data = JSON.parse(await readFile(localePath, 'utf-8'));
         return Object.keys(data).length > 0;
       }),
     ).then((results) => results.some(Boolean));
@@ -564,18 +565,18 @@ export async function runTranslate(flags: Record<string, string | boolean>): Pro
     projectRoot: process.cwd(),
     createSession: async (sessionOptions) => {
       if (isMock) {
-        const { createMockSession } = await import('../translate/mock');
+        const { createMockSession } = await import('../translate/mock.js');
         return createMockSession();
       }
-      const { createTranslationSession } = await import('../translate/pi-session');
+      const { createTranslationSession } = await import('../translate/pi-session.js');
       return createTranslationSession(sessionOptions);
     },
     createBriefSession: async (sessionOptions) => {
       if (isMock) {
-        const { createMockDocSession } = await import('../translate/mock-docs');
+        const { createMockDocSession } = await import('../translate/mock-docs.js');
         return createMockDocSession();
       }
-      const { createTextSession } = await import('../translate/pi-session');
+      const { createTextSession } = await import('../translate/pi-session.js');
       return createTextSession(sessionOptions);
     },
   };

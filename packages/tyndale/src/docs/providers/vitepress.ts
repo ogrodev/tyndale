@@ -1,6 +1,6 @@
-import type { DocsFramework, DocsProvider } from '../types';
+import type { DocsFramework, DocsProvider } from '../types.js';
 import { join, relative } from 'path';
-import { walkDir } from './walk';
+import { walkDir } from './walk.js';
 
 export class VitePressProvider implements DocsProvider {
   readonly framework: DocsFramework = { id: 'vitepress', name: 'VitePress' };

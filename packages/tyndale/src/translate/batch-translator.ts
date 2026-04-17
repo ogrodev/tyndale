@@ -1,9 +1,9 @@
 // packages/tyndale/src/translate/batch-translator.ts
-import { buildTranslationPrompt, parseTranslationResult } from './pi-session';
-import { validateTranslation } from './wire-validator';
+import { buildTranslationPrompt, parseTranslationResult } from './pi-session.js';
+import { validateTranslation } from './wire-validator.js';
 
-export type { TranslationInput } from './pi-session';
-import type { TranslationInput } from './pi-session';
+export type { TranslationInput } from './pi-session.js';
+import type { TranslationInput } from './pi-session.js';
 
 /** Minimal session interface for testability — real Pi session satisfies this. */
 export interface TranslationSession {

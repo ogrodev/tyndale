@@ -1,7 +1,7 @@
 import { visibleWidth, type Component } from '@mariozechner/pi-tui';
-import type { TerminalRow, TerminalTone } from '../terminal/ui';
-import { createTerminalTheme } from '../terminal/ui';
-import type { TranslationSessionActivityEvent } from '../translate/pi-session';
+import type { TerminalRow, TerminalTone } from '../terminal/ui.js';
+import { createTerminalTheme } from '../terminal/ui.js';
+import type { TranslationSessionActivityEvent } from '../translate/pi-session.js';
 
 const PREVIEW_LIMIT = 88;
 const DETAIL_LIMIT = 104;

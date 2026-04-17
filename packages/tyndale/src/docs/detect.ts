@@ -1,6 +1,6 @@
 import { existsSync, readFileSync } from 'fs';
 import { join } from 'path';
-import type { DetectedFramework, DocsFramework } from './types';
+import type { DetectedFramework, DocsFramework } from './types.js';
 
 interface FrameworkSignal {
   framework: DocsFramework;

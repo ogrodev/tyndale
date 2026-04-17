@@ -1,6 +1,6 @@
 import { existsSync, readFileSync, mkdirSync, writeFileSync } from 'fs';
 import { join, dirname } from 'path';
-import type { TranslationInput } from './pi-session';
+import type { TranslationInput } from './pi-session.js';
 
 const BRIEFS_DIR = '.tyndale/briefs';
 

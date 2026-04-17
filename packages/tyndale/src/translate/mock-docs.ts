@@ -1,4 +1,4 @@
-import type { TranslationSession } from './batch-translator';
+import type { TranslationSession } from './batch-translator.js';
 
 /**
  * Mock doc translator for testing. Prefixes each prose line with "[{locale}] "

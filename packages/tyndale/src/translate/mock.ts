@@ -1,4 +1,4 @@
-import type { TranslationSession } from './batch-translator';
+import type { TranslationSession } from './batch-translator.js';
 
 /**
  * Mock translator for testing. Prefixes each source value with "[{locale}] ".

@@ -1,6 +1,6 @@
-import type { DocsFramework, DocsProvider } from '../types';
+import type { DocsFramework, DocsProvider } from '../types.js';
 import { extname } from 'path';
-import { walkDir } from './walk';
+import { walkDir } from './walk.js';
 
 export class NextraProvider implements DocsProvider {
   readonly framework: DocsFramework = { id: 'nextra', name: 'Nextra' };

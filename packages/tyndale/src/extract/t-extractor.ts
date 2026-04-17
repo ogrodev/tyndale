@@ -1,6 +1,6 @@
 import type { File, JSXElement } from '@babel/types';
 import _traverse from '@babel/traverse';
-import { serializeJSXToWireFormat } from './jsx-serializer';
+import { serializeJSXToWireFormat } from './jsx-serializer.js';
 import { computeHash } from 'tyndale-react'
 
 const traverse = (_traverse as any).default ?? _traverse;
@@ -50,7 +50,7 @@ export function extractTComponents(ast: File, filePath: string): ExtractedEntry[
  * wire format via `serializeAstroT`. Does not recurse into nested `<T>`.
  */
 import type { ParentNode, Node, TagLikeNode } from '@astrojs/compiler/types';
-import { serializeAstroT } from '../astro/serializer';
+import { serializeAstroT } from '../astro/serializer.js';
 
 export function extractTFromAstro(templateRoot: ParentNode, filePath: string): ExtractedEntry[] {
   const entries: ExtractedEntry[] = [];

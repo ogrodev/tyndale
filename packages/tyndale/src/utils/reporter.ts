@@ -1,5 +1,5 @@
-import { createTerminalUi } from '../terminal/ui';
-import type { ExtractionError } from '../extract/string-extractor';
+import { createTerminalUi } from '../terminal/ui.js';
+import type { ExtractionError } from '../extract/string-extractor.js';
 
 export interface ExtractionReport {
   total: number;

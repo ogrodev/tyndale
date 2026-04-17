@@ -1,5 +1,5 @@
-import type { TranslationInput } from './pi-session';
-import { countEntryTokens } from './tokenizer';
+import type { TranslationInput } from './pi-session.js';
+import { countEntryTokens } from './tokenizer.js';
 
 export interface TokenBatch {
   entries: TranslationInput[];

@@ -1,14 +1,14 @@
 // packages/tyndale/src/commands/validate.ts
-import type { CommandResult } from '../cli';
+import type { CommandResult } from '../cli.js';
 import { join } from 'node:path';
 import { readFileSync } from 'node:fs';
-import { loadConfig } from '../config';
-import { walkSourceFiles } from '../extract/file-walker';
-import { parseSource } from '../extract/ast-parser';
-import { extractTComponents, type ExtractedEntry } from '../extract/t-extractor';
-import { extractStrings } from '../extract/string-extractor';
-import { validateTComponent } from '../extract/validator';
-import { createProgress, createTerminalUi } from '../terminal/ui';
+import { loadConfig } from '../config.js';
+import { walkSourceFiles } from '../extract/file-walker.js';
+import { parseSource } from '../extract/ast-parser.js';
+import { extractTComponents, type ExtractedEntry } from '../extract/t-extractor.js';
+import { extractStrings } from '../extract/string-extractor.js';
+import { validateTComponent } from '../extract/validator.js';
+import { createProgress, createTerminalUi } from '../terminal/ui.js';
 import type { JSXElement } from '@babel/types';
 import _traverse from '@babel/traverse';
 

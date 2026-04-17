@@ -1,5 +1,5 @@
-import type { CommandResult } from '../cli';
-import { readLine } from '../utils/readline';
+import type { CommandResult } from '../cli.js';
+import { readLine } from '../utils/readline.js';
 import { readFile } from 'node:fs/promises';
 import { writeFile, readFile as fsReadFile, stat } from 'node:fs/promises';
 import { join } from 'node:path';

@@ -1,7 +1,7 @@
 import type { File } from '@babel/types';
 import _traverse from '@babel/traverse';
 import { computeHash } from 'tyndale-react'
-import type { ExtractedEntry } from './t-extractor';
+import type { ExtractedEntry } from './t-extractor.js';
 
 const traverse = (_traverse as any).default ?? _traverse;
 
@@ -174,8 +174,8 @@ export function extractStrings(ast: File, filePath: string): StringExtractionRes
  * Line numbers in emitted entries/errors match the original `.astro` source
  * lines (the line-offset padding is applied internally).
  */
-import { parseSource } from './ast-parser';
-import type { TemplateExpression } from '../astro/expression-source';
+import { parseSource } from './ast-parser.js';
+import type { TemplateExpression } from '../astro/expression-source.js';
 
 export function extractStringCallsFromExpressions(
   expressions: TemplateExpression[],

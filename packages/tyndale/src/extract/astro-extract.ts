@@ -5,16 +5,16 @@
  *
  * Mirrors the shape of the `.tsx` extraction path in `commands/extract.ts`.
  */
-import { parseAstro, parseFrontmatterAsTs } from '../astro/parser';
-import { extractTemplateExpressions } from '../astro/expression-source';
+import { parseAstro, parseFrontmatterAsTs } from '../astro/parser.js';
+import { extractTemplateExpressions } from '../astro/expression-source.js';
 import {
   collectTBindings,
   extractStringCalls,
   extractStringCallsFromExpressions,
   type ExtractionError,
-} from './string-extractor';
-import { extractTFromAstro, type ExtractedEntry } from './t-extractor';
-import { validateTFromAstro } from './validator';
+} from './string-extractor.js';
+import { extractTFromAstro, type ExtractedEntry } from './t-extractor.js';
+import { validateTFromAstro } from './validator.js';
 
 export interface AstroExtractResult {
   entries: ExtractedEntry[];
