@@ -10,10 +10,10 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-blue?style=flat-square&logo=typescript&logoColor=white)](https://www.typescriptlang.org)
 [![License](https://img.shields.io/badge/License-MIT-yellow?style=flat-square)](LICENSE)
 
-**AI-powered i18n for React and Next.js.**  
+**AI-powered i18n for React, Next.js, and Astro.**  
 Write your app in one language, run the CLI, and generate translated UI and docs.
 
-[Overview](#overview) • [Quickstart](#quickstart) • [Translate docs](#translate-documentation) • [Packages](#packages) • [Configuration](#configuration) • [Development](#development)
+[Overview](#overview) • [Supported frameworks](#supported-frameworks) • [Quickstart](#quickstart) • [Translate docs](#translate-documentation) • [Packages](#packages) • [Configuration](#configuration) • [Development](#development)
 </div>
 
 ## Overview
@@ -24,11 +24,28 @@ Tyndale is a Bun monorepo with three publishable packages:
 - `tyndale-react` — React components and hooks for runtime translation
 - `tyndale-next` — Next.js adapter for locale routing, providers, and static generation helpers
 
-It is built for a zero-key workflow: wrap JSX with `<T>`, mark plain strings with `msg()` or `useTranslation()`, then let the CLI generate locale files for your app. Tyndale can also translate MDX/Markdown documentation with `translate-docs`.
+It is built for a zero-key workflow: wrap JSX or `.astro` templates with `<T>`, mark plain strings with `msg()` or `useTranslation()`, then let the CLI generate locale files for your app. Tyndale can also translate MDX/Markdown documentation with `translate-docs`.
+
+## Supported frameworks
+
+### App translation (`tyndale extract` / `tyndale translate`)
+
+- React
+- Vite + React
+- Next.js
+- Astro components (`.astro`)
+
+### Documentation translation (`tyndale translate-docs`)
+
+- Starlight
+- Docusaurus
+- VitePress
+- MkDocs
+- Nextra
 
 ## Features
 
-- Zero-key JSX and string translation for React apps
+- Zero-key JSX and `.astro` string extraction for app translation
 - AI-powered translation using your configured provider
 - Incremental app translation based on deltas
 - Rich formatting support for variables, plurals, numbers, currency, and dates
@@ -41,7 +58,8 @@ It is built for a zero-key workflow: wrap JSX with `<T>`, mark plain strings wit
 ### 1. Install
 
 ```bash
-npm install tyndale tyndale-react
+npm install tyndale-react
+npm install -D tyndale
 ```
 
 If you are using Next.js, also install the adapter:
@@ -94,7 +112,48 @@ npx tyndale translate
 > [!TIP]
 > `translate` auto-runs extraction first, then translates only changed strings. Run `npx tyndale extract` by itself when you want to inspect the extracted manifest before making translation calls.
 
-### 6. For Next.js, verify the middleware
+### 6. Astro applications
+
+If you want to translate `.astro` pages/components, Tyndale supports that too.
+
+1. If your Astro project does not already render React components, add Astro's React integration first.
+
+   ```bash
+   npx astro add react
+   ```
+
+   `tyndale-react` exports React components such as `<T>`, `<Var>`, and `<Num>`, so Astro needs the React integration to render them. See Astro's official `@astrojs/react` guide: https://docs.astro.build/en/guides/integrations-guide/react/
+
+2. Initialize Tyndale and keep `.astro` in `extensions` (added by `tyndale init` by default).
+
+   ```json
+   {
+     "extensions": [".ts", ".tsx", ".js", ".jsx", ".astro"]
+   }
+   ```
+
+3. Wrap translatable Astro content.
+
+   ```astro
+   ---
+   import { T, Var, Num } from 'tyndale-react';
+   const userName = 'Ada';
+   const count = 3;
+   ---
+
+   <T>
+     <h1>Hello <Var name="user">{userName}</Var></h1>
+     <p>You have <Num name="count" value={count} /> items.</p>
+   </T>
+   ```
+
+4. Run translations as usual.
+
+   ```bash
+   npx tyndale translate
+   ```
+
+### 7. For Next.js, verify the middleware
 
 ```ts
 // middleware.ts
@@ -107,7 +166,7 @@ export const config = {
 };
 ```
 
-### 7. Add the Next.js provider
+### 8. Add the Next.js provider
 
 ```tsx
 // app/[locale]/layout.tsx
@@ -143,17 +202,9 @@ npx tyndale translate-docs setup
 npx tyndale translate-docs
 ```
 
-Supported frameworks:
+Supported frameworks: Starlight, Docusaurus, VitePress, MkDocs, Nextra.
 
-- Starlight
-- Docusaurus
-- VitePress
-- MkDocs
-- Nextra
-
-> [!NOTE]
-> `translate-docs` writes `.tyndale-docs-state.json` at the project root to track source document hashes. Commit it so fresh clones can skip unchanged docs instead of retranslating everything.
-
+`translate-docs` writes `.tyndale-docs-state.json` at the project root to track source document hashes. Commit it so fresh clones can skip unchanged docs instead of retranslating everything.
 ## Packages
 
 | Package | Purpose |
@@ -185,7 +236,7 @@ Supported frameworks:
   "defaultLocale": "en",
   "locales": ["es", "fr", "ja"],
   "source": ["src", "app"],
-  "extensions": [".ts", ".tsx", ".js", ".jsx"],
+  "extensions": [".ts", ".tsx", ".js", ".jsx", ".astro"],
   "output": "public/_tyndale",
   "translate": {
     "tokenBudget": 50000,
