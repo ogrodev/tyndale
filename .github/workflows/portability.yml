@@ -1,0 +1,122 @@
+name: Portability
+
+# Guards against the class of bug that dev-harness testing hides (stale dist,
+# extensionless ESM imports, Bun-only APIs, symlink-path drift, RSC boundary
+# violations). Runs three layers:
+#
+#   1. static-lint        — fast source-level scan (no build/install).
+#   2. packed-install     — matrix: {OS} × {Node} × Bun. Packs each package,
+#                          installs into a throwaway project, runs the CLI
+#                          under both runtimes, and dynamic-imports the
+#                          libraries. Catches packaging/dist regressions.
+#   3. next-integration   — Playwright against a real Next.js app wired with
+#                          tyndale-next middleware + TyndaleServerProvider.
+#                          Catches RSC boundary, SSR, and middleware bugs.
+#
+# Layer 1 is cheap and gates everything else. Layer 2 runs on a small matrix.
+# Layer 3 runs on Linux only — Next.js runtime behaviour is not OS-sensitive,
+# and Playwright+browsers on Windows/macOS add cost for little signal.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: portability-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  static-lint:
+    name: Layer 1 — static portability lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+      - name: Build packages
+        run: bun run build:packages
+      - name: Run portability lint (source + dist)
+        run: |
+          bun test --cwd packages/tyndale tests/portability.test.ts
+          bun test --cwd packages/tyndale-react tests/portability.test.ts
+          bun test --cwd packages/tyndale-next tests/portability.test.ts
+
+  packed-install:
+    name: Layer 2 — packed install (${{ matrix.os }}, node ${{ matrix.node }})
+    needs: static-lint
+    strategy:
+      # Report every failing cell instead of aborting on the first.
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        node: ['20', '22', '24']
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Build packages
+        run: bun run build:packages
+
+      - name: Run portability E2E (pack + install + run under node & bun)
+        run: bun test tests/e2e/portability.test.ts
+        env:
+          # Give the matrix cell a predictable npm cache location (avoids GH
+          # Actions' default shared cache contention across runners).
+          npm_config_cache: ${{ runner.temp }}/npm-cache
+
+  next-integration:
+    name: Layer 3 — Next.js integration (node ${{ matrix.node }})
+    needs: static-lint
+    strategy:
+      fail-fast: false
+      matrix:
+        node: ['20', '22', '24']
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Build packages
+        run: bun run build:packages
+
+      - name: Install Playwright browser (chromium only)
+        run: bunx playwright install --with-deps chromium
+
+      - name: Run Next.js integration E2E
+        run: bun run test:playwright
+        env:
+          NEXT_TELEMETRY_DISABLED: '1'
+
+      - name: Upload Playwright trace on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-trace-node${{ matrix.node }}
+          path: |
+            test-results/
+            playwright-report/
+          if-no-files-found: ignore
