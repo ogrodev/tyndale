@@ -39,16 +39,6 @@ export const strings = {
   // Locale Demo
   localeDemoTitle: msg('See it in action'),
   localeDemoSubtitle: msg('Switch locales and watch the content update instantly. This is what your users experience.'),
-
-  // QuickStart
-  quickStartTitle: msg('Up and running in 5 steps'),
-  quickStartSubtitle: msg('From zero to translated in minutes.'),
-  quickStartInstall: msg('Install'),
-  quickStartInit: msg('Initialize'),
-  quickStartWrap: msg('Wrap content'),
-  quickStartTranslate: msg('Translate'),
-  quickStartShip: msg('Ship it'),
-
   // CTA
   ctaTitle: msg('Ready to go global?'),
   ctaSubtitle: msg('Start translating your React app today. Open source, free forever.'),
