@@ -60,7 +60,7 @@ export async function scaffoldConfig(
     defaultLocale: options.defaultLocale,
     locales: options.locales,
     source,
-    extensions: ['.ts', '.tsx', '.js', '.jsx'],
+    extensions: ['.ts', '.tsx', '.js', '.jsx', '.astro'],
     output: 'public/_tyndale',
     translate: {},
     localeAliases: {},

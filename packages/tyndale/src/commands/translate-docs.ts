@@ -1,7 +1,7 @@
 // packages/tyndale/src/commands/translate-docs.ts
 import { createHash } from 'crypto';
 import type { CommandResult } from '../cli';
-import { join, relative, dirname } from 'path';
+import { join, relative, dirname, extname } from 'path';
 import { mkdirSync, writeFileSync, readFileSync, existsSync, readdirSync, statSync } from 'fs';
 import type { TranslationSession } from '../translate/batch-translator';
 import { resolveConcurrency } from '../translate/concurrency';
@@ -10,6 +10,7 @@ import { runPool } from '../translate/pool';
 import { createProgress, createTerminalUi, type ProgressReporter, type TerminalRow } from '../terminal/ui';
 import { createTranslateActivityTui, type TranslateActivityController } from '../tui/translate-activity';
 import { runTui } from '../tui/run-tui';
+import { splitAstroFast } from '../astro/split-fast';
 
 /** Locale code → full language name. */
 const LOCALE_NAMES: Record<string, string> = {
@@ -129,7 +130,12 @@ function parseFrontmatter(raw: string): { valid: boolean; error?: string; data?:
 function validateTranslatedDoc(
   translated: string,
   sourceContent: string,
+  ext: string,
 ): string | null {
+  if (ext === '.astro') {
+    return validateTranslatedAstro(translated, sourceContent);
+  }
+
   // Must have frontmatter
   const fm = extractFrontmatter(translated);
   if (!fm) return 'Missing frontmatter (no --- delimiters found)';
@@ -157,9 +163,95 @@ function validateTranslatedDoc(
   return null;
 }
 
+/**
+ * Validate a translated Astro page. Returns null if valid, error string otherwise.
+ *
+ * Rules (from Plan B spec §docs-translation validation):
+ *   1. splitAstroFast(translated) must return { kind: 'ok' }.
+ *   2. Every `import ...;` line in the source frontmatter appears verbatim in the
+ *      translated frontmatter.
+ *   3. Every Astro directive token (client:*, server:*, set:html, is:raw,
+ *      define:vars, class:list) present in the source template is preserved.
+ *   4. Translated output must not start with a code fence.
+ *   5. Translated template body must contain at least one non-whitespace char.
+ */
+function validateTranslatedAstro(
+  translated: string,
+  source: string,
+): string | null {
+  // Rule 4: code-fence wrapping is a common AI mistake — check before the split so
+  // the surrounding fence does not accidentally produce a successful split.
+  if (translated.trimStart().startsWith('```')) {
+    return 'Response wrapped in code fences — must be raw Astro content (no code fence)';
+  }
+
+  // Rule 1: structural split must succeed.
+  const tSplit = splitAstroFast(translated);
+  switch (tSplit.kind) {
+    case 'unclosed-frontmatter':
+      return "Translated Astro file has unclosed frontmatter (missing closing '---' fence)";
+    case 'invalid-prelude':
+      return "Translated Astro file has content before opening '---' fence";
+    case 'no-frontmatter':
+      return 'Translated Astro file is missing frontmatter (no --- delimiters found)';
+    case 'ok':
+      break;
+  }
+
+  const translatedFrontmatter = tSplit.frontmatter;
+  const translatedBody = tSplit.body;
+
+  // Rule 5: template body must be non-empty.
+  if (translatedBody.trim().length === 0) {
+    return 'Translated Astro file has an empty template body';
+  }
+
+  const sSplit = splitAstroFast(source);
+  const sourceFrontmatter = sSplit.kind === 'ok' ? sSplit.frontmatter : '';
+  const sourceBody = sSplit.kind === 'ok'
+    ? sSplit.body
+    : sSplit.kind === 'no-frontmatter'
+      ? sSplit.body
+      : '';
+
+  // Rule 2: source imports preserved verbatim in translated frontmatter.
+  const importLines = sourceFrontmatter.match(/^\s*import\b.*;?\s*$/gm) ?? [];
+  for (const rawLine of importLines) {
+    const imp = rawLine.trim();
+    if (imp.length === 0) continue;
+    if (!translatedFrontmatter.includes(imp)) {
+      return `Missing import statement: ${imp}`;
+    }
+  }
+
+  // Rule 3: every Astro directive token present in the source template is preserved.
+  const directiveRegex = /\b(?:client|server|set|is|define|class):[a-zA-Z]+\b/g;
+  const sourceDirectives = new Set(sourceBody.match(directiveRegex) ?? []);
+  for (const directive of sourceDirectives) {
+    if (!translatedBody.includes(directive)) {
+      return `Missing Astro directive: ${directive}`;
+    }
+  }
+
+  return null;
+}
+
 // ── Prompts ─────────────────────────────────────────────────
 
 function buildDocTranslationPrompt(
+  content: string,
+  languageName: string,
+  localeCode: string,
+  filePath: string,
+  ext: string,
+): string {
+  if (ext === '.astro') {
+    return buildDocTranslationPromptAstro(content, languageName, localeCode, filePath);
+  }
+  return buildDocTranslationPromptMdx(content, languageName, localeCode, filePath);
+}
+
+function buildDocTranslationPromptMdx(
   content: string,
   languageName: string,
   localeCode: string,
@@ -190,7 +282,76 @@ ${content}
 Respond with ONLY the translated MDX file content. No preamble, no explanation, no wrapping code fences.`;
 }
 
+function buildDocTranslationPromptAstro(
+  content: string,
+  languageName: string,
+  localeCode: string,
+  filePath: string,
+): string {
+  return `You are a professional technical documentation translator. Translate the following Astro page from English to ${languageName} (${localeCode}).
+
+FILE: ${filePath}
+
+STRUCTURE: An Astro page has two sections separated by \`---\` fences. The top section is the TypeScript/JavaScript frontmatter. The bottom section is the HTML/JSX-like template.
+
+FRONTMATTER RULES:
+1. Preserve every \`import\` statement verbatim — do not rename, reorder, or translate module paths.
+2. Preserve TypeScript/JavaScript code unchanged. Do NOT translate identifiers, types, property names, or expression syntax.
+3. Translate ONLY string literal values that are clearly user-facing (e.g. a \`title\`, \`description\`, or \`heading\` variable assigned a plain string). Leave all surrounding code intact.
+4. Preserve the opening and closing \`---\` fences exactly as in the source.
+
+TEMPLATE RULES:
+1. Translate visible HTML text content (paragraphs, headings, list items, etc.).
+2. Translate these attribute string values when present: \`alt=\`, \`title=\`, \`aria-label=\`, \`aria-description=\`.
+3. Do NOT translate component or HTML tag names (<Layout>, <Card>, <T>, <Steps>, etc.).
+4. Do NOT translate prop identifiers, CSS class names, non-string attribute values, URLs, file paths, or link targets.
+5. Do NOT translate the contents of \`{…}\` expressions — preserve them byte-for-byte.
+6. Do NOT translate code blocks (content between \`\`\` markers) or inline code (\`backtick\` spans).
+7. CRITICAL: Preserve every Astro directive exactly as written. Directives use a \`namespace:modifier\` syntax and include \`client:*\` (e.g. client:load, client:visible), \`server:*\`, \`set:html\`, \`is:raw\`, \`define:vars\`, and \`class:list\`. Preserve both the directive name and any associated value unchanged.
+8. Preserve \`<slot>\` elements and their \`name=\` attributes. Preserve Fragment shorthand (\`<>…</>\`).
+9. Preserve whitespace structure (blank lines, indentation of the template).
+
+GENERAL RULES:
+- Translate naturally and fluently — not word-for-word.
+- Do NOT translate API names, CLI commands, config field names, or brand names.
+- Do NOT wrap the response in code fences (no \`\`\`astro fence, no code fence of any kind).
+
+CONTENT:
+${content}
+
+Respond with ONLY the translated Astro file content. No preamble, no explanation, no wrapping code fences.`;
+}
+
 function buildDocCorrectionPrompt(
+  sourceContent: string,
+  brokenTranslation: string,
+  error: string,
+  languageName: string,
+  localeCode: string,
+  filePath: string,
+  ext: string,
+): string {
+  if (ext === '.astro') {
+    return buildDocCorrectionPromptAstro(
+      sourceContent,
+      brokenTranslation,
+      error,
+      languageName,
+      localeCode,
+      filePath,
+    );
+  }
+  return buildDocCorrectionPromptMdx(
+    sourceContent,
+    brokenTranslation,
+    error,
+    languageName,
+    localeCode,
+    filePath,
+  );
+}
+
+function buildDocCorrectionPromptMdx(
   sourceContent: string,
   brokenTranslation: string,
   error: string,
@@ -215,6 +376,44 @@ Fix the error and return the corrected translated MDX file. Common fixes:
 - Do not wrap the response in code fences
 
 Respond with ONLY the corrected MDX file content. No preamble, no explanation.`;
+}
+
+function buildDocCorrectionPromptAstro(
+  sourceContent: string,
+  brokenTranslation: string,
+  error: string,
+  languageName: string,
+  localeCode: string,
+  filePath: string,
+): string {
+  return `Your previous translation of ${filePath} to ${languageName} (${localeCode}) has a validation error. Fix it.
+
+ERROR: ${error}
+
+YOUR BROKEN OUTPUT:
+${brokenTranslation}
+
+ORIGINAL ENGLISH SOURCE:
+${sourceContent}
+
+This is an Astro page with two sections separated by \`---\` fences: a TypeScript frontmatter and an HTML/JSX-like template. Fix the validation error while respecting these rules:
+
+FRONTMATTER:
+- Preserve every \`import\` statement verbatim (same module path, same identifier).
+- Preserve TypeScript/JavaScript code unchanged. Translate only string literal values that are clearly user-facing.
+- Preserve the opening and closing \`---\` fences.
+
+TEMPLATE:
+- Translate visible HTML text and these attribute string values when present: \`alt=\`, \`title=\`, \`aria-label=\`, \`aria-description=\`.
+- Preserve component and HTML tag names, prop identifiers, CSS class names, URLs, file paths, and \`{…}\` expression contents unchanged.
+- CRITICAL: Preserve every Astro directive exactly as written. Directives use a \`namespace:modifier\` syntax and include \`client:*\`, \`server:*\`, \`set:html\`, \`is:raw\`, \`define:vars\`, and \`class:list\`.
+- Preserve \`<slot>\` elements and their attributes.
+
+OUTPUT RULES:
+- Do NOT wrap the response in code fences (no code fence of any kind).
+- Return the complete, corrected Astro file.
+
+Respond with ONLY the corrected Astro file content. No preamble, no explanation.`;
 }
 
 // ── File discovery ──────────────────────────────────────────
@@ -375,6 +574,7 @@ async function runDocTranslationWorkUnits(
           unit.languageName,
           unit.locale,
           unit.relativePath,
+          extname(unit.relativePath),
         );
         const result = await session.sendPrompt(prompt);
         const translated = extractText(result);
@@ -386,7 +586,7 @@ async function runDocTranslationWorkUnits(
           return { translated: false, validationError: createValidationError(unit, error, '') };
         }
 
-        const error = validateTranslatedDoc(translated, unit.content);
+        const error = validateTranslatedDoc(translated, unit.content, extname(unit.relativePath));
         if (error) {
           progress?.tick(unit.id, false);
           activity?.finishBatch(unit.id, false, error);
@@ -461,6 +661,7 @@ async function runDocCorrectionWorkUnits(
           issue.languageName,
           issue.locale,
           issue.relativePath,
+          extname(issue.relativePath),
         );
         const result = await session.sendPrompt(prompt);
         const corrected = extractText(result);
@@ -472,7 +673,7 @@ async function runDocCorrectionWorkUnits(
           return { file: issue.file, success: false, error };
         }
 
-        const error = validateTranslatedDoc(corrected, issue.sourceContent);
+        const error = validateTranslatedDoc(corrected, issue.sourceContent, extname(issue.relativePath));
         if (error) {
           progress?.tick(issue.file, false);
           activity?.finishBatch(issue.unitId, false, error);
@@ -877,3 +1078,12 @@ export async function runTranslateDocs(flags: Record<string, string | boolean>):
   const exitCode = await handleTranslateDocs(deps, options, console);
   return { exitCode };
 }
+
+
+/** Internal test-only surface. Not part of the public package API. */
+export const __testing__ = {
+  validateTranslatedDoc,
+  validateTranslatedAstro,
+  buildDocTranslationPrompt,
+  buildDocCorrectionPrompt,
+};

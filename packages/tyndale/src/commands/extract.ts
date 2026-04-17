@@ -6,6 +6,7 @@ import { walkSourceFiles } from '../extract/file-walker';
 import { parseSource } from '../extract/ast-parser';
 import { extractTComponents, type ExtractedEntry } from '../extract/t-extractor';
 import { extractStrings, type ExtractionError } from '../extract/string-extractor';
+import { extractFromAstroFile } from '../extract/astro-extract';
 import { extractDictionaries } from '../extract/dict-extractor';
 import { validateTComponent, detectStaleHashes } from '../extract/validator';
 import { writeExtractionOutput } from '../extract/output-writer';
@@ -18,7 +19,7 @@ const traverse = (_traverse as any).default ?? _traverse;
 
 /** Defaults for optional config fields not in TyndaleConfig type. */
 const DEFAULT_SOURCE = ['src'];
-const DEFAULT_EXTENSIONS = ['.ts', '.tsx', '.js', '.jsx'];
+const DEFAULT_EXTENSIONS = ['.ts', '.tsx', '.js', '.jsx', '.astro'];
 const DEFAULT_OUTPUT = 'public/_tyndale';
 
 interface Logger {
@@ -110,6 +111,14 @@ export async function runExtract(
         severity: 'error',
       });
       progress.tick(relativePath, false);
+      continue;
+    }
+
+    if (filePath.endsWith('.astro')) {
+      const astroResult = await extractFromAstroFile(code, relativePath);
+      allEntries.push(...astroResult.entries);
+      allErrors.push(...astroResult.errors);
+      progress.tick(relativePath, allErrors.length === errorCountBefore);
       continue;
     }
 
