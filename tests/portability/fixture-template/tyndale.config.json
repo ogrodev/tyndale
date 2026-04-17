@@ -1,0 +1,7 @@
+{
+  "defaultLocale": "en",
+  "locales": ["es"],
+  "source": ["src"],
+  "extensions": [".ts", ".tsx"],
+  "output": "public/_tyndale"
+}
