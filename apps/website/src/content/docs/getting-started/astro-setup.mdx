@@ -1,0 +1,96 @@
+---
+title: Astro Setup
+description: Set up Tyndale for Astro application translation and Astro/Starlight docs translation.
+---
+
+import { Steps } from '@astrojs/starlight/components';
+
+## What Tyndale supports in Astro
+
+Tyndale supports two different Astro workflows:
+
+- **Astro application translation** — translate `.astro` pages/components with the normal `tyndale extract` / `tyndale translate` flow
+- **Astro/Starlight docs translation** — translate Markdown/MDX docs with `tyndale translate-docs`
+
+Use the app flow for UI strings. Use the docs flow for documentation content.
+
+## Astro application translation
+
+<Steps>
+
+1. **Install Tyndale**
+
+   ```bash
+   npm install tyndale-react
+   npm install -D tyndale
+   ```
+
+2. **Add Astro's React integration if needed**
+
+   `tyndale-react` exports React components such as `<T>`, `<Var>`, and `<Num>`. If your Astro project does not already render React components, add Astro's React integration:
+
+   ```bash
+   npx astro add react
+   ```
+
+   See Astro's official `@astrojs/react` guide: https://docs.astro.build/en/guides/integrations-guide/react/
+
+3. **Initialize Tyndale**
+
+   ```bash
+   npx tyndale init
+   ```
+
+   `init` adds `.astro` to `extensions` by default.
+
+4. **Confirm `.astro` is included in your config**
+
+   ```json
+   {
+     "extensions": [".ts", ".tsx", ".js", ".jsx", ".astro"]
+   }
+   ```
+
+5. **Wrap translatable Astro content**
+
+   ```astro
+   ---
+   import { T, Var, Num } from 'tyndale-react';
+   const userName = 'Ada';
+   const count = 3;
+   ---
+
+   <T>
+     <h1>Hello <Var name="user">{userName}</Var></h1>
+     <p>You have <Num name="count" value={count} /> items.</p>
+   </T>
+   ```
+
+6. **Run translations**
+
+   ```bash
+   npx tyndale translate
+   ```
+
+</Steps>
+
+Tyndale extracts strings from `.astro` files through the same extraction pipeline it uses for the rest of your app, then writes translated locale files to `public/_tyndale/`.
+
+## Astro / Starlight docs translation
+
+Use `translate-docs` when you want to translate documentation content instead of app UI strings.
+
+```bash
+npx tyndale translate-docs setup
+npx tyndale translate-docs
+```
+
+Supported docs frameworks:
+
+- Starlight
+- Docusaurus
+- VitePress
+- MkDocs
+- Nextra
+
+`translate-docs setup` detects the docs framework and writes the `docs` block into `tyndale.config.json`. For the full docs workflow, see [Translating Documentation](/guides/translate-docs).

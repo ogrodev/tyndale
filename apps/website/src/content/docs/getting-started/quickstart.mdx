@@ -1,6 +1,6 @@
 ---
 title: Quickstart
-description: Get translations running in your React app in 5 minutes.
+description: Get translations running in your React or Astro app in 5 minutes.
 ---
 
 import { Steps } from '@astrojs/starlight/components';
@@ -10,7 +10,8 @@ import { Steps } from '@astrojs/starlight/components';
 1. **Install Tyndale**
 
    ```bash
-   npm install tyndale tyndale-react
+   npm install tyndale-react
+   npm install -D tyndale
    ```
 
 2. **Initialize your project**
@@ -19,7 +20,7 @@ import { Steps } from '@astrojs/starlight/components';
    npx tyndale init
    ```
 
-   This creates `tyndale.config.json` with default settings.
+   This creates `tyndale.config.json` with default settings, including `.astro` in `extensions`.
 
 3. **Authenticate with your AI provider**
 
@@ -55,14 +56,43 @@ import { Steps } from '@astrojs/starlight/components';
 
 </Steps>
 
+## Supported frameworks
+
+### App translation
+
+- React
+- Vite + React
+- Next.js
+- Astro components (`.astro`)
+
+### Documentation translation
+
+- Starlight
+- Docusaurus
+- VitePress
+- MkDocs
+- Nextra
+
+## Using Astro instead of React
+
+If you are translating `.astro` pages/components, add Astro's React integration first if your project does not already render React components:
+
+```bash
+npx astro add react
+```
+
+Then follow the dedicated [Astro setup guide](/getting-started/astro-setup). Use [Translating Documentation](/guides/translate-docs) for Starlight and other docs sites.
+
 ## What just happened?
 
-Tyndale scanned your JSX for `<T>` components and `useTranslation()` calls, extracted the English source text, sent it to your AI provider for translation, and wrote locale files to your `output` directory.
+Tyndale scanned your JSX or `.astro` templates for `<T>` components and `useTranslation()` calls, extracted the English source text, sent it to your AI provider for translation, and wrote locale files to your `output` directory.
 
 No key files. No manual JSON editing. Your translations are ready.
 
 ## Next steps
 
 - [Configure your project](/reference/configuration) — locales, AI model, output directory
+- [Set up Astro](/getting-started/astro-setup) — `.astro` files and React integration
 - [Set up Next.js](/getting-started/nextjs-setup) — middleware, providers, static generation
+- [Translate docs](/guides/translate-docs) — Starlight, Docusaurus, VitePress, MkDocs, Nextra
 - [Learn the React API](/reference/react-api) — all components and hooks

@@ -1,9 +1,9 @@
 ---
 title: Tyndale Documentation
-description: Learn how to use Tyndale for AI-powered i18n in React and Next.js.
+description: Learn how to use Tyndale for AI-powered i18n in React, Next.js, Astro applications, and docs sites.
 template: splash
 hero:
-  tagline: Open-source AI-powered i18n for React & Next.js
+  tagline: Open-source AI-powered i18n for React, Next.js, and Astro
   actions:
     - text: Get Started
       link: /getting-started/installation/
@@ -20,8 +20,8 @@ import { Card, CardGrid } from '@astrojs/starlight/components';
   <Card title="Quick Setup" icon="rocket">
     Install Tyndale, run `tyndale init`, and get translations in minutes.
   </Card>
-  <Card title="React Components" icon="puzzle">
-    Use `<T>`, `<Plural>`, `<DateTime>`, and hooks like `useTranslation()`.
+  <Card title="Astro Support" icon="seti:astro">
+    Translate `.astro` application strings and docs sites from the same CLI.
   </Card>
   <Card title="Next.js Ready" icon="laptop">
     Middleware, server providers, and static generation helpers built in.
@@ -30,3 +30,22 @@ import { Card, CardGrid } from '@astrojs/starlight/components';
     Validate translations in your pipeline with `tyndale validate`.
   </Card>
 </CardGrid>
+
+## Supported frameworks
+
+### App translation
+
+- React
+- Vite + React
+- Next.js
+- Astro components (`.astro`)
+
+### Documentation translation
+
+- Starlight
+- Docusaurus
+- VitePress
+- MkDocs
+- Nextra
+
+See [Astro setup](/getting-started/astro-setup), [Next.js setup](/getting-started/nextjs-setup), and [Translating Documentation](/guides/translate-docs) for the framework-specific steps.

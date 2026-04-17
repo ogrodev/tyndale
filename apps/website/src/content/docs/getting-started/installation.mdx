@@ -6,13 +6,31 @@ description: Install Tyndale and its companion packages.
 ## Prerequisites
 
 - Node.js 20 or later
-- React 18.2+ or 19+
+- React 18.2+ or 19+ for React/Next.js/Astro app translation
 - An AI provider API key (Anthropic, OpenAI, etc.)
+
+## Supported frameworks
+
+### App translation (`tyndale extract` / `tyndale translate`)
+
+- React
+- Vite + React
+- Next.js
+- Astro components (`.astro`)
+
+### Documentation translation (`tyndale translate-docs`)
+
+- Starlight
+- Docusaurus
+- VitePress
+- MkDocs
+- Nextra
 
 ## Install packages
 
 ```bash
-npm install tyndale tyndale-react
+npm install tyndale-react
+npm install -D tyndale
 ```
 
 For Next.js projects, also install the adapter:
@@ -21,10 +39,24 @@ For Next.js projects, also install the adapter:
 npm install tyndale-next
 ```
 
+For Astro app translation, add Astro's React integration if your project does not already render React components:
+
+```bash
+npx astro add react
+```
+
+Tyndale translates `.astro` application files through the normal `extract` / `translate` flow. Use `translate-docs` separately when you want to translate Starlight or other docs sites.
+
 ## Initialize your project
 
 ```bash
 npx tyndale init
 ```
 
-This creates a `tyndale.config.json` at your project root with sensible defaults.
+This creates a `tyndale.config.json` at your project root with sensible defaults, including `.astro` in `extensions`.
+
+## Framework-specific guides
+
+- [Astro setup](/getting-started/astro-setup)
+- [Next.js setup](/getting-started/nextjs-setup)
+- [Translating documentation](/guides/translate-docs)

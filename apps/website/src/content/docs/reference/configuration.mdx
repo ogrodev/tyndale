@@ -12,7 +12,7 @@ Create `tyndale.config.json` at your project root, or run `npx tyndale init` to 
   "defaultLocale": "en",
   "locales": ["es", "fr", "ja"],
   "source": ["src", "app"],
-  "extensions": [".ts", ".tsx", ".js", ".jsx"],
+  "extensions": [".ts", ".tsx", ".js", ".jsx", ".astro"],
   "output": "public/_tyndale",
   "translate": {
     "tokenBudget": 50000,
@@ -40,8 +40,8 @@ Create `tyndale.config.json` at your project root, or run `npx tyndale init` to 
 |-------|------|---------|-------------|
 | `defaultLocale` | `string` | `"en"` | Source language code |
 | `locales` | `string[]` | `[]` | Target locale codes |
-| `source` | `string[]` | `["src"]` | Directories to scan for translatable content |
-| `extensions` | `string[]` | `[".ts", ".tsx", ".js", ".jsx"]` | File extensions to include |
+| `source` | `string[]` | `[`"src"`]` | Directories to scan for translatable content (`[`"app", "src"`]` for Next.js projects) |
+| `extensions` | `string[]` | `[`".ts", ".tsx", ".js", ".jsx", ".astro"`]` | File extensions to include |
 | `output` | `string` | `"public/_tyndale"` | Output directory for generated locale files |
 | `translate.tokenBudget` | `number` | `50000` | Token budget per AI translation batch |
 | `translate.concurrency` | `number` | auto | Max parallel translation sessions |
