@@ -67,23 +67,73 @@ export function run(
 }
 
 /**
- * Build all packages then pack each to a tarball. Reuses a shared scratch
- * directory so the same tarballs can be installed by multiple test cases.
+ * Build all published packages, then pack each to a tarball. Reuses a shared
+ * scratch directory so the same tarballs can be installed by multiple test
+ * cases.
  */
 export async function packPackages(scratchDir: string): Promise<Record<string, string>> {
-  const outDir = join(scratchDir, 'tarballs');
-  await mkdir(outDir, { recursive: true });
+  const buildResult = await run('bun', ['run', 'build:packages'], {
+    cwd: REPO_ROOT,
+    timeout: 300_000,
+  });
+  if (buildResult.exitCode !== 0) {
+    throw new Error(
+      `bun run build:packages failed:\n${buildResult.stdout}\n${buildResult.stderr}`,
+    );
+  }
 
-  // Build is caller's responsibility — the test file calls `bun run build:packages`
-  // before packing so we don't rebuild for every test case.
+  const outDir = join(scratchDir, 'tarballs');
+  const stageRoot = join(scratchDir, 'staging');
+  await mkdir(outDir, { recursive: true });
+  await mkdir(stageRoot, { recursive: true });
 
   const tarballs: Record<string, string> = {};
   for (const pkg of PACKAGES) {
-    // `bun pm pack` rewrites `workspace:*` to the concrete version in the
-    // emitted tarball, which is the whole point of running it instead of
-    // `npm pack`.
+    const pkgJsonPath = join(pkg.dir, 'package.json');
+    const pkgJson = JSON.parse(await readFile(pkgJsonPath, 'utf-8')) as {
+      version: string;
+      files?: string[];
+      dependencies?: Record<string, string>;
+      devDependencies?: Record<string, string>;
+      optionalDependencies?: Record<string, string>;
+      peerDependencies?: Record<string, string>;
+    };
+    const stageDir = join(stageRoot, pkg.name);
+    await mkdir(stageDir, { recursive: true });
+
+    const resolveWorkspaceDeps = (deps?: Record<string, string>) =>
+      deps
+        ? Object.fromEntries(
+            Object.entries(deps).map(([name, value]) => [
+              name,
+              value === 'workspace:*' ? `^${pkgJson.version}` : value,
+            ]),
+          )
+        : undefined;
+
+    const stagedPkgJson = {
+      ...pkgJson,
+      dependencies: resolveWorkspaceDeps(pkgJson.dependencies),
+      devDependencies: resolveWorkspaceDeps(pkgJson.devDependencies),
+      optionalDependencies: resolveWorkspaceDeps(pkgJson.optionalDependencies),
+      peerDependencies: resolveWorkspaceDeps(pkgJson.peerDependencies),
+    };
+
+    await writeFile(join(stageDir, 'package.json'), JSON.stringify(stagedPkgJson, null, 2) + '\n');
+
+    for (const entry of pkgJson.files ?? []) {
+      await cp(join(pkg.dir, entry), join(stageDir, entry), { recursive: true });
+    }
+    for (const extra of ['README.md']) {
+      const source = join(pkg.dir, extra);
+      if (existsSync(source)) {
+        await cp(source, join(stageDir, extra), { recursive: true });
+      }
+    }
+
+    const beforeFiles = new Set(await readdir(outDir));
     const result = await run('bun', ['pm', 'pack', '--destination', outDir], {
-      cwd: pkg.dir,
+      cwd: stageDir,
       timeout: 60_000,
     });
     if (result.exitCode !== 0) {
@@ -91,15 +141,14 @@ export async function packPackages(scratchDir: string): Promise<Record<string, s
         `bun pm pack failed for ${pkg.name}:\n${result.stdout}\n${result.stderr}`,
       );
     }
-    // Find the produced tarball (the only .tgz matching the pkg name prefix).
-    const files = await readdir(outDir);
-    const match = files.find(
-      (f) => f.startsWith(`${pkg.name}-`) && f.endsWith('.tgz'),
-    );
-    if (!match) {
-      throw new Error(`could not locate packed tarball for ${pkg.name} in ${outDir}`);
+    const afterFiles = await readdir(outDir);
+    const created = afterFiles.filter((file) => !beforeFiles.has(file) && file.endsWith('.tgz'));
+    if (created.length !== 1) {
+      throw new Error(
+        `expected exactly one new tarball for ${pkg.name}, got ${created.length}: ${created.join(', ')}`,
+      );
     }
-    tarballs[pkg.name] = join(outDir, match);
+    tarballs[pkg.name] = join(outDir, created[0]!);
   }
   return tarballs;
 }
