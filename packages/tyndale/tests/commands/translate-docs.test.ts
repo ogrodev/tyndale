@@ -4,6 +4,7 @@ import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import type { CreateTranslationSessionOptions } from '../../src/translate/pi-session';
 import type { TranslationSession } from '../../src/translate/batch-translator';
+import { suggestConcurrency } from '../../src/translate/concurrency';
 
 const TEST_DIR = join(import.meta.dir, '__fixtures__/translate-docs-cmd');
 const CONTENT_DIR = join(TEST_DIR, 'src/content/docs');
@@ -11,6 +12,7 @@ const SOURCE_DOC_PATH = join(CONTENT_DIR, 'getting-started.mdx');
 const TARGET_DOC_PATH = join(CONTENT_DIR, 'es/getting-started.mdx');
 const STATE_PATH = join(TEST_DIR, '.tyndale-docs-state.json');
 const SOURCE_RELATIVE_PATH = 'getting-started.mdx';
+const AUTO_CONCURRENCY_LABEL = `${suggestConcurrency()} (auto-detected)`;
 
 const SOURCE_DOC = `---
 title: Getting started
@@ -248,11 +250,11 @@ describe('translate-docs command', () => {
     expect(activityControllers[0].overviews[0]).toEqual([
       { label: 'source docs', value: 1 },
       { label: 'locales active', value: 1 },
-      { label: 'concurrency', value: '10 (auto-detected)' },
+      { label: 'concurrency', value: AUTO_CONCURRENCY_LABEL },
     ]);
     expect(activityControllers[1].overviews[0]).toEqual([
       { label: 'affected locales', value: 1 },
-      { label: 'concurrency', value: '10 (auto-detected)' },
+      { label: 'concurrency', value: AUTO_CONCURRENCY_LABEL },
     ]);
     expect(activityControllers[0].registered[0]).toEqual([
       {
