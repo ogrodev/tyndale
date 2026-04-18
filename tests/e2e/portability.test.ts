@@ -42,7 +42,7 @@ describe.skipIf(SKIP)('portability: packed install runs under Node and Bun', () 
 
   afterAll(async () => {
     if (scratchDir) await rm(scratchDir, { recursive: true, force: true });
-  });
+  }, 300_000);
 
   const RUNTIMES: Runtime[] = ['node', 'bun'];
 
