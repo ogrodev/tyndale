@@ -57,6 +57,7 @@ mock.module('@mariozechner/pi-tui', () => ({
   ProcessTerminal: FakeProcessTerminal,
   TUI: FakeTUI,
   Container: FakeContainer,
+  visibleWidth: (text: string) => text.length,
 }));
 
 describe('runTui', () => {
