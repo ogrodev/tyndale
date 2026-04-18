@@ -192,17 +192,18 @@ export async function installFixture(
   );
 
   const installer = opts.installer ?? 'npm';
+  const installCommand = process.platform === 'win32' && installer === 'npm' ? 'npm.cmd' : installer;
   const args =
     installer === 'npm'
       ? ['install', '--no-audit', '--no-fund', '--loglevel=error']
       : ['install'];
-  const installResult = await run(installer, args, {
+  const installResult = await run(installCommand, args, {
     cwd: projectDir,
     timeout: 180_000,
   });
   if (installResult.exitCode !== 0) {
     throw new Error(
-      `${installer} install failed in ${projectDir}:\n${installResult.stdout}\n${installResult.stderr}`,
+      `${installCommand} install failed in ${projectDir}:\n${installResult.stdout}\n${installResult.stderr}`,
     );
   }
 
