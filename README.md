@@ -14,6 +14,7 @@
 Write your app in one language, run the CLI, and generate translated UI and docs.
 
 [Overview](#overview) • [Supported frameworks](#supported-frameworks) • [Quickstart](#quickstart) • [Translate docs](#translate-documentation) • [Packages](#packages) • [Configuration](#configuration) • [Development](#development)
+
 </div>
 
 ## Overview
@@ -55,6 +56,16 @@ It is built for a zero-key workflow: wrap JSX or `.astro` templates with `<T>`, 
 
 ## Quickstart
 
+### Let your AI set it up
+
+Paste this prompt into your coding agent if you want it to handle the Tyndale integration for you:
+
+```text
+Read https://raw.githubusercontent.com/ogrodev/tyndale/main/skills/setup-tyndale/SKILL.md and use it to set up Tyndale in this project. Detect whether this codebase is React, Next.js, Astro, or a supported docs framework, install the right published packages, wire the framework correctly, and run the necessary Tyndale setup steps so I do not need to make the integration choices myself.
+```
+
+If you prefer to do it manually, follow the steps below.
+
 ### 1. Install
 
 ```bash
@@ -85,19 +96,29 @@ npx tyndale auth
 ### 4. Mark translatable UI
 
 ```tsx
-import { T, useTranslation, Var, Num } from 'tyndale-react';
+import { T, useTranslation, Var, Num } from "tyndale-react";
 
-export function Welcome({ userName, count }: { userName: string; count: number }) {
+export function Welcome({
+  userName,
+  count,
+}: {
+  userName: string;
+  count: number;
+}) {
   const t = useTranslation();
 
   return (
     <div>
       <T>
-        <h1>Hello <Var name="user">{userName}</Var></h1>
-        <p>You have <Num value={count} /> items.</p>
+        <h1>
+          Hello <Var name="user">{userName}</Var>
+        </h1>
+        <p>
+          You have <Num value={count} /> items.
+        </p>
       </T>
 
-      <input placeholder={t('Search products...')} />
+      <input placeholder={t("Search products...")} />
     </div>
   );
 }
@@ -157,12 +178,12 @@ If you want to translate `.astro` pages/components, Tyndale supports that too.
 
 ```ts
 // middleware.ts
-import { createTyndaleMiddleware } from 'tyndale-next/middleware';
+import { createTyndaleMiddleware } from "tyndale-next/middleware";
 
 export default createTyndaleMiddleware();
 
 export const config = {
-  matcher: ['/((?!api|_next|_tyndale|.*\\..*).*)'],
+  matcher: ["/((?!api|_next|_tyndale|.*\\..*).*)"],
 };
 ```
 
@@ -170,7 +191,7 @@ export const config = {
 
 ```tsx
 // app/[locale]/layout.tsx
-import { getDirection, TyndaleServerProvider } from 'tyndale-next/server';
+import { getDirection, TyndaleServerProvider } from "tyndale-next/server";
 
 export default async function RootLayout({
   children,
@@ -205,27 +226,28 @@ npx tyndale translate-docs
 Supported frameworks: Starlight, Docusaurus, VitePress, MkDocs, Nextra.
 
 `translate-docs` writes `.tyndale-docs-state.json` at the project root to track source document hashes. Commit it so fresh clones can skip unchanged docs instead of retranslating everything.
+
 ## Packages
 
-| Package | Purpose |
-| --- | --- |
-| [`tyndale`](./packages/tyndale) | CLI for `init`, `auth`, `extract`, `translate`, `translate-docs`, `validate`, and `model` |
-| [`tyndale-react`](./packages/tyndale-react) | Runtime components and hooks such as `<T>`, `useTranslation()`, `msg()`, and `useDictionary(filenameKey)` |
-| [`tyndale-next`](./packages/tyndale-next) | Next.js helpers including middleware, config integration, server/client providers, and static locale params |
-| [`apps/website`](./apps/website) | Astro + Starlight documentation site for the project |
+| Package                                     | Purpose                                                                                                     |
+| ------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| [`tyndale`](./packages/tyndale)             | CLI for `init`, `auth`, `extract`, `translate`, `translate-docs`, `validate`, and `model`                   |
+| [`tyndale-react`](./packages/tyndale-react) | Runtime components and hooks such as `<T>`, `useTranslation()`, `msg()`, and `useDictionary(filenameKey)`   |
+| [`tyndale-next`](./packages/tyndale-next)   | Next.js helpers including middleware, config integration, server/client providers, and static locale params |
+| [`apps/website`](./apps/website)            | Astro + Starlight documentation site for the project                                                        |
 
 ## CLI overview
 
-| Command | Description |
-| --- | --- |
-| `tyndale init` | Create `tyndale.config.json`, update `.gitignore`, and scaffold Next.js middleware when applicable |
-| `tyndale auth` | Configure AI provider credentials |
-| `tyndale extract` | Extract translatable source strings without translating them; useful for inspection and review |
-| `tyndale translate` | Auto-extract, then translate changed app strings for configured locales |
-| `tyndale translate-docs` | Translate MDX/Markdown docs for a supported documentation framework |
-| `tyndale translate-docs setup` | Detect a docs framework and write the `docs` config |
-| `tyndale validate` | Validate locale files without making AI calls |
-| `tyndale model` | Change the configured AI model |
+| Command                        | Description                                                                                        |
+| ------------------------------ | -------------------------------------------------------------------------------------------------- |
+| `tyndale init`                 | Create `tyndale.config.json`, update `.gitignore`, and scaffold Next.js middleware when applicable |
+| `tyndale auth`                 | Configure AI provider credentials                                                                  |
+| `tyndale extract`              | Extract translatable source strings without translating them; useful for inspection and review     |
+| `tyndale translate`            | Auto-extract, then translate changed app strings for configured locales                            |
+| `tyndale translate-docs`       | Translate MDX/Markdown docs for a supported documentation framework                                |
+| `tyndale translate-docs setup` | Detect a docs framework and write the `docs` config                                                |
+| `tyndale validate`             | Validate locale files without making AI calls                                                      |
+| `tyndale model`                | Change the configured AI model                                                                     |
 
 ## Configuration
 

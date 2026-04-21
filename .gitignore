@@ -37,7 +37,6 @@ coverage/
 .omp/
 TASKS.jsonl
 test_docs/
-skills/
 clean-ignored-from-git.sh
 
 # Next.js (fixture)
