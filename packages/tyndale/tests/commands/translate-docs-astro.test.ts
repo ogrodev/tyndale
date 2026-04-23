@@ -5,49 +5,51 @@ import { tmpdir } from 'os';
 import { join } from 'path';
 import { StarlightProvider } from '../../src/docs/providers/starlight';
 
-// Silence the TUI machinery so the test exercises the non-interactive branch.
-mock.module('../../src/tui/run-tui', () => ({
-  runTui: async <T>(
-    build: (controls: { resolve(value: T | null): void; requestRender(force?: boolean): void }) => unknown,
-  ) => {
-    return await new Promise<T | null>((resolve) => {
-      build({
-        resolve,
-        requestRender() {},
+let commandModulePromise: Promise<typeof import('../../src/commands/translate-docs')>;
+
+function installTranslateDocsTuiMocks(): void {
+  // Silence the TUI machinery so the test exercises the non-interactive branch.
+  mock.module('../../src/tui/run-tui', () => ({
+    runTui: async <T>(
+      build: (controls: { resolve(value: T | null): void; requestRender(force?: boolean): void }) => unknown,
+    ) => {
+      return await new Promise<T | null>((resolve) => {
+        build({
+          resolve,
+          requestRender() {},
+        });
       });
-    });
-  },
-}));
+    },
+  }));
 
-mock.module('../../src/tui/translate-activity', () => ({
-  createTranslateActivityTui: () => ({
-    root: {
-      invalidate() {},
-      render() {
-        return [];
+  mock.module('../../src/tui/translate-activity', () => ({
+    createTranslateActivityTui: () => ({
+      root: {
+        invalidate() {},
+        render() {
+          return [];
+        },
       },
-    },
-    setOverview() {},
-    registerBatches() {},
-    startBatch() {},
-    recordRetry() {},
-    recordSessionEvent() {},
-    finishBatch() {},
-    finish() {},
-    snapshot() {
-      return {
-        title: '',
-        overview: [],
-        totals: { total: 0, queued: 0, running: 0, success: 0, failure: 0 },
-        batches: [],
-        recentEvents: [],
-        elapsedMs: 0,
-      };
-    },
-  }),
-}));
-
-const commandModulePromise = import('../../src/commands/translate-docs');
+      setOverview() {},
+      registerBatches() {},
+      startBatch() {},
+      recordRetry() {},
+      recordSessionEvent() {},
+      finishBatch() {},
+      finish() {},
+      snapshot() {
+        return {
+          title: '',
+          overview: [],
+          totals: { total: 0, queued: 0, running: 0, success: 0, failure: 0 },
+          batches: [],
+          recentEvents: [],
+          elapsedMs: 0,
+        };
+      },
+    }),
+  }));
+}
 
 const FIXTURE_ROOT = join(import.meta.dir, '../fixtures/docs-astro-project');
 const SOURCE_RELATIVE_PATH = 'intro.astro';
@@ -73,6 +75,8 @@ describe('translate-docs command — .astro support', () => {
   let sourceContent: string;
 
   beforeEach(() => {
+    installTranslateDocsTuiMocks();
+    commandModulePromise = import('../../src/commands/translate-docs');
     console.log = (() => {}) as typeof console.log;
     console.error = (() => {}) as typeof console.error;
     Object.defineProperty(process.stdout, 'isTTY', { value: false, configurable: true });
@@ -89,6 +93,7 @@ describe('translate-docs command — .astro support', () => {
   afterEach(() => {
     console.log = originalLog;
     console.error = originalError;
+    mock.restore();
     if (originalIsTTY) {
       Object.defineProperty(process.stdout, 'isTTY', originalIsTTY);
     }

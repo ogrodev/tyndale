@@ -83,10 +83,14 @@ describe('model command', () => {
         ModelRegistry: { create: () => ({ refresh() {}, getAvailable: () => [] }) },
       }));
 
-      const { runModel } = await import('../../src/commands/model');
-      const result = await runModel({});
-      expect(result.exitCode).toBe(1);
-      expect(errors.some(e => e.includes('tyndale.config.json not found'))).toBe(true);
+      try {
+        const { runModel } = await import('../../src/commands/model');
+        const result = await runModel({});
+        expect(result.exitCode).toBe(1);
+        expect(errors.some(e => e.includes('tyndale.config.json not found'))).toBe(true);
+      } finally {
+        mock.restore();
+      }
     });
   });
 });

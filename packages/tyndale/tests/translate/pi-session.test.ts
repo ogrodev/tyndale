@@ -1,5 +1,5 @@
 // packages/tyndale/tests/translate/pi-session.test.ts
-import { beforeEach, describe, expect, it, mock } from 'bun:test';
+import { afterEach, beforeEach, describe, expect, it, mock } from 'bun:test';
 import {
   buildTranslationPrompt,
   createTextSession,
@@ -11,19 +11,6 @@ import {
 
 let createAgentSessionImpl: ((options: unknown) => Promise<{ session: any }>) | null = null;
 const capturedCreateAgentSessionOptions: unknown[] = [];
-
-mock.module('@mariozechner/pi-coding-agent', () => ({
-  AuthStorage: { create: () => ({}) },
-  ModelRegistry: { create: () => ({ refresh() {} }) },
-  SessionManager: { inMemory: () => ({}) },
-  createAgentSession: (options: unknown) => {
-    capturedCreateAgentSessionOptions.push(options);
-    if (!createAgentSessionImpl) {
-      throw new Error('createAgentSessionImpl not configured');
-    }
-    return createAgentSessionImpl(options);
-  },
-}));
 
 function createFakeAgentSession(events: any[], promptError?: unknown) {
   let listener: ((event: any) => void) | undefined;
@@ -46,10 +33,26 @@ function createFakeAgentSession(events: any[], promptError?: unknown) {
 
 describe('pi-session', () => {
   beforeEach(() => {
+    mock.module('@mariozechner/pi-coding-agent', () => ({
+      AuthStorage: { create: () => ({}) },
+      ModelRegistry: { create: () => ({ refresh() {} }) },
+      SessionManager: { inMemory: () => ({}) },
+      createAgentSession: (options: unknown) => {
+        capturedCreateAgentSessionOptions.push(options);
+        if (!createAgentSessionImpl) {
+          throw new Error('createAgentSessionImpl not configured');
+        }
+        return createAgentSessionImpl(options);
+      },
+    }));
     capturedCreateAgentSessionOptions.length = 0;
     createAgentSessionImpl = async () => ({
       session: createFakeAgentSession([]),
     });
+  });
+
+  afterEach(() => {
+    mock.restore();
   });
 
   describe('buildTranslationPrompt', () => {
