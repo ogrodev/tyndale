@@ -5,6 +5,7 @@ import react from '@astrojs/react';
 import vercel from '@astrojs/vercel';
 
 export default defineConfig({
+  site: 'https://tyndale.dev',
   output: 'static',
   adapter: vercel(),
   vite: {
