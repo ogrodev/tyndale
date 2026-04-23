@@ -51,76 +51,78 @@ type FakeActivityController = {
 const runTuiOptions: Array<Record<string, unknown> | undefined> = [];
 const activityControllers: FakeActivityController[] = [];
 
-mock.module('../../src/tui/run-tui', () => ({
-  runTui: async <T>(
-    build: (controls: { resolve(value: T | null): void; requestRender(force?: boolean): void }) => unknown,
-    options?: Record<string, unknown>,
-  ) => {
-    runTuiOptions.push(options);
+let commandModulePromise: Promise<typeof import('../../src/commands/translate-docs')>;
 
-    return await new Promise<T | null>((resolve) => {
-      build({
-        resolve,
-        requestRender() {},
+function installTranslateDocsTuiMocks(): void {
+  mock.module('../../src/tui/run-tui', () => ({
+    runTui: async <T>(
+      build: (controls: { resolve(value: T | null): void; requestRender(force?: boolean): void }) => unknown,
+      options?: Record<string, unknown>,
+    ) => {
+      runTuiOptions.push(options);
+
+      return await new Promise<T | null>((resolve) => {
+        build({
+          resolve,
+          requestRender() {},
+        });
       });
-    });
-  },
-}));
+    },
+  }));
 
-mock.module('../../src/tui/translate-activity', () => ({
-  createTranslateActivityTui: (_controls: unknown, options?: Record<string, unknown>) => {
-    const controller: FakeActivityController = {
-      options,
-      overviews: [],
-      registered: [],
-      started: [],
-      events: [],
-      finishedBatches: [],
-      footers: [],
-    };
-    activityControllers.push(controller);
+  mock.module('../../src/tui/translate-activity', () => ({
+    createTranslateActivityTui: (_controls: unknown, options?: Record<string, unknown>) => {
+      const controller: FakeActivityController = {
+        options,
+        overviews: [],
+        registered: [],
+        started: [],
+        events: [],
+        finishedBatches: [],
+        footers: [],
+      };
+      activityControllers.push(controller);
 
-    return {
-      root: {
-        invalidate() {},
-        render() {
-          return [];
+      return {
+        root: {
+          invalidate() {},
+          render() {
+            return [];
+          },
         },
-      },
-      setOverview(rows: unknown) {
-        controller.overviews.push(rows);
-      },
-      registerBatches(batches: unknown) {
-        controller.registered.push(batches);
-      },
-      startBatch(batchId: string) {
-        controller.started.push(batchId);
-      },
-      recordRetry() {},
-      recordSessionEvent(batchId: string, event: unknown) {
-        controller.events.push({ batchId, event });
-      },
-      finishBatch(batchId: string, ok: boolean, detail?: string) {
-        controller.finishedBatches.push({ batchId, ok, detail });
-      },
-      finish(footer?: string) {
-        controller.footers.push(footer);
-      },
-      snapshot() {
-        return {
-          title: '',
-          overview: [],
-          totals: { total: 0, queued: 0, running: 0, success: 0, failure: 0 },
-          batches: [],
-          recentEvents: [],
-          elapsedMs: 0,
-        };
-      },
-    };
-  },
-}));
-
-const commandModulePromise = import('../../src/commands/translate-docs');
+        setOverview(rows: unknown) {
+          controller.overviews.push(rows);
+        },
+        registerBatches(batches: unknown) {
+          controller.registered.push(batches);
+        },
+        startBatch(batchId: string) {
+          controller.started.push(batchId);
+        },
+        recordRetry() {},
+        recordSessionEvent(batchId: string, event: unknown) {
+          controller.events.push({ batchId, event });
+        },
+        finishBatch(batchId: string, ok: boolean, detail?: string) {
+          controller.finishedBatches.push({ batchId, ok, detail });
+        },
+        finish(footer?: string) {
+          controller.footers.push(footer);
+        },
+        snapshot() {
+          return {
+            title: '',
+            overview: [],
+            totals: { total: 0, queued: 0, running: 0, success: 0, failure: 0 },
+            batches: [],
+            recentEvents: [],
+            elapsedMs: 0,
+          };
+        },
+      };
+    },
+  }));
+}
 
 function writeDoc(path: string, content: string): void {
   mkdirSync(join(path, '..'), { recursive: true });
@@ -147,6 +149,8 @@ describe('translate-docs command', () => {
   beforeEach(() => {
     runTuiOptions.length = 0;
     activityControllers.length = 0;
+    installTranslateDocsTuiMocks();
+    commandModulePromise = import('../../src/commands/translate-docs');
     console.log = (() => {}) as typeof console.log;
     console.error = (() => {}) as typeof console.error;
     Object.defineProperty(process.stdout, 'isTTY', { value: false, configurable: true });
@@ -156,6 +160,7 @@ describe('translate-docs command', () => {
   afterEach(() => {
     console.log = originalLog;
     console.error = originalError;
+    mock.restore();
     if (originalIsTTY) {
       Object.defineProperty(process.stdout, 'isTTY', originalIsTTY);
     }

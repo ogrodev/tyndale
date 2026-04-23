@@ -32,6 +32,7 @@ describe('auth command', () => {
         expect(output.some((l) => l.includes('anthropic'))).toBe(true);
       } finally {
         console.log = origLog;
+        mock.restore();
       }
     });
 
@@ -58,6 +59,7 @@ describe('auth command', () => {
         expect(output.some((l) => l.includes('No providers'))).toBe(true);
       } finally {
         console.log = origLog;
+        mock.restore();
       }
     });
   });

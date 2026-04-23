@@ -1,6 +1,7 @@
 #!/usr/bin/env node
-import { fileURLToPath } from 'node:url';
 import { realpathSync } from 'node:fs';
+import type { Writable } from 'node:stream';
+import { fileURLToPath } from 'node:url';
 import { createTerminalUi } from './terminal/ui.js';
 
 export interface ParsedArgs {
@@ -181,13 +182,63 @@ function isMainModule(): boolean {
 }
 
 if (isMainModule()) {
-  const { command, flags } = parseArgs(process.argv);
-  routeCommand(command, flags).then(({ exitCode }) => {
-    // Set exit code and let the event loop drain naturally instead of calling
-    // `process.exit()`. Under Node, `process.exit` terminates before piped
-    // stdout flushes, producing empty output when spawned with pipes.
-    // If any subsystem leaves handles open, fix the cleanup there — don't
-    // paper over it by hard-killing the process here.
-    process.exitCode = exitCode;
+  void runCliEntrypoint();
+}
+
+async function runCliEntrypoint(): Promise<void> {
+  let exitCode = 0;
+  try {
+    const { command, flags } = parseArgs(process.argv);
+    const result = await routeCommand(command, flags);
+    exitCode = result.exitCode;
+  } catch (err) {
+    const message = err instanceof Error ? (err.stack ?? err.message) : String(err);
+    console.error(message);
+    exitCode = 1;
+  }
+
+  // Flush any buffered stdio before exiting. Without this, `process.exit`
+  // can terminate before piped stdout finishes writing, producing empty
+  // output when the CLI is spawned with pipes.
+  await drainStdio();
+
+  // Force exit after stdio drains. Commands should still clean up their own
+  // handles, but the CLI cannot rely on the event loop to empty on Windows:
+  // translate/auth/model dependencies (undici HTTP pools, proper-lockfile,
+  // readline/TUI stdin) can keep it alive indefinitely. `runCliEntrypoint`
+  // is the last-resort termination boundary for the CLI process.
+  process.exit(exitCode);
+}
+
+async function drainStdio(): Promise<void> {
+  await Promise.all([drainStream(process.stdout), drainStream(process.stderr)]);
+}
+
+export function drainStream(stream: Writable): Promise<void> {
+  if (stream.writableEnded || stream.destroyed || stream.writableLength === 0) {
+    return Promise.resolve();
+  }
+
+  return new Promise((resolve) => {
+    let settled = false;
+
+    const finish = () => {
+      if (settled) return;
+      settled = true;
+      stream.off('close', finish);
+      stream.off('error', finish);
+      resolve();
+    };
+
+    // Empty writes invoke their callback once prior buffered output has
+    // flushed, even when the stream never entered backpressure and would
+    // never emit `drain`.
+    stream.once('close', finish);
+    stream.once('error', finish);
+    try {
+      stream.write('', finish);
+    } catch {
+      finish();
+    }
   });
 }
