@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Tyndale docs
+    url: https://tyndale.dev
+    about: Read the documentation and setup guides at the official Tyndale website.
