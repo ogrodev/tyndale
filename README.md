@@ -67,6 +67,7 @@ npx tyndale auth
 ```
 
 OAuth providers open a browser and reuse your existing subscription. Providers without OAuth fall back to an API key. Either way, the credentials live on your machine.
+[Supported Providers](https://github.com/badlogic/pi-mono/tree/main/packages/ai#supported-providers)
 
 ### 4. Mark translatable UI
 
