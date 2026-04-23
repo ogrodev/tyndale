@@ -13,7 +13,9 @@
 **Translate your app with the AI subscription you already pay for.**  
 Tyndale wraps your strings, hashes them, and only sends what changed to your model.
 
-[Why Tyndale](#why-tyndale) • [Quickstart](#quickstart) • [Supported frameworks](#supported-frameworks) • [Translate docs](#translate-documentation) • [Packages](#packages) • [Configuration](#configuration) • [Development](#development)
+Website: https://tyndale.dev
+
+[Website](https://tyndale.dev) • [Why Tyndale](#why-tyndale) • [Quickstart](#quickstart) • [Supported frameworks](#supported-frameworks) • [Translate docs](#translate-documentation) • [Packages](#packages) • [Configuration](#configuration) • [Development](#development)
 
 </div>
 
