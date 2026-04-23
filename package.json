@@ -16,12 +16,12 @@
     "tests/e2e/fixture"
   ],
   "scripts": {
-    "test": "bun test --cwd packages/tyndale-react && bun test --cwd packages/tyndale-next && bun test --cwd packages/tyndale && bun test tests/e2e/",
+    "test": "bun test --cwd packages/tyndale-react && bun test --cwd packages/tyndale-next && bun test --cwd packages/tyndale --isolate && bun test tests/e2e/",
     "test:e2e": "bun test tests/e2e/",
     "test:playwright": "playwright test --config tests/playwright/playwright.config.ts",
     "test:react": "bun test --cwd packages/tyndale-react",
     "test:next": "bun test --cwd packages/tyndale-next",
-    "test:cli": "bun test --cwd packages/tyndale",
+    "test:cli": "bun test --cwd packages/tyndale --isolate",
     "typecheck": "tsc --build",
     "dev": "bun --cwd apps/website dev",
     "build:website": "bun --cwd apps/website build",
