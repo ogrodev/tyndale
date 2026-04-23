@@ -29,7 +29,7 @@
   ],
   "scripts": {
     "build": "tsc --build",
-    "test": "bun test"
+    "test": "bun test --isolate"
   },
   "keywords": [
     "i18n",
