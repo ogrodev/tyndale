@@ -197,9 +197,14 @@ export async function installFixture(
     installer === 'npm'
       ? ['install', '--no-audit', '--no-fund', '--loglevel=error']
       : ['install'];
+  // Windows npm installs on fresh GitHub runners are materially slower than the
+  // other matrix cells; keep the harness strict, but give that path more headroom.
+  const installTimeout = process.platform === 'win32' && installer === 'npm'
+    ? 300_000
+    : 180_000;
   const installResult = await run(installCommand, args, {
     cwd: projectDir,
-    timeout: 180_000,
+    timeout: installTimeout,
   });
   if (installResult.exitCode !== 0) {
     throw new Error(
