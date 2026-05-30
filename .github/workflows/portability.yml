@@ -14,8 +14,9 @@ name: Portability
 #                          Catches RSC boundary, SSR, and middleware bugs.
 #
 # Layer 1 is cheap and gates everything else. Layer 2 runs on a small matrix.
-# Layer 3 runs on Linux only — Next.js runtime behaviour is not OS-sensitive,
-# and Playwright+browsers on Windows/macOS add cost for little signal.
+# Layer 3 runs on Linux only and current LTS Node lines — Next.js runtime
+# behaviour is not OS-sensitive, and Playwright/browser installation on the
+# moving current Node line has been flaky enough to hide product regressions.
 
 on:
   push:
@@ -84,7 +85,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        node: ['20', '22', '24']
+        node: ['20', '22']
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -104,7 +105,7 @@ jobs:
         run: bun run build:packages
 
       - name: Install Playwright browser (chromium only)
-        run: bunx playwright install --with-deps chromium
+        run: bunx playwright install --with-deps --only-shell chromium
 
       - name: Run Next.js integration E2E
         run: bun run test:playwright

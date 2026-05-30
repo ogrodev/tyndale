@@ -1,61 +1,17 @@
-// packages/tyndale-next/src/config.ts
-import { createRequire } from 'node:module';
-import * as fs from 'node:fs';
-import * as path from 'node:path';
+// packages/tyndale-next/src/config.cjs
+const { createRequire } = require('node:module');
+const fs = require('node:fs');
+const path = require('node:path');
 
-const requireFromTyndaleNext = createRequire(import.meta.url);
+const requireFromTyndaleNext = createRequire(__filename);
 
 /** The cookie name used by Tyndale middleware for locale persistence. */
-export const TYNDALE_COOKIE_NAME = 'TYNDALE_LOCALE';
+const TYNDALE_COOKIE_NAME = 'TYNDALE_LOCALE';
 
-interface TyndaleConfigFile {
-  defaultLocale: string;
-  locales: string[];
-  output: string;
-  localeAliases: Record<string, string>;
-}
-
-interface WebpackConfig {
-  resolve: {
-    alias: Record<string, string>;
-    [key: string]: unknown;
-  };
-  [key: string]: unknown;
-}
-
-type WebpackOptions = Record<string, unknown>;
-
-type TurbopackResolveAlias = Record<
-  string,
-  string | string[] | Record<string, string | string[]>
->;
-
-interface TurbopackConfig {
-  resolveAlias?: TurbopackResolveAlias;
-  [key: string]: unknown;
-}
-
-interface NextConfig {
-  env?: Record<string, string>;
-  turbopack?: TurbopackConfig;
-  webpack?: (config: WebpackConfig, options: WebpackOptions) => WebpackConfig;
-  [key: string]: unknown;
-}
-
-interface PackageJson {
-  exports?: unknown;
-  main?: unknown;
-  module?: unknown;
-}
-
-/**
- * Reads tyndale.config.json from the project root (cwd).
- * Throws at build time with a clear message if not found or malformed.
- */
-function readTyndaleConfig(): TyndaleConfigFile {
+function readTyndaleConfig() {
   const configPath = path.resolve(process.cwd(), 'tyndale.config.json');
 
-  let raw: string;
+  let raw;
   try {
     raw = fs.readFileSync(configPath, 'utf-8');
   } catch {
@@ -65,7 +21,7 @@ function readTyndaleConfig(): TyndaleConfigFile {
   }
 
   try {
-    return JSON.parse(raw) as TyndaleConfigFile;
+    return JSON.parse(raw);
   } catch {
     throw new Error(
       `tyndale.config.json at ${configPath} contains invalid JSON. Fix the syntax and rebuild.`,
@@ -73,7 +29,7 @@ function readTyndaleConfig(): TyndaleConfigFile {
   }
 }
 
-function selectExportPath(value: unknown): string | undefined {
+function selectExportPath(value) {
   if (typeof value === 'string') return value;
 
   if (Array.isArray(value)) {
@@ -86,32 +42,29 @@ function selectExportPath(value: unknown): string | undefined {
 
   if (!value || typeof value !== 'object') return undefined;
 
-  const record = value as Record<string, unknown>;
   for (const condition of ['import', 'node', 'default', 'require', 'bun']) {
-    const selected = selectExportPath(record[condition]);
+    const selected = selectExportPath(value[condition]);
     if (selected) return selected;
   }
 
   return undefined;
 }
 
-function selectPackageExport(
-  packageJson: PackageJson,
-  exportKey: string,
-): string | undefined {
+function selectPackageExport(packageJson, exportKey) {
   const exportsField = packageJson.exports;
 
   if (exportKey !== '.') {
     return exportsField &&
       typeof exportsField === 'object' &&
       !Array.isArray(exportsField)
-      ? selectExportPath((exportsField as Record<string, unknown>)[exportKey])
+      ? selectExportPath(exportsField[exportKey])
       : undefined;
   }
+
   const rootExport =
     exportsField && typeof exportsField === 'object' && !Array.isArray(exportsField)
       ? Object.prototype.hasOwnProperty.call(exportsField, '.')
-        ? (exportsField as Record<string, unknown>)['.']
+        ? exportsField['.']
         : exportsField
       : exportsField;
 
@@ -123,7 +76,7 @@ function selectPackageExport(
   );
 }
 
-function resolvePackageExport(packageName: string, exportKey: string): string {
+function resolvePackageExport(packageName, exportKey) {
   const searchPaths = requireFromTyndaleNext.resolve.paths(packageName) ?? [];
 
   for (const nodeModulesPath of searchPaths) {
@@ -131,9 +84,9 @@ function resolvePackageExport(packageName: string, exportKey: string): string {
     const packageJsonPath = path.join(packageDir, 'package.json');
     if (!fs.existsSync(packageJsonPath)) continue;
 
-    let packageJson: PackageJson;
+    let packageJson;
     try {
-      packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8')) as PackageJson;
+      packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8'));
     } catch {
       throw new Error(`${packageName} package.json at ${packageJsonPath} is invalid JSON.`);
     }
@@ -154,7 +107,7 @@ function resolvePackageExport(packageName: string, exportKey: string): string {
   );
 }
 
-function toTurbopackAliasPath(resolvedPath: string): string {
+function toTurbopackAliasPath(resolvedPath) {
   const relativePath = path
     .relative(process.cwd(), resolvedPath)
     .split(path.sep)
@@ -163,25 +116,7 @@ function toTurbopackAliasPath(resolvedPath: string): string {
   return relativePath.startsWith('.') ? relativePath : `./${relativePath}`;
 }
 
-/**
- * Wraps a Next.js config to inject Tyndale build-time constants.
- *
- * Reads tyndale.config.json from the project root and sets environment
- * variables that the middleware and providers read at runtime:
- *
- * - TYNDALE_DEFAULT_LOCALE — the default locale code
- * - TYNDALE_LOCALES — JSON array of target locale codes
- * - TYNDALE_COOKIE_NAME — cookie name for locale persistence
- * - TYNDALE_LOCALE_ALIASES — JSON object of alias mappings
- * - TYNDALE_OUTPUT — output directory path
- *
- * Usage in next.config.ts:
- * ```ts
- * import { withTyndaleConfig } from 'tyndale-next/config';
- * export default withTyndaleConfig({});
- * ```
- */
-export function withTyndaleConfig(nextConfig: NextConfig): NextConfig {
+function withTyndaleConfig(nextConfig) {
   const tyndaleConfig = readTyndaleConfig();
 
   // Resolve to the exact physical paths so server and client bundles share the
@@ -201,7 +136,7 @@ export function withTyndaleConfig(nextConfig: NextConfig): NextConfig {
       ...nextConfig.env,
       TYNDALE_DEFAULT_LOCALE: tyndaleConfig.defaultLocale,
       TYNDALE_LOCALES: JSON.stringify(tyndaleConfig.locales),
-      TYNDALE_COOKIE_NAME: TYNDALE_COOKIE_NAME,
+      TYNDALE_COOKIE_NAME,
       TYNDALE_LOCALE_ALIASES: JSON.stringify(
         tyndaleConfig.localeAliases ?? {},
       ),
@@ -226,3 +161,8 @@ export function withTyndaleConfig(nextConfig: NextConfig): NextConfig {
     },
   };
 }
+
+module.exports = {
+  TYNDALE_COOKIE_NAME,
+  withTyndaleConfig,
+};

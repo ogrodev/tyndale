@@ -148,7 +148,31 @@ describe('withTyndaleConfig', () => {
     expect(typeof result.webpack).toBe('function');
   });
 
-  test('webpack function sets resolve.alias for tyndale-react', () => {
+  test('sets Turbopack resolve aliases for tyndale-react subpaths', () => {
+    writeConfig({
+      defaultLocale: 'en',
+      locales: ['es'],
+      output: 'public/_tyndale',
+      localeAliases: {},
+    });
+    const result = withTyndaleConfig({
+      turbopack: {
+        resolveAlias: {
+          custom: '/custom/path',
+          'tyndale-react': '/stale-prefix-alias',
+        },
+      },
+    });
+    expect(result.turbopack?.resolveAlias?.custom).toBe('/custom/path');
+    expect(result.turbopack?.resolveAlias?.['tyndale-react']).toContain(
+      'tyndale-react',
+    );
+    expect(result.turbopack?.resolveAlias?.['tyndale-react/server']).toContain(
+      'server',
+    );
+  });
+
+  test('webpack function sets an exact resolve.alias for tyndale-react', () => {
     writeConfig({
       defaultLocale: 'en',
       locales: ['es'],
@@ -156,11 +180,17 @@ describe('withTyndaleConfig', () => {
       localeAliases: {},
     });
     const result = withTyndaleConfig({});
-    const mockConfig = { resolve: { alias: {} as Record<string, string> } };
+    const mockConfig = {
+      resolve: {
+        alias: { 'tyndale-react': '/stale-prefix-alias' } as Record<string, string>,
+      },
+    };
     const output = (result.webpack as Function)(mockConfig, {});
-    expect(output.resolve.alias['tyndale-react']).toBeDefined();
-    expect(typeof output.resolve.alias['tyndale-react']).toBe('string');
-    expect(output.resolve.alias['tyndale-react']).toContain('tyndale-react');
+    expect(output.resolve.alias['tyndale-react']).toBeUndefined();
+    expect(output.resolve.alias['tyndale-react$']).toBeDefined();
+    expect(output.resolve.alias['tyndale-react/server']).toBeUndefined();
+    expect(typeof output.resolve.alias['tyndale-react$']).toBe('string');
+    expect(output.resolve.alias['tyndale-react$']).toContain('tyndale-react');
   });
 
   test('webpack function chains with existing webpack', () => {
@@ -182,7 +212,7 @@ describe('withTyndaleConfig', () => {
     const output = (result.webpack as Function)(mockConfig, {});
     expect(userWebpackCalled).toBe(true);
     expect(output.resolve.alias['custom']).toBe('/custom/path');
-    expect(output.resolve.alias['tyndale-react']).toBeDefined();
+    expect(output.resolve.alias['tyndale-react$']).toBeDefined();
   });
 
 });

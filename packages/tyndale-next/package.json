@@ -26,7 +26,8 @@
     },
     "./config": {
       "types": "./dist/config.d.ts",
-      "import": "./dist/config.js"
+      "import": "./dist/config.js",
+      "require": "./dist/config.cjs"
     },
     "./middleware": {
       "types": "./dist/middleware.d.ts",
@@ -37,7 +38,7 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && bun -e \"await Bun.write('dist/config.cjs', Bun.file('src/config.cjs'))\"",
     "test": "bun test"
   },
   "keywords": [
