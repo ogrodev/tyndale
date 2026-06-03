@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-06-03
+
+### Added
+
+- Export shared `TranslationFn` and `TranslationVariables` types from `tyndale-react` root and server entry points.
+- Extract server-side `getTranslation()` string calls imported from `tyndale-react/server`.
+
+### Fixed
+
+- Restore the published `tyndale-next/config` subpath export.
+- Document pure shared helper strings with `msgString()` markers so the CLI extracts composed labels before runtime translation.
+
+
 ## [0.1.0] - 2026-04-12
 
 ### Added
@@ -20,5 +33,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Locale aliases for variant locale codes
 - RTL direction support via `useDirection` hook
 
-[Unreleased]: https://github.com/ogrodev/tyndale/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/ogrodev/tyndale/compare/v1.2.0...HEAD
+[1.2.0]: https://github.com/ogrodev/tyndale/compare/v1.1.1...v1.2.0
 [0.1.0]: https://github.com/ogrodev/tyndale/releases/tag/v0.1.0
