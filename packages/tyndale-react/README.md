@@ -183,6 +183,12 @@ const greeting = t('Hello, {name}!', { name: 'Alice' });
 
 Hashes the source string, looks up the translation, applies interpolation, and falls back to the source when no translation exists.
 
+`useTranslation()` and `getTranslation()` both return the exported `TranslationFn` type:
+
+```ts
+import type { TranslationFn } from 'tyndale-react';
+```
+
 ---
 
 ### `useLocale()`
@@ -238,21 +244,23 @@ The CLI extractor recognizes `msg('literal')` calls and extracts the argument.
 
 ### `msgString(source)`
 
-Like `msg()`, but for non-React contexts (Astro, Node.js) where a plain string is needed. Returns the source string unchanged at runtime; the CLI extractor still picks it up.
+Like `msg()`, but for non-React contexts where a plain string is needed. Returns the source string unchanged at runtime; the CLI extractor still picks it up. Pass the returned source through a `TranslationFn` when you need the translated value.
 
 ```ts
-import { msgString } from 'tyndale-react';
-const title = msgString('Page title');
+import { msgString, type TranslationFn } from 'tyndale-react';
+declare const t: TranslationFn;
+const titleSource = msgString('Page title');
+const title = t(titleSource);
 ```
 
 ---
 
 ### `getTranslation(options)` — server entry (`tyndale-react/server`)
 
-Async server-side translation function. Loads locale files from disk and returns a `t()` function.
+Async server-side translation function. Loads locale files from disk and returns a `TranslationFn`.
 
 ```ts
-import { getTranslation } from 'tyndale-react/server';
+import { getTranslation, type TranslationFn } from 'tyndale-react/server';
 
 const t = await getTranslation({
   locale: 'fr',
@@ -260,11 +268,48 @@ const t = await getTranslation({
   outputPath: './public/_tyndale',
 });
 
-const title = t('Welcome');
+const title: string = t('Welcome');
+const sameShape: TranslationFn = t;
 ```
 
 > [!NOTE]
 > For Next.js server components, use `TyndaleServerProvider` from [`tyndale-next`](../tyndale-next) instead — it handles file loading and passes translations through React context automatically.
+
+### Pure shared helpers
+
+For plain TypeScript helpers used by both Server and Client Components, keep the helper pure and inject a `TranslationFn`. Use `msgString()` in module-scope maps so the CLI extracts those source strings, then translate through the injected function at the call site.
+
+```ts
+import { msgString, type TranslationFn } from 'tyndale-react';
+
+type DashboardStatus = 'valid' | 'expired';
+
+const STATUS_LABELS = {
+  valid: msgString('Compliant'),
+  expired: msgString('Expired'),
+} satisfies Record<DashboardStatus, string>;
+
+const STATUS_FILTER_LABEL = msgString('Status: {status}');
+
+export function statusLabel(status: DashboardStatus, t: TranslationFn): string {
+  return t(STATUS_LABELS[status]);
+}
+
+export function activeFilterLabels(
+  filters: { status?: DashboardStatus },
+  t: TranslationFn,
+): string[] {
+  const labels: string[] = [];
+
+  if (filters.status) {
+    labels.push(t(STATUS_FILTER_LABEL, { status: statusLabel(filters.status, t) }));
+  }
+
+  return labels;
+}
+```
+
+Client code passes `useTranslation()`. Server code passes `await getTranslation(...)`. Avoid building translated sentences with template literals; translate the whole sentence or label with placeholders so translators can reorder words naturally.
 
 ## `TyndaleProvider` props
 

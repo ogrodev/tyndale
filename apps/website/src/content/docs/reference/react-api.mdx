@@ -72,8 +72,10 @@ function Greeting({ name }: { name: string }) {
 Signature:
 
 ```ts
-(source: string, vars?: Record<string, string | number>) => string
+type TranslationFn = (source: string, vars?: Record<string, string | number>) => string;
 ```
+
+`TranslationFn` is exported from `tyndale-react` and is also the return type of `getTranslation()`.
 
 ### `useLocale()`
 
@@ -128,9 +130,9 @@ The hook looks up manifest entries with `type: 'dictionary'` and falls back to t
 
 ### `getTranslation(options)`
 
-Async server helper that loads a locale file from disk and returns a translation function.
+Async server helper that loads a locale file from disk and returns a `TranslationFn`.
 
-Available from both `tyndale-react` and the server-only subpath:
+Import it from the server-only subpath so client bundles never include Node filesystem code:
 
 ```ts
 import { getTranslation } from 'tyndale-react/server';
@@ -177,6 +179,39 @@ export const copy = {
 ```
 
 Use `msgString()` in non-React contexts such as plain TypeScript modules, Astro frontmatter, or server utilities.
+
+### Pure shared helpers
+
+For helpers imported by both Server and Client Components, pass a `TranslationFn` into the helper instead of reading translation state globally. Mark module-scope label maps with `msgString()` so the CLI extracts them.
+
+```ts
+import { msgString, type TranslationFn } from 'tyndale-react';
+
+type Status = 'valid' | 'expired';
+
+const STATUS_LABELS = {
+  valid: msgString('Compliant'),
+  expired: msgString('Expired'),
+} satisfies Record<Status, string>;
+
+const STATUS_FILTER_LABEL = msgString('Status: {status}');
+
+export function statusLabel(status: Status, t: TranslationFn): string {
+  return t(STATUS_LABELS[status]);
+}
+
+export function activeFilterLabels(status: Status | undefined, t: TranslationFn): string[] {
+  const labels: string[] = [];
+
+  if (status) {
+    labels.push(t(STATUS_FILTER_LABEL, { status: statusLabel(status, t) }));
+  }
+
+  return labels;
+}
+```
+
+Client components pass `useTranslation()`. Server components pass `await getTranslation(...)`. Translate composed labels with placeholders instead of template literals so word order can change by locale.
 
 ## Translation and formatting components
 

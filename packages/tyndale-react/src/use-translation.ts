@@ -3,6 +3,7 @@
 import { useContext, useCallback } from 'react';
 import { TyndaleContext } from './context.js';
 import { hash } from './hash.js';
+import type { TranslationFn, TranslationVariables } from './types.js';
 
 /**
  * Interpolates {name} placeholders in a string with provided values.
@@ -10,7 +11,7 @@ import { hash } from './hash.js';
  */
 export function interpolate(
   text: string,
-  vars?: Record<string, string | number>,
+  vars?: TranslationVariables,
 ): string {
   if (!vars) return text;
   return text.replace(/\{(\w+)\}/g, (match, key) => {
@@ -27,14 +28,11 @@ export function interpolate(
  * Returns t(source, vars?) that hashes source, looks up translation,
  * applies interpolation, and falls back to source.
  */
-export function useTranslation(): (
-  source: string,
-  vars?: Record<string, string | number>,
-) => string {
+export function useTranslation(): TranslationFn {
   const ctx = useContext(TyndaleContext);
 
   return useCallback(
-    (source: string, vars?: Record<string, string | number>): string => {
+    (source: string, vars?: TranslationVariables): string => {
       const h = hash(source);
       const translated = ctx?.translations[h];
       const result = translated ?? source;

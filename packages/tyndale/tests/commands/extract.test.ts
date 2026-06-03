@@ -33,9 +33,9 @@ describe('runExtract (integration)', () => {
     expect(manifest.defaultLocale).toBe('en');
     expect(manifest.locales).toEqual(['es', 'fr']);
 
-    // Count entries: 2 T components + 2 t() + 2 msg() + 2 dict = 8
+    // Count entries: 2 T components + 2 client t() + 2 server t() + 2 msg() + 2 dict = 10
     const entryCount = Object.keys(manifest.entries).length;
-    expect(entryCount).toBe(8);
+    expect(entryCount).toBe(10);
 
     // Verify entry types
     const entries = Object.values(manifest.entries) as any[];
@@ -44,7 +44,7 @@ describe('runExtract (integration)', () => {
     const dictEntries = entries.filter((e) => e.type === 'dictionary');
 
     expect(jsxEntries).toHaveLength(2);
-    expect(stringEntries).toHaveLength(4); // 2 t() + 2 msg()
+    expect(stringEntries).toHaveLength(6); // 2 client t() + 2 server t() + 2 msg()
     expect(dictEntries).toHaveLength(2);
 
     // Verify dictionary metadata
@@ -63,6 +63,8 @@ describe('runExtract (integration)', () => {
     expect(jsxValues).toContain('<0>Hello {user}</0>');
     expect(jsxValues).toContain('Enter your email');
     expect(jsxValues).toContain('Email address');
+    expect(jsxValues).toContain('Server metadata title');
+    expect(jsxValues).toContain('Server metadata description');
     expect(jsxValues).toContain('Home');
     expect(jsxValues).toContain('About');
     expect(jsxValues).toContain('Hello, welcome!');

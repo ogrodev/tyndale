@@ -17,14 +17,19 @@ export interface StringExtractionResult {
   errors: ExtractionError[];
 }
 
-/** Names of tyndale-react hooks/functions whose return value is a `t()` function. */
-const T_FUNCTION_SOURCES = new Set(['useTranslation', 'getTranslation']);
+/** Package entry points that expose extractable Tyndale runtime APIs. */
+const TYNDALE_REACT_SOURCE = 'tyndale-react';
+const TYNDALE_REACT_SERVER_SOURCE = 'tyndale-react/server';
+
+/** Names of Tyndale functions whose return value is a `t()` function. */
+const CLIENT_T_FUNCTION_SOURCES = new Set(['useTranslation']);
+const SERVER_T_FUNCTION_SOURCES = new Set(['getTranslation']);
 
 /** Names of marker functions whose first argument is an extractable string. */
 const MARKER_FUNCTIONS = new Set(['msg', 'msgString']);
 
 export interface TBindings {
-  /** Local identifiers imported from `tyndale-react`. */
+  /** Local identifiers imported from Tyndale runtime packages. */
   tyndaleImports: Set<string>;
   /**
    * Local identifiers that refer to an extractable callable — either a marker
@@ -35,7 +40,7 @@ export interface TBindings {
 }
 
 /**
- * Scan a module AST for tyndale-react imports and `t` bindings. Returns the
+ * Scan a module AST for Tyndale runtime imports and `t` bindings. Returns the
  * identifiers that the call-site extractor should treat as extractable.
  *
  * Separated from `extractStringCalls` so alternate front-ends (e.g. Astro,
@@ -46,25 +51,34 @@ export function collectTBindings(ast: File): TBindings {
   const tyndaleImports = new Set<string>();
   const tBindings = new Set<string>();
 
-  // Pass 1: tyndale-react imports.
+  // Pass 1: Tyndale runtime imports.
+  const translationFunctionImports = new Set<string>();
   traverse(ast, {
     ImportDeclaration(path: any) {
       const source = path.node.source.value;
-      if (source !== 'tyndale-react') return;
+      if (source !== TYNDALE_REACT_SOURCE && source !== TYNDALE_REACT_SERVER_SOURCE) return;
 
       for (const specifier of path.node.specifiers) {
-        if (specifier.type === 'ImportSpecifier') {
-          const imported =
-            specifier.imported.type === 'Identifier'
-              ? specifier.imported.name
-              : specifier.imported.value;
-          const local = specifier.local.name;
+        if (specifier.type !== 'ImportSpecifier') continue;
 
+        const imported =
+          specifier.imported.type === 'Identifier'
+            ? specifier.imported.name
+            : specifier.imported.value;
+        const local = specifier.local.name;
+
+        if (source === TYNDALE_REACT_SOURCE && MARKER_FUNCTIONS.has(imported)) {
           tyndaleImports.add(local);
+          tBindings.add(local);
+          continue;
+        }
 
-          if (MARKER_FUNCTIONS.has(imported)) {
-            tBindings.add(local);
-          }
+        if (
+          (source === TYNDALE_REACT_SOURCE && CLIENT_T_FUNCTION_SOURCES.has(imported)) ||
+          (source === TYNDALE_REACT_SERVER_SOURCE && SERVER_T_FUNCTION_SOURCES.has(imported))
+        ) {
+          tyndaleImports.add(local);
+          translationFunctionImports.add(local);
         }
       }
     },
@@ -94,7 +108,7 @@ export function collectTBindings(ast: File): TBindings {
         calleeName = init.argument.callee.name;
       }
 
-      if (calleeName && T_FUNCTION_SOURCES.has(calleeName) && tyndaleImports.has(calleeName)) {
+      if (calleeName && translationFunctionImports.has(calleeName)) {
         const localName = path.node.id.type === 'Identifier' ? path.node.id.name : null;
         if (localName) {
           tBindings.add(localName);
