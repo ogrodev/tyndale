@@ -12,6 +12,8 @@ export type {
   LocaleData,
   EntryType,
   Manifest,
+  TranslationVariables,
+  TranslationFn,
 } from './types.js';
 export { useLocale } from './use-locale.js';
 export { computeHash, hash } from './hash.js';

@@ -55,6 +55,20 @@ export interface TyndaleConfig {
 export type LocaleData = Record<string, string>;
 
 /**
+ * Values available to `{name}` placeholders in translated plain strings.
+ */
+export type TranslationVariables = Record<string, string | number>;
+
+/**
+ * Shared plain-string translator returned by `useTranslation()` on the client
+ * and `getTranslation()` on the server.
+ */
+export type TranslationFn = (
+  source: string,
+  vars?: TranslationVariables,
+) => string;
+
+/**
  * Type of an extracted translation entry.
  * - "jsx": from `<T>` component
  * - "string": from `useTranslation()` / `getTranslation()` / `msg()`

@@ -2,6 +2,7 @@ import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { hash } from './hash.js';
 import { interpolate } from './use-translation.js';
+import type { TranslationFn, TranslationVariables } from './types.js';
 
 export interface GetTranslationOptions {
   /** Target locale code. */
@@ -11,11 +12,6 @@ export interface GetTranslationOptions {
   /** Absolute or relative path to the directory containing locale JSON files. */
   outputPath: string;
 }
-
-type TranslationFn = (
-  source: string,
-  vars?: Record<string, string | number>,
-) => string;
 
 /**
  * Server-side async translation function.
@@ -45,7 +41,7 @@ export async function getTranslation(
     }
   }
 
-  return (source: string, vars?: Record<string, string | number>): string => {
+  return (source: string, vars?: TranslationVariables): string => {
     const h = hash(source);
     const translated = translations[h] ?? source;
     return interpolate(translated, vars);

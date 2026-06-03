@@ -41,11 +41,11 @@ describe('extractStrings', () => {
     expect(result.entries[1].wireFormat).toBe('Email address');
   });
 
-  it('extracts getTranslation() destructured t() calls', () => {
+  it('extracts getTranslation() t() calls from the server subpath', () => {
     const code = `
-      import { getTranslation } from 'tyndale-react';
+      import { getTranslation } from 'tyndale-react/server';
       async function Page() {
-        const t = await getTranslation();
+        const t = await getTranslation({ locale: 'fr', outputPath: './public/_tyndale' });
         return <h1>{t('Page title')}</h1>;
       }
     `;
@@ -54,6 +54,35 @@ describe('extractStrings', () => {
 
     expect(result.entries).toHaveLength(1);
     expect(result.entries[0].wireFormat).toBe('Page title');
+  });
+
+  it('extracts aliased getTranslation() t() calls from the server subpath', () => {
+    const code = `
+      import { getTranslation as getTyndaleTranslation } from 'tyndale-react/server';
+      async function Page() {
+        const t = await getTyndaleTranslation({ locale: 'fr', outputPath: './public/_tyndale' });
+        return <h1>{t('Aliased page title')}</h1>;
+      }
+    `;
+    const ast = parseSource(code, 'page.tsx');
+    const result = extractStrings(ast, 'page.tsx');
+
+    expect(result.entries).toHaveLength(1);
+    expect(result.entries[0].wireFormat).toBe('Aliased page title');
+  });
+
+  it('does not extract getTranslation() t() calls from non-Tyndale imports', () => {
+    const code = `
+      import { getTranslation } from './local-i18n';
+      async function Page() {
+        const t = await getTranslation();
+        return <h1>{t('Not from Tyndale')}</h1>;
+      }
+    `;
+    const ast = parseSource(code, 'page.tsx');
+    const result = extractStrings(ast, 'page.tsx');
+
+    expect(result.entries).toHaveLength(0);
   });
 
   it('extracts msg() calls', () => {
@@ -71,6 +100,44 @@ describe('extractStrings', () => {
     expect(result.entries[0].wireFormat).toBe('Home');
     expect(result.entries[1].wireFormat).toBe('About');
     expect(result.entries[0].context).toMatch(/nav\.ts:msg@4/);
+  });
+
+  it('extracts pure helper strings marked with msgString()', () => {
+    const code = `
+      import { msgString, type TranslationFn } from 'tyndale-react';
+
+      type Status = 'valid' | 'expired';
+
+      const STATUS_LABELS = {
+        valid: msgString('Compliant'),
+        expired: msgString('Expired'),
+      } satisfies Record<Status, string>;
+
+      const STATUS_FILTER_LABEL = msgString('Status: {status}');
+
+      export function statusLabel(status: Status, t: TranslationFn): string {
+        return t(STATUS_LABELS[status]);
+      }
+
+      export function activeFilterLabels(status: Status | undefined, t: TranslationFn): string[] {
+        const labels: string[] = [];
+
+        if (status) {
+          labels.push(t(STATUS_FILTER_LABEL, { status: statusLabel(status, t) }));
+        }
+
+        return labels;
+      }
+    `;
+    const ast = parseSource(code, 'helper.ts');
+    const result = extractStrings(ast, 'helper.ts');
+
+    expect(result.entries.map((entry) => entry.wireFormat)).toEqual([
+      'Compliant',
+      'Expired',
+      'Status: {status}',
+    ]);
+    expect(result.errors).toHaveLength(0);
   });
 
   it('reports error for template literal in t()', () => {
